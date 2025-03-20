@@ -13,6 +13,8 @@ import { useUserStore } from "./stores/useUserStore";
 import { useEffect } from "react";
 import LoadingSpinner from "./components/LoadingSpinner";
 
+import JobPostPage from "./pages/JobPostPage";
+
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
   
@@ -43,7 +45,8 @@ function App() {
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
 					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />
-					
+					<Route path="/post-job" element={user ? <JobPostPage /> : <Navigate to='/' />} />
+
 					<Route
 						path="/secret-dashboard"
 						element={
@@ -54,6 +57,7 @@ function App() {
 							)
 						}
 					/>
+
 				</Routes>
 			</div>
 			<Toaster />

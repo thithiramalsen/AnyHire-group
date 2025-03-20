@@ -1,4 +1,4 @@
-import { User, Edit, Settings, List, BarChart2, Briefcase } from "lucide-react";
+import { User, Edit, Settings, List, BarChart2, Folder, Calendar, Briefcase, Clock } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { rolePermissions } from "../lib/rolePermissions";
 
@@ -10,7 +10,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: "settings", label: "Settings", icon: Settings },
         { id: "categories", label: "Categories", icon: List },
         { id: "analytics", label: "Analytics", icon: BarChart2 },
-        { id: "portfolio", label: "Portfolio", icon: Briefcase }
+        { id: "portfolio", label: "Portfolio", icon: Folder },
+        { id: "bookings", label: "Bookings", icon: Calendar },
+        { id: "jobs", label: "Jobs", icon: Briefcase },
+        { id: "pending-jobs", label: "Pending Jobs", icon: Clock },
     ];
 
     const accessibleTabs = tabs.filter((tab) =>

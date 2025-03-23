@@ -23,7 +23,7 @@ const PortfolioTab = () => {
 
     const handleAddItem = () => {
         setCurrentItem({
-            title: "",
+            category: "",
             phoneNumber: "",
             email: "",
             experience: "",
@@ -113,7 +113,7 @@ const PortfolioTab = () => {
 
 const PortfolioItem = ({ item, onEdit, onDelete }) => (
     <div className="p-4 bg-gray-800 rounded shadow">
-        <p>Title: {item.title}</p>
+        <p>Category: {item.category}</p>
         <p>Phone Number: {item.phoneNumber}</p>
         <p>Email: {item.email}</p>
         <p>Experience: {item.experience}</p>
@@ -143,8 +143,8 @@ const PortfolioForm = ({ item, onSave, onCancel }) => {
         e.preventDefault();
 
         // Validation
-        if (!formData.title.trim()) {
-            toast.error("Title is required.");
+        if (!formData.category.trim()) {
+            toast.error("Category is required.");
             return;
         }
         if (!formData.phoneNumber.match(/^\d{10}$/)) {
@@ -174,12 +174,12 @@ const PortfolioForm = ({ item, onSave, onCancel }) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <label className="block text-gray-300 mb-1">Title</label>
+                <label className="block text-gray-300 mb-1">Category</label>
                 <input
                     type="text"
-                    value={formData.title}
+                    value={formData.category}
                     onChange={(e) =>
-                        setFormData({ ...formData, title: e.target.value })
+                        setFormData({ ...formData, category: e.target.value })
                     }
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
                     required
@@ -225,7 +225,10 @@ const PortfolioForm = ({ item, onSave, onCancel }) => {
                 <textarea
                     value={formData.qualifications}
                     onChange={(e) =>
-                        setFormData({ ...formData, qualifications: e.target.value })
+                        setFormData({
+                            ...formData,
+                            qualifications: e.target.value,
+                        })
                     }
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
                     required
@@ -236,7 +239,10 @@ const PortfolioForm = ({ item, onSave, onCancel }) => {
                 <textarea
                     value={formData.description}
                     onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
+                        setFormData({
+                            ...formData,
+                            description: e.target.value,
+                        })
                     }
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
                     required

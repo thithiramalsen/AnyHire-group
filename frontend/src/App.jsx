@@ -6,6 +6,11 @@ import LoginPage from "./pages/LoginPage";
 import DashBoard from "./pages/Dashboard";
 import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
+import FindJobPage from "./pages/findjobpage";
+import BookingPage from "./pages/Bookingpage";
+import JobStatusPage from "./pages/JobStatusPage";
+import PortfolioUpdatePage from "./pages/portfolioupdatepage";
+import BookingHistoryPage from "./pages/bookinghistorypage";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
@@ -46,8 +51,13 @@ function App() {
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
 					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />
 					<Route path="/post-job" element={user ? <JobPostPage /> : <Navigate to='/' />} />
+					<Route path="/find-job" element={user ? <FindJobPage /> : <Navigate to='/' />} />
+					<Route path="/booking/:id" element={user ? <BookingPage /> : <Navigate to='/' />} />
+					<Route path="/job-status" element={user ? <JobStatusPage /> : <Navigate to='/' />} />
+					<Route path="/portfolio-update" element={user ? <PortfolioUpdatePage /> : <Navigate to='/' />} />
+					<Route path="/booking-history" element={user ? <BookingHistoryPage /> : <Navigate to='/' />} />
 
-					<Route
+		     	<Route
 						path="/secret-dashboard"
 						element={
 							user ? (

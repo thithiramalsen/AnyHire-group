@@ -1,12 +1,12 @@
 import express from "express";
 import * as Jobs from "../controllers/job.controller.js";
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
-import { getProfile } from "../controllers/auth.controller.js"; // Correct import for getProfile
+import upload from "../middleware/uploadmiddleware.js";
 
 const router = express.Router();
 
 // Job posting
-router.post("/add", protectRoute, Jobs.addJob);
+router.post("/add", protectRoute, upload.array("images", 5), Jobs.addJob);
 
 // Get all jobs
 router.get("/get", Jobs.getjobs);
@@ -20,9 +20,10 @@ router.patch("/up/:id", Jobs.updateJob);
 // Delete a job
 router.delete("/del/:id", Jobs.deleteJob);
 
-router.get("/status", protectRoute, Jobs.getJobsByStatus); // Fetch jobs by status
-router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob); // Approve a job
+// Fetch jobs by status
+router.get("/status", protectRoute, Jobs.getJobsByStatus);
 
-
+// Approve a job
+router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob);
 
 export default router;

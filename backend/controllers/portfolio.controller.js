@@ -1,8 +1,8 @@
 import Portfolio from "../models/portfolio.model.js";
 
-export const getPortfolioItems = async (req, res) => {
+export const getPortfolio = async (req, res) => {
     try {
-        const portfolioItems = await Portfolio.find({ user: req.user._id });
+        const portfolioItems = await Portfolio.find({  });
         res.json(portfolioItems);
     } catch (error) {
         console.error("Error fetching portfolio items:", error.message);
@@ -10,10 +10,37 @@ export const getPortfolioItems = async (req, res) => {
     }
 };
 
+export const getPortfolioItems = async (req, res) => {
+    try {
+        const portfolioItems = await Portfolio.findById(req.params.id);
+        res.json(portfolioItems);
+    } catch (error) {
+        console.error("Error fetching portfolio items:", error.message);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const getUserPortfolio = async (req, res) => {
+    try {
+        const category  = req.body.category;
+        const id = req.body.id;
+        const portfolioItem = await Portfolio.findOne({user:id,category});
+        if (!portfolioItem) {
+            return res.status(404).json({ message: "Portfolio item not found" });
+        }
+        res.json(portfolioItem);
+    } catch (error) {
+        console.error("Error fetching user portfolio:", error.message);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+
 export const createPortfolioItem = async (req, res) => {
     try {
         const {
-            title,
+            category,
             phoneNumber,
             email,
             experience,
@@ -23,7 +50,7 @@ export const createPortfolioItem = async (req, res) => {
 
         const newPortfolioItem = await Portfolio.create({
             user: req.user._id,
-            title,
+            category,
             phoneNumber,
             email,
             experience,
@@ -40,32 +67,35 @@ export const createPortfolioItem = async (req, res) => {
 
 export const updatePortfolioItem = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id;
         const {
-            title,
+            category,
             phoneNumber,
             email,
             experience,
             qualifications,
-            description, // Updated field
+            description,
         } = req.body;
 
-        const updatedPortfolioItem = await Portfolio.findOneAndUpdate(
-            { _id: id, user: req.user._id },
-            {
-                title,
-                phoneNumber,
-                email,
-                experience,
-                qualifications,
-                description, // Updated field
-            },
-            { new: true, runValidators: true }
-        );
+        console.log(req.body);
 
-        if (!updatedPortfolioItem) {
+        // Find the portfolio item by ID and user ID
+        const portfolioItem = await Portfolio.findOne({ user:id});
+
+        if (!portfolioItem) {
             return res.status(404).json({ message: "Portfolio item not found" });
         }
+
+        // Update the fields
+        portfolioItem.category = category;
+        portfolioItem.phoneNumber = phoneNumber;
+        portfolioItem.email = email;
+        portfolioItem.experience = experience;
+        portfolioItem.qualifications = qualifications;
+        portfolioItem.description = description;
+
+        // Save the updated portfolio item
+        const updatedPortfolioItem = await portfolioItem.save();
 
         res.json(updatedPortfolioItem);
     } catch (error) {

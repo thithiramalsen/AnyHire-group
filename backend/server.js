@@ -4,7 +4,6 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import cors from "cors";
 import multer from "multer";
-import Redis from "ioredis";
 import mongoose from "mongoose";
 
 import authRoutes from "./routes/auth.route.js";
@@ -12,7 +11,7 @@ import analyticsRoutes from "./routes/analytics.route.js";
 import portfolioRoutes from "./routes/portfolio.route.js";
 import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
-
+import categoryRoutes from "./routes/category.route.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -22,18 +21,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
 
-//Middleware
-app.use(express.json({ limit: "10mb" })); // allows you to parse the body of the request
+// Middleware
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
-
-//from Tharusha
-app.use(express.urlencoded({ extended: true })); // allows you to parse the body of the request
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-//Booking
+// Booking
 app.use("/bookings", bookingRoutes);
-
-
 
 // Static file serving for uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -50,38 +45,42 @@ app.post("/upload", upload.single("file"), (req, res) => {
   res.send("File uploaded successfully");
 });
 
-
-//MiddleWare routes
+// Middleware routes
 app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
-app.use("/api/job", jobRouter); // From Tharusha - Updated to include /api prefix
-
-
+app.use("/api/job", jobRouter);
+app.use("/api/category", categoryRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {
-	if (err instanceof multer.MulterError) {
-	  // Handle Multer-specific errors
-	  return res.status(400).json({ message: err.message });
-	}
-	if (err) {
-	  // Handle other errors
-	  return res.status(500).json({ message: err.message });
-	}
-	next();
-  });
-
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: err.message });
+  }
+  if (err) {
+    return res.status(500).json({ message: err.message });
+  }
+  next();
+});
 
 if (process.env.NODE_ENV === "production") {
-	app.use(express.static(path.join(__dirname, "/frontend/dist")));
+  app.use(express.static(path.join(__dirname, "/frontend/dist")));
 
-	app.get("*", (req, res) => {
-		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
-	});
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+  });
 }
 
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Allow only your frontend
+    credentials: true, // Allow cookies, authentication headers
+    methods: "GET,POST,PUT,DELETE", // Allowed methods
+    allowedHeaders: "Content-Type,Authorization", // Allowed headers
+  })
+);
+
 app.listen(PORT, () => {
-	console.log("Server is running on http://localhost:" + PORT);
-	connectDB();
+  console.log("Server is running on http://localhost:" + PORT);
+  connectDB();
 });

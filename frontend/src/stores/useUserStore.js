@@ -7,22 +7,22 @@ export const useUserStore = create((set, get) => ({
 	loading: false,
 	checkingAuth: true,
 
-	signup: async ({ name, email, password, confirmPassword, role }) => {
-		set({ loading: true });
+	signup: async (formData) => {
+        set({ loading: true });
 
-		if (password !== confirmPassword) {
-			set({ loading: false });
-			return toast.error("Passwords do not match");
-		}
-
-		try {
-			const res = await axios.post("/auth/signup", { name, email, password, role });
-			set({ user: res.data, loading: false });
-		} catch (error) {
-			set({ loading: false });
-			toast.error(error.response.data.message || "An error occurred");
-		}
-	},
+        try {
+            // Send FormData to the backend
+            const res = await axios.post("/auth/signup", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            set({ user: res.data, loading: false });
+            toast.success("Signup successful!");
+        } catch (error) {
+            set({ loading: false });
+            toast.error(error.response?.data?.message || "An error occurred during signup");
+        }
+    },
+	
 	login: async (email, password) => {
 		set({ loading: true });
 

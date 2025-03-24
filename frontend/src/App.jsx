@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
-import DashBoard from "./pages/Dashboard";
+import DashBoard from "./pages/DashBoard";
 import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 
@@ -13,7 +13,6 @@ import { useUserStore } from "./stores/useUserStore";
 import { useEffect } from "react";
 import LoadingSpinner from "./components/LoadingSpinner";
 
-import JobPostPage from "./pages/JobPostPage";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -45,7 +44,7 @@ function App() {
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
 					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />
-					<Route path="/post-job" element={user ? <JobPostPage /> : <Navigate to='/' />} />
+					
 
 					<Route
 						path="/secret-dashboard"

@@ -179,6 +179,20 @@ export const getJobsByStatus = async (req, res) => {
   }
 };
 
+// Get jobs by user ID
+export const getJobsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const jobs = await Job.find({ createdBy: userId });
+    res.status(200).json(jobs);
+  } catch (err) {
+    console.error("Error fetching jobs by user ID:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Other controller functions...
+
 // Approve a job
 export const approveJob = async (req, res) => {
   try {

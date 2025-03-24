@@ -6,7 +6,7 @@ import CategoriesTab from "../Components/CategoriesTab";
 import AnalyticsTab from "../Components/AnalyticsTab";
 import BookingsTab from "../Components/BookingsTab";
 import JobsTab from "../Components/JobsTab";
-//import JobApprovalTab from "../Components/JobApprovalTab";
+import JobApprovalTab from "../Components/JobApprovalTab";
 import JobPostingTab from "../Components/JobPostingTab";
 import PendingJobsTab from "../Components/PendingJobsTab"; // Added import
 
@@ -31,7 +31,7 @@ const DashBoard = () => {
                 {accessibleTabs.includes("portfolio") && activeTab === "portfolio" && <PortfolioTab />}
                 {accessibleTabs.includes("bookings") && activeTab === "bookings" && <BookingsTab />}
                 {accessibleTabs.includes("jobs") && activeTab === "jobs" && <JobsTab />}
-                {accessibleTabs.includes("admin-approval") && activeTab === "admin-approval" && <JobApprovalTab />}
+                {accessibleTabs.includes("admin-job-approval") && activeTab === "admin-job-approval" && <JobApprovalTab />}
                 {accessibleTabs.includes("post_job") && activeTab === "post_job" && <JobPostingTab />}
                 {accessibleTabs.includes("pending-jobs") && activeTab === "pending-jobs" && <PendingJobsTab />} {/* Added tab */}
             </div>

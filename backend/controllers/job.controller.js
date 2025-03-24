@@ -1,22 +1,22 @@
 import Job from "../models/job.model.js";
-import multer, { diskStorage } from 'multer';
+import multer from "multer";
 
 // Configure Multer for file uploads
-const storage = diskStorage({
+const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 
-const upload = multer({ storage: storage }).array('images', 5); // Limit to 5 images
+const upload = multer({ storage: storage }).array("images", 5); // Limit to 5 images
 
 // Get all jobs
-export const getjobs = async (req, res) => {
+export const getJobs = async (req, res) => {
   try {
-    const jobs = await find();
+    const jobs = await Job.find();
     res.status(200).json(jobs);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -26,35 +26,28 @@ export const getjobs = async (req, res) => {
 // Get a job by ID
 export const getJobById = async (req, res) => {
   try {
-    const ajob = await findById(req.query.id);
-    if (ajob == null) {
-      return res.status(404).json({ message: "Cannot find job" });
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
     }
-    res.status(200).json(ajob);
+    res.status(200).json(job);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-
-
 // Create a new job
 export const addJob = async (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message }); // Handle Multer errors
-    }
 
-    // Validate if files are uploaded
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "At least one image is required." });
-    }
+
+   
 
     // Validate required fields
-    const { title, description, location, district, category, skills, jobType, payment, deadline } = req.body;
-    if (!title || !description || !location || !district || !category || !skills || !jobType || !payment || !deadline) {
+    const { title, description, location, district, category, jobType, payment, deadline } = req.body;
+    if (!title || !description || !location || !district || !category || !jobType || !payment || !deadline) {
       return res.status(400).json({ message: "All fields are required." });
     }
+    console.log(req.body);
 
     // Validate field lengths
     if (title.length < 3 || title.length > 100) {
@@ -75,20 +68,21 @@ export const addJob = async (req, res) => {
       return res.status(400).json({ message: "Deadline must be a valid future date." });
     }
 
-    // Save job to the database
-    const imagePaths = req.files.map((file) => file.path);
+
+
+
 
     const job = new Job({
       title,
       description,
-      images: imagePaths,
+      images: req.file ? `/uploads/${req.file.filename}` : "",
       location,
       district,
       category,
-      skills,
       jobType,
       payment,
       deadline,
+      createdBy: req.user._id, // Associate the job with the logged-in user
     });
 
     try {
@@ -97,15 +91,15 @@ export const addJob = async (req, res) => {
     } catch (err) {
       res.status(400).json({ message: err.message });
     }
-  });
+  
 };
 
 // Update a job
 export const updateJob = async (req, res) => {
   try {
-    const job = await findById(req.params.id);
-    if (job == null) {
-      return res.status(404).json({ message: "Cannot find job" });
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
     }
 
     // Validate fields if provided in the request
@@ -125,14 +119,14 @@ export const updateJob = async (req, res) => {
       }
     }
 
-    // Update fields 
+    // Update fields
     if (req.body.title != null) job.title = req.body.title;
     if (req.body.description != null) job.description = req.body.description;
     if (req.body.images != null) job.images = req.body.images;
     if (req.body.location != null) job.location = req.body.location;
     if (req.body.district != null) job.district = req.body.district;
     if (req.body.category != null) job.category = req.body.category;
-    if (req.body.skills != null) job.skills = req.body.skills;
+    if (req.body.skills != null) job.skills = req.body.skills.split(",");
     if (req.body.jobType != null) job.jobType = req.body.jobType;
     if (req.body.payment != null) job.payment = req.body.payment;
     if (req.body.deadline != null) job.deadline = req.body.deadline;
@@ -164,9 +158,23 @@ export const deleteJob = async (req, res) => {
 export const getJobsByStatus = async (req, res) => {
   try {
     const { status } = req.query; // "approved" or "pending"
-    const jobs = await Job.find({ status });
+    if (!status) {
+      return res.status(400).json({ message: "Status query parameter is required." });
+    }
+
+    let jobs;
+
+    if (req.user.role === "admin") {
+      // Admin can see all jobs with the given status
+      jobs = await Job.find({ status });
+    } else {
+      // Regular users can only see their own jobs with the given status
+      jobs = await Job.find({ status, createdBy: req.user._id });
+    }
+
     res.status(200).json(jobs);
   } catch (err) {
+    console.error("Error fetching jobs by status:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

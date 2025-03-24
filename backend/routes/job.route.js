@@ -1,28 +1,33 @@
 import express from "express";
 import * as Jobs from "../controllers/job.controller.js";
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
-import { getProfile } from "../controllers/auth.controller.js"; // Correct import for getProfile
+import upload from "../lib/multer.js"; 
 
 const router = express.Router();
 
+
+
 // Job posting
-router.post("/add", protectRoute, Jobs.addJob);
+router.post("/add", protectRoute, upload.single("images"),Jobs.addJob);
 
 // Get all jobs
-router.get("/get", Jobs.getjobs);
+router.get("/get", Jobs.getJobs,);
+
+// Fetch jobs by status
+router.get("/status", protectRoute, Jobs.getJobsByStatus);
 
 // Get a job by ID
-router.get("/one", Jobs.getJobById);
+router.get("/:id", Jobs.getJobById);
 
 // Update a job
-router.patch("/up/:id", Jobs.updateJob);
+router.patch("/up/:id", protectRoute, Jobs.updateJob);
 
 // Delete a job
-router.delete("/del/:id", Jobs.deleteJob);
-
-router.get("/status", protectRoute, Jobs.getJobsByStatus); // Fetch jobs by status
-router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob); // Approve a job
+router.delete("/del/:id", protectRoute, Jobs.deleteJob);
 
 
+
+// Approve a job
+router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob);
 
 export default router;

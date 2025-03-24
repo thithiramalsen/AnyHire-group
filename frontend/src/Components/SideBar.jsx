@@ -13,7 +13,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: "portfolio", label: "Portfolio", icon: Folder },
         { id: "bookings", label: "Bookings", icon: Calendar },
         { id: "jobs", label: "Jobs", icon: Briefcase },
-        { id: "admin-approval", label: "Admin Approval", icon: Clock },
+        //{ id: "admin-approval", label: "Admin Approval", icon: Clock },
         { id: "post_job", label: "Post Job", icon: PlusCircle },
         { id: "pending-jobs", label: "Pending Jobs", icon: Clock }, // Added pending-jobs
     ];

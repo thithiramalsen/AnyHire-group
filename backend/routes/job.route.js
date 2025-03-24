@@ -30,4 +30,6 @@ router.delete("/del/:id", protectRoute, Jobs.deleteJob);
 // Approve a job
 router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob);
 
+router.patch("/decline/:id", protectRoute, adminRoute, Jobs.declineJob);
+
 export default router;

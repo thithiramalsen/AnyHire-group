@@ -194,3 +194,25 @@ export const approveJob = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+export const declineJob = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Decline job request received for ID:", id);
+
+    const job = await Job.findById(id);
+    if (!job) {
+      console.log("Job not found for ID:", id);
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    job.status = "declined";
+    await job.save();
+    console.log("Job declined successfully:", job);
+
+    res.status(200).json({ message: "Job declined successfully", job });
+  } catch (error) {
+    console.error("Error declining job:", error);
+    res.status(500).json({ message: "Failed to decline job" });
+  }
+};

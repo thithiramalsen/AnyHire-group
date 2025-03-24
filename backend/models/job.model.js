@@ -11,7 +11,7 @@ const jobSchema = new mongoose.Schema({
   payment: { type: Number, required: true },
   deadline: { type: Date, required: true },
   postedDate: { type: Date, default: Date.now },
-  status: { type: String, enum: ["pending", "approved"], default: "pending" },
+  status: { type: String, enum: ["pending", "approved", "declined"], default: "pending" },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 });
 

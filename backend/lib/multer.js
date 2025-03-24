@@ -3,9 +3,13 @@ import path from "path";
 
 // Configure Multer storage
 const storage = multer.diskStorage({
-  destination: "uploads/",
+  destination: (req, file, cb) => {
+    console.log("Multer destination called");
+    cb(null, "uploads/");
+  },
   filename: (req, file, cb) => {
-      cb(null, Date.now() + path.extname(file.originalname));
+    console.log("Multer filename called:", file.originalname);
+    cb(null, Date.now() + "-" + file.originalname);
   },
 });
 
@@ -22,7 +26,8 @@ const fileFilter = (req, file, cb) => {
 // Multer instance
 const upload = multer({
   storage,
-
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+  fileFilter,
 });
 
 export default upload;

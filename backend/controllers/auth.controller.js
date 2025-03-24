@@ -1,6 +1,9 @@
 import { redis } from "../lib/redis.js";
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
+import multer from "../lib/multer.js";
 
 const generateTokens = (userId) => {
 	const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
@@ -34,33 +37,47 @@ const setCookies = (res, accessToken, refreshToken) => {
 };
 
 export const signup = async (req, res) => {
-	const { email, password, name, role } = req.body;
-	try {
-		const userExists = await User.findOne({ email });
+	console.log("Uploaded file:", req.file); // Debugging
+    console.log("Request body:", req.body);
+    console.log("Uploaded file:", req.file);
 
-		if (userExists) {
-			return res.status(400).json({ message: "User already exists" });
-		}
+    const { email, password, name, role } = req.body;
 
-		// Create the user with the provided role (default is 'customer' if not provided)
-		const user = await User.create({ name, email, password, role });
+    // Validate required fields
+    if (!email || !password || !name) {
+        return res.status(400).json({ message: "All fields (name, email, password) are required" });
+    }
 
-		// authenticate
-		const { accessToken, refreshToken } = generateTokens(user._id);
-		await storeRefreshToken(user._id, refreshToken);
+    try {
+        const userExists = await User.findOne({ email });
 
-		setCookies(res, accessToken, refreshToken);
+        if (userExists) {
+            return res.status(400).json({ message: "User already exists" });
+        }
 
-		res.status(201).json({
-			_id: user._id,
-			name: user.name,
-			email: user.email,
-			role: user.role,
-		});
-	} catch (error) {
-		console.log("Error in signup controller", error.message);
-		res.status(500).json({ message: error.message });
-	}
+        // Handle image upload
+        const image = req.file ? req.file.filename : null;
+
+        // Create the user with the provided role (default is 'customer' if not provided)
+        const user = await User.create({ name, email, password, role, image });
+
+        // Authenticate
+        const { accessToken, refreshToken } = generateTokens(user._id);
+        await storeRefreshToken(user._id, refreshToken);
+
+        setCookies(res, accessToken, refreshToken);
+
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            image: user.image,
+        });
+    } catch (error) {
+        console.log("Error in signup controller", error.message);
+        res.status(500).json({ message: error.message });
+    }
 };
 
 export const login = async (req, res) => {
@@ -163,5 +180,58 @@ export const updateProfile = async (req, res) => {
     } catch (error) {
         console.log("Error in updateProfile controller", error.message);
         res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+export const uploadPfp = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const user = req.user;
+
+        // Delete the old PFP if it exists
+        if (user.image) {
+            const oldImagePath = path.join("uploads", user.image);
+            if (fs.existsSync(oldImagePath)) {
+                fs.unlinkSync(oldImagePath);
+            }
+        }
+
+        // Update the user's PFP
+        user.image = req.file.filename;
+        await user.save();
+
+        res.json({ message: "Profile picture updated successfully", image: user.image });
+    } catch (error) {
+        console.error("Error uploading PFP:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const deletePfp = async (req, res) => {
+    try {
+        const user = req.user;
+
+        if (!user.image) {
+            return res.status(400).json({ message: "No profile picture to delete" });
+        }
+
+        // Delete the PFP file
+        const imagePath = path.join("uploads", user.image);
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+        }
+
+        // Remove the PFP reference from the user
+        user.image = null;
+        await user.save();
+
+        res.json({ message: "Profile picture deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting PFP:", error);
+        res.status(500).json({ message: "Server error" });
     }
 };

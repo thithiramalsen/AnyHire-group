@@ -23,7 +23,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["customer", "jobSeeker", "admin"],
         default: "customer"
-    }
+    },
+
+    image: {
+        type: String,
+        default: null, // Default to null if no image is provided
+    },
+
+    
 }, {
      //createdAt, updatedAt
     timestamps: true 

@@ -82,6 +82,7 @@ export const addJob = async (req, res) => {
       jobType,
       payment,
       deadline,
+      createdBy: req.user._id, // Associate the job with the logged-in user
     });
 
     try {
@@ -160,10 +161,20 @@ export const getJobsByStatus = async (req, res) => {
     if (!status) {
       return res.status(400).json({ message: "Status query parameter is required." });
     }
-    const jobs = await Job.find({ status });
+
+    let jobs;
+
+    if (req.user.role === "admin") {
+      // Admin can see all jobs with the given status
+      jobs = await Job.find({ status });
+    } else {
+      // Regular users can only see their own jobs with the given status
+      jobs = await Job.find({ status, createdBy: req.user._id });
+    }
+
     res.status(200).json(jobs);
   } catch (err) {
-    console.error("Error fetching jobs by status: stfu", err.message);
+    console.error("Error fetching jobs by status:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

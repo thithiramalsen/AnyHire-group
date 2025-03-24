@@ -12,6 +12,7 @@ const jobSchema = new mongoose.Schema({
   deadline: { type: Date, required: true },
   postedDate: { type: Date, default: Date.now },
   status: { type: String, enum: ["pending", "approved"], default: "pending" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 });
 
 function arrayLimit(val) {

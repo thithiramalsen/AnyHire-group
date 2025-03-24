@@ -1,203 +1,187 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
-import PortfolioForm from "./PortfolioForm";
-import PortfolioItem from "./PortfolioItem";
 
-const PortfolioTab = () => {
-    const [portfolioItems, setPortfolioItems] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState("");
+const ProfileTab = () => {
     const [isEditing, setIsEditing] = useState(false);
-    const [currentItem, setCurrentItem] = useState(null);
+    const [profile, setProfile] = useState({ name: "", email: "" });
+    const [imageFile, setImageFile] = useState(null);
 
+    // Fetch profile data
     useEffect(() => {
-        const fetchPortfolioItems = async () => {
+        const fetchProfile = async () => {
             try {
-                const response = await axios.get("/portfolio");
-                setPortfolioItems(response.data);
+                const response = await axios.get("/auth/profile");
+                console.log(response.data); // Debug: Check the profile data
+                setProfile(response.data);
             } catch (error) {
-                console.error("Error fetching portfolio items:", error);
-                toast.error("Failed to load portfolio items.");
+                console.error("Error fetching profile:", error);
             }
         };
 
-        const fetchCategories = async () => {
-            try {
-                const response = await axios.get("/category");
-                setCategories(response.data.categories);
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-                toast.error("Failed to load categories.");
-            }
-        };
-
-        fetchPortfolioItems();
-        fetchCategories();
+        fetchProfile();
     }, []);
 
-    const handleAddItem = () => {
-        setCurrentItem({
-            title: "",
-            phoneNumber: "",
-            email: "",
-            experience: "",
-            qualifications: "",
-            description: "",
-            categories: [],
-            images: [],
-            files: [],
-        });
-        setIsEditing(true);
-    };
 
-    const handleEditItem = (item) => {
-        setCurrentItem(item);
-        setIsEditing(true);
-    };
+    const handleImageUpload = async () => {
+        if (!imageFile) {
+            toast.error("Please select an image to upload.");
+            return;
+        }
 
-    const handleSaveItem = async (item, images, files) => {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+
         try {
-            const formData = new FormData();
-            Object.keys(item).forEach((key) => {
-                if (key === "categories") {
-                    item[key].forEach((category) => formData.append("categories", category));
-                } else {
-                    formData.append(key, item[key]);
-                }
+            const response = await axios.post("/auth/profile/pfp", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
             });
-
-            images.forEach((image) => formData.append("images", image));
-            files.forEach((file) => formData.append("files", file));
-
-            let response;
-            if (item._id) {
-                response = await axios.put(`/portfolio/${item._id}`, formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                });
-                setPortfolioItems((prev) =>
-                    prev.map((i) => (i._id === item._id ? response.data : i))
-                );
-            } else {
-                response = await axios.post("/portfolio", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                });
-                setPortfolioItems((prev) => [...prev, response.data]);
-            }
-
-            setIsEditing(false);
-            setCurrentItem(null);
-            toast.success("Portfolio item saved successfully!");
+            setProfile((prev) => ({ ...prev, image: response.data.image }));
+            toast.success("Profile picture updated successfully!");
         } catch (error) {
-            console.error("Error saving portfolio item:", error);
-            toast.error("Failed to save portfolio item.");
+            console.error("Error uploading profile picture:", error);
+            toast.error("Failed to upload profile picture.");
         }
     };
 
-    const handleDeleteItem = async (id) => {
+    const handleImageDelete = async () => {
         try {
-            await axios.delete(`/portfolio/${id}`);
-            setPortfolioItems((prev) => prev.filter((item) => item._id !== id));
-            toast.success("Portfolio item deleted.");
+            await axios.delete("/auth/profile/pfp");
+            setProfile((prev) => ({ ...prev, image: null }));
+            toast.success("Profile picture deleted successfully!");
         } catch (error) {
-            console.error("Error deleting portfolio item:", error);
-            toast.error("Failed to delete portfolio item.");
+            console.error("Error deleting profile picture:", error);
+            toast.error("Failed to delete profile picture.");
         }
     };
-
-    const handleFilterByCategory = (categoryId) => {
-        setSelectedCategory(categoryId);
-    };
-
-    const filteredPortfolioItems = selectedCategory
-        ? portfolioItems.filter((item) =>
-            item.categories.includes(selectedCategory)
-        )
-        : portfolioItems;
-
-    const pendingPortfolios = portfolioItems.filter((item) => item.status === "pending");
 
     return (
         <div>
-            {/* Add Portfolio Item Section */}
-            <h2 className="text-2xl font-bold mb-4">Add Portfolio Item</h2>
-            <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Profile</h2>
+
+            {/* Profile Picture Section */}
+            <div className="mb-4">
+                <div className="text-center">
+                    <img
+                        src={`http://localhost:5000/uploads/${profile.image || "default-profile.png"}`}
+                        alt="Profile"
+                        className="w-32 h-32 rounded-full object-cover mx-auto mb-4"
+                    />
+                    {profile.image && (
+                        <button
+                            onClick={handleImageDelete}
+                            className="px-4 py-2 bg-red-600 text-white rounded"
+                        >
+                            Delete Profile Picture
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Upload Profile Picture */}
+            <div className="mb-4">
+                <label className="block text-gray-300 mb-1">Upload Profile Picture</label>
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files[0])}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                />
                 <button
-                    onClick={handleAddItem}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded"
+                    onClick={handleImageUpload}
+                    className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded"
                 >
-                    Add Portfolio Item
+                    Upload
                 </button>
             </div>
 
-            {/* Render PortfolioForm if Editing */}
+            {/* Profile Details */}
             {isEditing ? (
-                <PortfolioForm
-                    item={currentItem}
-                    categories={categories} // Pass categories as a prop
-                    onSave={handleSaveItem}
+                <EditProfileForm
+                    profile={profile}
+                    setProfile={setProfile}
                     onCancel={() => setIsEditing(false)}
                 />
             ) : (
-                <>
-                    {/* Separator */}
-                    <hr className="my-8 border-gray-600" />
-
-                    {/* Existing Portfolios Section */}
-                    <h2 className="text-2xl font-bold mb-4">Existing Portfolios</h2>
-                    <div className="mb-4">
-                        <label className="block text-gray-300 mb-1">Filter by Category</label>
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => handleFilterByCategory(e.target.value)}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                        >
-                            <option value="">All Categories</option>
-                            {categories.map((category) => (
-                                <option key={category._id} value={category._id}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="space-y-4">
-                        {filteredPortfolioItems.map((item) => (
-                            <PortfolioItem
-                                key={item._id}
-                                item={item}
-                                categories={categories} // Pass categories as a prop
-                                onEdit={() => handleEditItem(item)}
-                                onDelete={() => handleDeleteItem(item._id)}
-                            />
-                        ))}
-                        {filteredPortfolioItems.length === 0 && (
-                            <p className="text-gray-400">No portfolio items found.</p>
-                        )}
-                    </div>
-
-                    {/* Separator */}
-                    <hr className="my-8 border-gray-600" />
-
-                    {/* Portfolios Awaiting Approval Section */}
-                    <h2 className="text-2xl font-bold mb-4">Portfolios Awaiting Approval</h2>
-                    <div className="space-y-4">
-                        {pendingPortfolios.map((item) => (
-                            <PortfolioItem
-                                key={item._id}
-                                item={item}
-                                categories={categories} // Pass categories as a prop
-                                onEdit={() => handleEditItem(item)}
-                                onDelete={() => handleDeleteItem(item._id)}
-                            />
-                        ))}
-                        {pendingPortfolios.length === 0 && (
-                            <p className="text-gray-400">No portfolios awaiting approval.</p>
-                        )}
-                    </div>
-                </>
+                <ViewProfile profile={profile} onEdit={() => setIsEditing(true)} />
             )}
         </div>
     );
 };
 
-export default PortfolioTab;
+
+const ViewProfile = ({ profile, onEdit }) => (
+    <div>
+        <p>Name: {profile.name}</p>
+        <p>Email: {profile.email}</p>
+        <button
+            onClick={onEdit}
+            className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded"
+        >
+            Edit Profile
+        </button>
+    </div>
+);
+
+const EditProfileForm = ({ profile, setProfile, onCancel }) => {
+    const [formData, setFormData] = useState(profile);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+            // Send updated data to the backend
+            const response = await axios.put("/auth/profile", formData);
+            setProfile(response.data); // Update the profile state with the new data
+            toast.success("Profile updated successfully!"); // Success toast
+            onCancel(); // Close the edit form
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast.error("Failed to update profile. Please try again."); // Error toast
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+                <label className="block text-gray-300 mb-1">Name</label>
+                <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                />
+            </div>
+            <div className="mb-4">
+                <label className="block text-gray-300 mb-1">Email</label>
+                <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                />
+            </div>
+            <div className="flex space-x-4">
+                <button
+                    type="submit"
+                    className="px-4 py-2 bg-emerald-600 text-white rounded"
+                >
+                    Save
+                </button>
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-4 py-2 bg-gray-600 text-white rounded"
+                >
+                    Cancel
+                </button>
+            </div>
+        </form>
+    );
+};
+
+export default ProfileTab;

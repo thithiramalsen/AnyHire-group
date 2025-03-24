@@ -1,4 +1,5 @@
 import Portfolio from "../models/portfolio.model.js";
+import Category from "../models/category.model.js";
 
 export const getPortfolioItems = async (req, res) => {
     try {
@@ -11,15 +12,41 @@ export const getPortfolioItems = async (req, res) => {
 };
 
 export const createPortfolioItem = async (req, res) => {
+
+    console.log("Request body:", req.body);
+    console.log("Type of phoneNumber:", typeof req.body.phoneNumber);
+
     try {
+        console.log("Request body:", req.body);
+        console.log("Uploaded files:", req.files);
+
         const {
             title,
             phoneNumber,
             email,
             experience,
             qualifications,
-            description, // Updated field
+            description,
+            categories,
         } = req.body;
+
+        //const categoryIds = categories.map((id) => mongoose.Types.ObjectId(id));
+
+        // Validate categories
+        const selectedCategories = await Category.find({ _id: { $in: categories } });
+        const requiresPortfolio = selectedCategories.some(
+            (category) => category.requiresPortfolio
+        );
+
+        // Determine portfolio status
+        const status = requiresPortfolio ? "pending" : "approved";
+
+        // Handle file uploads
+        const images = req.files?.images?.map((file) => `/uploads/${file.filename}`) || [];
+        const files = req.files?.files?.map((file) => `/uploads/${file.filename}`) || [];
+
+        console.log("Images:", images);
+        console.log("Files:", files);
 
         const newPortfolioItem = await Portfolio.create({
             user: req.user._id,
@@ -28,8 +55,14 @@ export const createPortfolioItem = async (req, res) => {
             email,
             experience,
             qualifications,
-            description, // Updated field
+            description,
+            categories,
+            images,
+            files,
+            status,
         });
+
+        console.log("New portfolio item created:", newPortfolioItem);
 
         res.status(201).json(newPortfolioItem);
     } catch (error) {

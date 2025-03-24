@@ -13,13 +13,17 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter for validation (e.g., only images)
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+  const allowedTypes = [
+    "image/jpeg", "image/png", "image/gif", 
+    "application/pdf", "application/msword", 
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ];
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only JPEG, PNG, and GIF are allowed."), false);
+    cb(new Error("Invalid file type. Allowed types: JPEG, PNG, GIF, PDF, DOC, DOCX"), false);
   }
 };
 

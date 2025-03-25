@@ -56,6 +56,19 @@ const PendingJobsTab = () => {
     }
   };
 
+  const handleDelete = async (jobId) => {
+    try {
+      await axios.delete(`/job/del/${jobId}`);
+      setPendingJobs((prev) => prev.filter((job) => job._id !== jobId));
+      setApprovedJobs((prev) => prev.filter((job) => job._id !== jobId));
+      setDeclinedJobs((prev) => prev.filter((job) => job._id !== jobId));
+      toast.success("Job deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast.error("Failed to delete job.");
+    }
+  };
+
   const getCategoryName = (categoryId) => {
     const category = categories.find((cat) => cat._id === categoryId);
     return category ? category.name : "Unknown Category";
@@ -84,14 +97,22 @@ const PendingJobsTab = () => {
                 style={{ maxWidth: "300px", maxHeight: "300px" }}
               />
             )}
-            {allowEdit && (
+            <div className="flex space-x-2 mt-2">
+              {allowEdit && (
+                <button
+                  onClick={() => handleEdit(job)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                >
+                  Edit
+                </button>
+              )}
               <button
-                onClick={() => handleEdit(job)}
-                className="px-4 py-2 bg-blue-600 text-white rounded mt-2"
+                onClick={() => handleDelete(job._id)}
+                className="px-4 py-2 bg-red-600 text-white rounded"
               >
-                Edit
+                Delete
               </button>
-            )}
+            </div>
           </div>
         ))
       )}

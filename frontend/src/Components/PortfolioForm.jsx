@@ -40,10 +40,12 @@ const PortfolioForm = ({ item, categories, onSave, onCancel }) => {
             toast.error("Invalid email address.");
             return;
         }
+
         if (!formData.experience.trim()) {
             toast.error("Experience is required.");
             return;
         }
+
         if (!formData.qualifications.trim()) {
             toast.error("Qualifications are required.");
             return;

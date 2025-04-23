@@ -32,6 +32,7 @@ export const createPortfolioItem = async (req, res) => {
 
         //const categoryIds = categories.map((id) => mongoose.Types.ObjectId(id));
 
+        
         // Validate categories
         const selectedCategories = await Category.find({ _id: { $in: categories } });
         const requiresPortfolio = selectedCategories.some(
@@ -80,19 +81,35 @@ export const updatePortfolioItem = async (req, res) => {
             email,
             experience,
             qualifications,
-            description, // Updated field
+            description,
+            categories,
         } = req.body;
+
+        // Handle file uploads
+        const images = req.files?.images?.map((file) => `/uploads/${file.filename}`) || [];
+        const files = req.files?.files?.map((file) => `/uploads/${file.filename}`) || [];
+
+        const updateData = {
+            title,
+            phoneNumber,
+            email,
+            experience,
+            qualifications,
+            description,
+            categories,
+        };
+
+        if (images.length > 0) {
+            updateData.images = images;
+        }
+
+        if (files.length > 0) {
+            updateData.files = files;
+        }
 
         const updatedPortfolioItem = await Portfolio.findOneAndUpdate(
             { _id: id, user: req.user._id },
-            {
-                title,
-                phoneNumber,
-                email,
-                experience,
-                qualifications,
-                description, // Updated field
-            },
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -106,6 +123,7 @@ export const updatePortfolioItem = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
 
 export const deletePortfolioItem = async (req, res) => {
     try {

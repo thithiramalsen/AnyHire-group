@@ -48,6 +48,23 @@ export const signup = async (req, res) => {
         return res.status(400).json({ message: "All fields (name, email, password) are required" });
     }
 
+       /*/ Validate email format
+       const emailRegex = /\S+@\S+\.\S+/;
+       if (!emailRegex.test(email)) {
+           return res.status(400).json({ message: "Invalid email format" });
+       }
+   
+       // Validate password length
+       if (password.length < 6) {
+           return res.status(400).json({ message: "Password must be at least 6 characters long" });
+       }
+   
+       // Validate password match
+       if (password !== confirmPassword) {
+           return res.status(400).json({ message: "Passwords do not match" });
+       }*/
+   
+
     try {
         const userExists = await User.findOne({ email });
 
@@ -232,6 +249,33 @@ export const deletePfp = async (req, res) => {
         res.json({ message: "Profile picture deleted successfully" });
     } catch (error) {
         console.error("Error deleting PFP:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+export const deleteAccount = async (req, res) => {
+    try {
+        const user = req.user;
+
+        // Delete the user's profile picture if it exists
+        if (user.image) {
+            const imagePath = path.join("uploads", user.image);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        }
+
+        // Delete the user from the database
+        await User.findByIdAndDelete(user._id);
+
+        // Clear cookies
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+
+        res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting account:", error);
         res.status(500).json({ message: "Server error" });
     }
 };

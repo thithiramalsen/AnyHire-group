@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { UserPlus, Mail, Lock, User, ArrowRight, Loader, Image } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUserStore } from "../stores/useUserStore";
+import toast from "react-hot-toast";
 
 const SignUpJobSeekerPage = () => {
 
@@ -18,6 +19,46 @@ const SignUpJobSeekerPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Name validation
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (formData.name.length < 3) {
+        toast.error("Name must be at least 3 characters long.");
+        return;
+    }
+    if (!nameRegex.test(formData.name)) {
+        toast.error("Name can only contain letters.");
+        return;
+    }
+	
+		// Password validation
+		if (formData.password.length < 6) {
+			toast.error("Password must be at least 6 characters long.");
+			return;
+		}
+
+    /*/ Profile picture validation
+		if (!formData.image) {
+			alert("Please select a profile picture.");
+			return;
+		}*/
+
+    /*/ Image file type validation
+		if (!formData.image.type.startsWith("image/")) {
+			toast.error("Please select a valid image file.");
+			return;
+		}*/
+    
+    // Image file type validation (only if an image is selected)
+		if (formData.image && !formData.image.type.startsWith("image/")) {
+			toast.error("Please select a valid image file.");
+			return;
+		}	
+	
+		if (formData.password !== formData.confirmPassword) {
+			toast.error("Passwords do not match.");
+			return;
+		}
 
     // Adding role 'jobSeeker' to the formData
     const data = new FormData();

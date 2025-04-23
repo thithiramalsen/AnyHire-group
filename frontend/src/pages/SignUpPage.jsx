@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { UserPlus, Mail, Lock, User, ArrowRight, Loader, Image } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUserStore } from "../stores/useUserStore";
+import { toast } from "react-hot-toast";
 
 const SignUpPage = () => {
 	const [formData, setFormData] = useState({
@@ -16,15 +17,50 @@ const SignUpPage = () => {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
+	
+		// Name validation
+		const nameRegex = /^[A-Za-z\s]+$/;
+		if (formData.name.length < 3) {
+			toast.error("Name must be at least 3 characters long.");
+			return;
+		}
+		if (!nameRegex.test(formData.name)) {
+			toast.error("Name can only contain letters.");
+			return;
+		}
+	
+		// Password validation
+		if (formData.password.length < 6) {
+			toast.error("Password must be at least 6 characters long.");
+			return;
+		}
+	
+		if (formData.password !== formData.confirmPassword) {
+			toast.error("Passwords do not match.");
+			return;
+		}
+	
+		/*/ Profile picture validation
+		if (!formData.image) {
+			toast.error("Please select a profile picture.");
+			return;
+		}*/
+
+		// Image file type validation (only if an image is selected)
+		if (formData.image && !formData.image.type.startsWith("image/")) {
+			toast.error("Please select a valid image file.");
+			return;
+		}				
+	
 		const data = new FormData();
-    	data.append("name", formData.name);
+		data.append("name", formData.name);
 		data.append("email", formData.email);
 		data.append("password", formData.password);
 		data.append("confirmPassword", formData.confirmPassword);
 		if (formData.image) {
 			data.append("image", formData.image); // Add image to FormData
 		}
-
+	
 		signup(data); // Pass FormData to the signup function
 	};
 

@@ -12,6 +12,7 @@ import portfolioRoutes from "./routes/portfolio.route.js";
 import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
 import categoryRoutes from "./routes/category.route.js";
+import ticketRoutes from "./routes/ticket.route.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -51,6 +52,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
 app.use("/api/category", categoryRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

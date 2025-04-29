@@ -1,39 +1,72 @@
 import { useState } from "react";
-import Sidebar from "../Components/SideBar";
-import ProfileTab from "../Components/ProfileTab";
-import PortfolioTab from "../Components/PortfolioTab";
-import CategoriesTab from "../Components/CategoriesTab";
-import AnalyticsTab from "../Components/AnalyticsTab";
-import BookingsTab from "../Components/BookingsTab";
-import JobsTab from "../Components/JobsTab";
-import JobApprovalTab from "../Components/JobApprovalTab";
-import JobPostingTab from "../Components/JobPostingTab";
-import PendingJobsTab from "../Components/PendingJobsTab"; // Added import
-
 import { rolePermissions } from "../lib/rolePermissions";
 import { useUserStore } from "../stores/useUserStore";
+
+// Import all tab components
+import ProfileTab from "../Components/ProfileTab";
+import AnalyticsTab from "../Components/AnalyticsTab";
+import JobApprovalTab from "../Components/JobApprovalTab";
+import BookingsTab from "../Components/BookingsTab";
+import JobPostingTab from "../Components/JobPostingTab";
+import PortfolioTab from "../Components/PortfolioTab";
+import JobsTab from "../Components/JobsTab";
+import CategoriesTab from "../Components/CategoriesTab";
+import SupportUserTab from "../Components/SupportUserTab";
+import SupportAdminTab from "../Components/SupportAdminTab";
+
+// Component mapping
+const componentMap = {
+    ProfileTab,
+    AnalyticsTab,
+    JobApprovalTab,
+    BookingsTab,
+    JobPostingTab,
+    PortfolioTab,
+    JobsTab,
+    CategoriesTab,
+    SupportUserTab,
+    SupportAdminTab
+};
 
 const DashBoard = () => {
     const { user } = useUserStore();
     const [activeTab, setActiveTab] = useState("profile");
 
-    // Get accessible tabs based on the user's role
-    const accessibleTabs = rolePermissions[user?.role] || [];
+    // Get the user's role configuration
+    const roleConfig = rolePermissions[user?.role] || { tabs: [] };
+    const { tabs } = roleConfig;
+
+    // Get the current tab component
+    const currentTab = tabs.find(tab => tab.id === activeTab);
+    const TabComponent = currentTab ? componentMap[currentTab.component] : null;
 
     return (
         <div className="flex">
-            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+            {/* Sidebar */}
+            <div className="w-64 bg-gray-800 h-screen fixed">
+                <div className="p-4">
+                    <h2 className="text-xl font-bold mb-4">Dashboard</h2>
+                    <nav>
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`w-full text-left px-4 py-2 mb-2 rounded ${
+                                    activeTab === tab.id 
+                                        ? 'bg-green-600 text-white' 
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            </div>
+
+            {/* Main Content */}
             <div className="flex-1 ml-64 p-8">
-                {accessibleTabs.includes("profile") && activeTab === "profile" && <ProfileTab />}
-                {accessibleTabs.includes("settings") && activeTab === "settings" && <SettingsTab />}
-                {accessibleTabs.includes("categories") && activeTab === "categories" && <CategoriesTab />}
-                {accessibleTabs.includes("analytics") && activeTab === "analytics" && <AnalyticsTab />}
-                {accessibleTabs.includes("portfolio") && activeTab === "portfolio" && <PortfolioTab />}
-                {accessibleTabs.includes("bookings") && activeTab === "bookings" && <BookingsTab />}
-                {accessibleTabs.includes("jobs") && activeTab === "jobs" && <JobsTab />}
-                {accessibleTabs.includes("admin-job-approval") && activeTab === "admin-job-approval" && <JobApprovalTab />}
-                {accessibleTabs.includes("post_job") && activeTab === "post_job" && <JobPostingTab />}
-                {accessibleTabs.includes("pending-jobs") && activeTab === "pending-jobs" && <PendingJobsTab />} {/* Added tab */}
+                {TabComponent && <TabComponent />}
             </div>
         </div>
     );

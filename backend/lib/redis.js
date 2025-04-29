@@ -12,7 +12,7 @@ export const redis = new Redis({
     password: redisUrl.password,
     tls: {
         // Required for Upstash Redis
-        rejectUnauthorized: true,
+        rejectUnauthorized: false, // Temporarily disable certificate verification
         // You can add additional TLS options if needed
         // ca: [fs.readFileSync('/path/to/ca.crt')],
         // cert: fs.readFileSync('/path/to/client.crt'),

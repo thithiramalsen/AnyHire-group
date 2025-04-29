@@ -13,6 +13,7 @@ import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
 import categoryRoutes from "./routes/category.route.js";
 import ticketRoutes from "./routes/ticket.route.js";
+import userRoutes from "./routes/user.route.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -53,6 +54,7 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
 app.use("/api/category", categoryRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/users", userRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

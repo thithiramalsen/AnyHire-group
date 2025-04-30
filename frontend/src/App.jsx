@@ -43,8 +43,7 @@ function App() {
 					<Route path='/signup' element={!user ? <SignUpPage /> : <Navigate to='/' />} />
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
-					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />
-					
+					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />	
 
 					<Route
 						path="/secret-dashboard"

@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import Counter from "./counter.model.js";
 
 const userSchema = new mongoose.Schema({
+    _id: { type: Number },
     name:{
         type: String,
         required: [true, "Name is required"]
@@ -37,6 +39,18 @@ const userSchema = new mongoose.Schema({
 }
 )
 
+// Add pre-save middleware to handle auto-incrementing
+userSchema.pre('save', async function(next) {
+    if (this.isNew) {
+      const counter = await Counter.findByIdAndUpdate(
+        { _id: 'userId' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this._id = counter.seq;
+    }
+    next();
+});
 
 //pre-save hook to hash password before saving to the database
 userSchema.pre("save", async function (next) {
@@ -46,10 +60,10 @@ userSchema.pre("save", async function (next) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
         next();
-    } catch (error) {
-        next(error)
+    } catch(error){
+        next(error);
     }
-})
+});
 
 //credential check
 userSchema.methods.comparePassword = async function (password){

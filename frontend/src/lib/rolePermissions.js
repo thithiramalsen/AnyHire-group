@@ -5,7 +5,8 @@ export const rolePermissions = {
             { id: "analytics", label: "Analytics", component: "AnalyticsTab" },
             { id: "job-approval", label: "Job Approval", component: "JobApprovalTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
-            { id: "user-management", label: "User Management", component: "UserManagementTab" }
+            { id: "user-management", label: "User Management", component: "UserManagementTab" },
+            { id: "categories", label: "Categories", component: "CategoriesTab" }
         ]
     },
     customer: {
@@ -13,7 +14,8 @@ export const rolePermissions = {
             { id: "profile", label: "Profile", component: "ProfileTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
             { id: "post-job", label: "Post Job", component: "JobPostingTab" },
-            { id: "support", label: "Support", component: "SupportUserTab" }
+            { id: "support", label: "Support", component: "SupportUserTab" },
+            { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
         ]
     },
     jobSeeker: {

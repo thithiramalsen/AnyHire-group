@@ -1,7 +1,7 @@
 const PortfolioItem = ({ item, onEdit, onDelete, categories }) => {
     const categoryNames = item.categories
         .map(categoryId => {
-            const category = categories.find(cat => cat._id === categoryId);
+            const category = categories.find(cat => Number(cat._id) === Number(categoryId));
             return category ? category.name : "";
         })
         .filter(name => name !== "")

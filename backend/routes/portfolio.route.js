@@ -17,7 +17,7 @@ const upload = multer.fields([
 
 router.get("/", protectRoute, getPortfolioItems);
 router.post("/", protectRoute, upload, createPortfolioItem);
-router.put("/:id", protectRoute, updatePortfolioItem);
+router.put("/:id", protectRoute, upload, updatePortfolioItem);
 router.delete("/:id", protectRoute, deletePortfolioItem);
 
 export default router;

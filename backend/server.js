@@ -12,6 +12,8 @@ import portfolioRoutes from "./routes/portfolio.route.js";
 import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
 import categoryRoutes from "./routes/category.route.js";
+import ticketRoutes from "./routes/ticket.route.js";
+import userRoutes from "./routes/user.route.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -50,7 +52,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
+app.use("/api/booking", bookingRoutes);
 app.use("/api/category", categoryRoutes);
+app.use("/api/tickets", ticketRoutes);
+app.use("/api/users", userRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

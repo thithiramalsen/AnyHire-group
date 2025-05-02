@@ -1,18 +1,29 @@
 import express from "express";
-import Booking from "../models/booking.model.js"; // Replace with your actual Booking model
-import { protectRoute } from "../middleware/auth.middleware.js";
+import * as Bookings from "../controllers/booking.controller.js";
+import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
+import {
+    applyForJob,
+    updateBookingStatus,
+    getUserBookings,
+    getBookingById,
+    getJobBookings
+} from '../controllers/booking.controller.js';
 
 const router = express.Router();
 
-// Get all bookings for the logged-in user
-router.get("/", protectRoute, async (req, res) => {
-    try {
-        const bookings = await Booking.find({ user: req.user._id }); // Fetch bookings for the logged-in user
-        res.status(200).json(bookings);
-    } catch (error) {
-        console.error("Error fetching bookings:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+// Apply for a job (creates booking)
+router.post('/apply/:jobId', protectRoute, applyForJob);
+
+// Update booking status (accept/decline/progress/complete)
+router.patch('/:id/status', protectRoute, updateBookingStatus);
+
+// Get all bookings for logged-in user (both as seeker and poster)
+router.get('/me', protectRoute, getUserBookings);
+
+// Get single booking by ID
+router.get('/:id', protectRoute, getBookingById);
+
+// Get all bookings for a specific job (poster only)
+router.get('/job/:jobId', protectRoute, getJobBookings);
 
 export default router;

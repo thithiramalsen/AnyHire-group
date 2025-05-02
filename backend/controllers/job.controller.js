@@ -183,7 +183,7 @@ export const getJobsByStatus = async (req, res) => {
 export const getJobsByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
-    const jobs = await Job.find({ createdBy: userId });
+    const jobs = await Job.find({ createdBy: (userId) });
     res.status(200).json(jobs);
   } catch (err) {
     console.error("Error fetching jobs by user ID:", err.message);
@@ -192,6 +192,17 @@ export const getJobsByUserId = async (req, res) => {
 };
 
 // Other controller functions...
+
+export const getJobsApproved = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: "approved" }) // Only fetch approved jobs
+      .populate("createdBy", "name"); // Populate Job Poster name
+    res.status(200).json(jobs);
+  } catch (err) {
+    console.error("Error fetching jobs:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
 
 // Approve a job
 export const approveJob = async (req, res) => {

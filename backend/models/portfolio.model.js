@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
+import Counter from './counter.model.js';
 
 const portfolioSchema = new mongoose.Schema(
     {
+        _id: { type: Number },
         user: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: Number,
             ref: "User",
             required: true,
         },
@@ -38,7 +40,7 @@ const portfolioSchema = new mongoose.Schema(
         },
         categories: [
             {
-                type: mongoose.Schema.Types.ObjectId,
+                type: Number,
                 ref: "Category",
             },
         ],
@@ -63,6 +65,18 @@ const portfolioSchema = new mongoose.Schema(
     }
 );
 
-const Portfolio = mongoose.model("Portfolio", portfolioSchema);
+// Add pre-save middleware to handle auto-incrementing
+portfolioSchema.pre('save', async function(next) {
+    if (this.isNew) {
+        const counter = await Counter.findByIdAndUpdate(
+            { _id: 'portfolioId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        this._id = counter.seq;
+    }
+    next();
+});
 
+const Portfolio = mongoose.model("Portfolio", portfolioSchema);
 export default Portfolio;

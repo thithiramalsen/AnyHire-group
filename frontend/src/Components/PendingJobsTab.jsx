@@ -13,22 +13,33 @@ const PendingJobsTab = () => {
   useEffect(() => {
     const fetchJobsAndCategories = async () => {
       try {
+        console.log("Fetching user profile...");
         // Fetch the user's profile
         const userResponse = await axios.get("/auth/profile", { withCredentials: true });
         setUserId(userResponse.data._id);
+        console.log("User profile fetched successfully:", userResponse.data);
 
+        console.log("Fetching categories...");
         // Fetch categories
         const categoriesResponse = await axios.get("/category", { withCredentials: true });
         setCategories(categoriesResponse.data.categories || []);
+        console.log("Categories fetched successfully:", categoriesResponse.data.categories);
 
+        console.log(`Fetching jobs for user ID: ${userResponse.data._id}...`);
         // Fetch user's jobs
         const jobsResponse = await axios.get(`/job/user/${userResponse.data._id}`, { withCredentials: true });
         const jobs = jobsResponse.data;
+        console.log("Jobs fetched successfully:", jobs);
 
         // Separate jobs by status
         setPendingJobs(jobs.filter(job => job.status === "pending"));
         setApprovedJobs(jobs.filter(job => job.status === "approved"));
         setDeclinedJobs(jobs.filter(job => job.status === "declined"));
+        console.log("Jobs categorized successfully:", {
+          pending: jobs.filter(job => job.status === "pending"),
+          approved: jobs.filter(job => job.status === "approved"),
+          declined: jobs.filter(job => job.status === "declined"),
+        });
       } catch (error) {
         console.error("Error fetching jobs and categories:", error);
         toast.error("Failed to load jobs and categories.");
@@ -39,20 +50,38 @@ const PendingJobsTab = () => {
   }, []);
 
   const handleEdit = (job) => {
+    console.log("Editing job:", job);
     setEditingJob(job);
   };
 
   const handleSaveEdit = async (updatedJob) => {
     try {
+      console.log("Saving updated job:", updatedJob);
       await axios.patch(`/job/up/${updatedJob._id}`, updatedJob);
       setPendingJobs((prev) =>
         prev.map((job) => (job._id === updatedJob._id ? updatedJob : job))
       );
       setEditingJob(null);
       toast.success("Job updated successfully!");
+      console.log("Job updated successfully:", updatedJob);
     } catch (error) {
       console.error("Error updating job:", error);
       toast.error("Failed to update job.");
+    }
+  };
+
+  const handleDelete = async (jobId) => {
+    try {
+      console.log(`Deleting job with ID: ${jobId}...`);
+      await axios.delete(`/job/del/${jobId}`);
+      setPendingJobs((prev) => prev.filter((job) => job._id !== jobId));
+      setApprovedJobs((prev) => prev.filter((job) => job._id !== jobId));
+      setDeclinedJobs((prev) => prev.filter((job) => job._id !== jobId));
+      toast.success("Job deleted successfully!");
+      console.log(`Job with ID: ${jobId} deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast.error("Failed to delete job.");
     }
   };
 
@@ -84,14 +113,22 @@ const PendingJobsTab = () => {
                 style={{ maxWidth: "300px", maxHeight: "300px" }}
               />
             )}
-            {allowEdit && (
+            <div className="flex space-x-2 mt-2">
+              {allowEdit && (
+                <button
+                  onClick={() => handleEdit(job)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                >
+                  Edit
+                </button>
+              )}
               <button
-                onClick={() => handleEdit(job)}
-                className="px-4 py-2 bg-blue-600 text-white rounded mt-2"
+                onClick={() => handleDelete(job._id)}
+                className="px-4 py-2 bg-red-600 text-white rounded"
               >
-                Edit
+                Delete
               </button>
-            )}
+            </div>
           </div>
         ))
       )}

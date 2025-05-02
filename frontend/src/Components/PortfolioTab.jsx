@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
+import PortfolioModalForm from "./PortfolioModalForm";
 
 const PortfolioTab = () => {
     const [portfolioItems, setPortfolioItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("");
-    const [isEditing, setIsEditing] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
 
     useEffect(() => {
@@ -35,55 +36,45 @@ const PortfolioTab = () => {
     }, []);
 
     const handleAddItem = () => {
-        setCurrentItem({
-            title: "",
-            phoneNumber: "",
-            email: "",
-            experience: "",
-            qualifications: "",
-            description: "",
-            categories: [],
-            images: [],
-            files: [],
-        });
-        setIsEditing(true);
+        setCurrentItem(null);
+        setIsModalOpen(true);
     };
 
     const handleEditItem = (item) => {
         setCurrentItem(item);
-        setIsEditing(true);
+        setIsModalOpen(true);
     };
 
-    const handleSaveItem = async (item, images, files) => {
+    const handleSaveItem = async (formData, images, files) => {
         try {
-            const formData = new FormData();
-            Object.keys(item).forEach((key) => {
+            const formDataToSend = new FormData();
+            Object.keys(formData).forEach((key) => {
                 if (key === "categories") {
-                    item[key].forEach((category) => formData.append("categories", category));
+                    formData[key].forEach((category) => formDataToSend.append("categories", category));
                 } else {
-                    formData.append(key, item[key]);
+                    formDataToSend.append(key, formData[key]);
                 }
             });
 
-            images.forEach((image) => formData.append("images", image));
-            files.forEach((file) => formData.append("files", file));
+            images.forEach((image) => formDataToSend.append("images", image));
+            files.forEach((file) => formDataToSend.append("files", file));
 
             let response;
-            if (item._id) {
-                response = await axios.put(`/portfolio/${item._id}`, formData, {
+            if (currentItem?._id) {
+                response = await axios.put(`/portfolio/${currentItem._id}`, formDataToSend, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
                 setPortfolioItems((prev) =>
-                    prev.map((i) => (i._id === item._id ? response.data : i))
+                    prev.map((i) => (i._id === currentItem._id ? response.data : i))
                 );
             } else {
-                response = await axios.post("/portfolio", formData, {
+                response = await axios.post("/portfolio", formDataToSend, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
                 setPortfolioItems((prev) => [...prev, response.data]);
             }
 
-            setIsEditing(false);
+            setIsModalOpen(false);
             setCurrentItem(null);
             toast.success("Portfolio item saved successfully!");
         } catch (error) {
@@ -104,14 +95,33 @@ const PortfolioTab = () => {
     };
 
     const handleFilterByCategory = (categoryId) => {
-        setSelectedCategory(categoryId);
+        // Convert empty string to null for "All Categories"
+        setSelectedCategory(categoryId === "" ? "" : Number(categoryId));
     };
 
     const filteredPortfolioItems = selectedCategory
-        ? portfolioItems.filter((item) =>
-            item.categories.includes(selectedCategory)
-        )
-        : portfolioItems;
+    ? portfolioItems.filter((item) => {
+        // Ensure categories is always an array of numbers
+        const itemCategoryIds = Array.isArray(item.categories) 
+            ? item.categories.map(id => Number(id))
+            : [];
+        
+        // Debug logging
+        console.log({
+            portfolioTitle: item.title,
+            rawCategories: item.categories,
+            parsedCategoryIds: itemCategoryIds,
+            selectedCategory: Number(selectedCategory),
+            categoriesType: typeof item.categories,
+            isArray: Array.isArray(item.categories),
+            matchFound: itemCategoryIds.includes(Number(selectedCategory))
+        });
+        
+        return itemCategoryIds.includes(Number(selectedCategory));
+    })
+    : portfolioItems;
+
+
 
     const pendingPortfolios = portfolioItems.filter((item) => item.status === "pending");
 
@@ -128,72 +138,77 @@ const PortfolioTab = () => {
                 </button>
             </div>
 
-            {/* Render PortfolioForm if Editing */}
-            {isEditing ? (
-                <PortfolioForm
-                    item={currentItem}
-                    categories={categories} // Pass categories as a prop
-                    onSave={handleSaveItem}
-                    onCancel={() => setIsEditing(false)}
-                />
-            ) : (
-                <>
-                    {/* Separator */}
-                    <hr className="my-8 border-gray-600" />
+            {/* Modal Form */}
+            <PortfolioModalForm
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setCurrentItem(null);
+                }}
+                onSave={handleSaveItem}
+                item={currentItem}
+            />
 
-                    {/* Existing Portfolios Section */}
-                    <h2 className="text-2xl font-bold mb-4">Existing Portfolios</h2>
-                    <div className="mb-4">
-                        <label className="block text-gray-300 mb-1">Filter by Category</label>
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => handleFilterByCategory(e.target.value)}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+            {/* Existing Portfolios Section */}
+            <hr className="my-8 border-gray-600" />
+            <h2 className="text-2xl font-bold mb-4">Existing Portfolios</h2>
+            <div className="mb-4">
+                
+                <label className="block text-gray-300 mb-1">Filter by Category</label>
+                <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        console.log('Selected category value:', value);
+                        handleFilterByCategory(value);
+                    }}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                >
+                    <option value="">All Categories</option>
+                    {categories.map((category) => (
+                        <option
+                            key={category._id}
+                            value={category._id}
                         >
-                            <option value="">All Categories</option>
-                            {categories.map((category) => (
-                                <option key={category._id} value={category._id}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="space-y-4">
-                        {filteredPortfolioItems.map((item) => (
-                            <PortfolioItem
-                                key={item._id}
-                                item={item}
-                                categories={categories} // Pass categories as a prop
-                                onEdit={() => handleEditItem(item)}
-                                onDelete={() => handleDeleteItem(item._id)}
-                            />
-                        ))}
-                        {filteredPortfolioItems.length === 0 && (
-                            <p className="text-gray-400">No portfolio items found.</p>
-                        )}
-                    </div>
+                            {`${category.name} (ID: ${category._id})`}
+                        </option>
+                    ))}
+                </select>
 
-                    {/* Separator */}
-                    <hr className="my-8 border-gray-600" />
+            </div>
 
-                    {/* Portfolios Awaiting Approval Section */}
-                    <h2 className="text-2xl font-bold mb-4">Portfolios Awaiting Approval</h2>
-                    <div className="space-y-4">
-                        {pendingPortfolios.map((item) => (
-                            <PortfolioItem
-                                key={item._id}
-                                item={item}
-                                categories={categories} // Pass categories as a prop
-                                onEdit={() => handleEditItem(item)}
-                                onDelete={() => handleDeleteItem(item._id)}
-                            />
-                        ))}
-                        {pendingPortfolios.length === 0 && (
-                            <p className="text-gray-400">No portfolios awaiting approval.</p>
-                        )}
-                    </div>
-                </>
-            )}
+            <div className="space-y-4">
+                {filteredPortfolioItems.map((item) => (
+                    <PortfolioItem
+                        key={item._id}
+                        item={item}
+                        categories={categories}
+                        onEdit={() => handleEditItem(item)}
+                        onDelete={() => handleDeleteItem(item._id)}
+                    />
+                ))}
+                {filteredPortfolioItems.length === 0 && (
+                    <p className="text-gray-400">No portfolio items found.</p>
+                )}
+            </div>
+
+            {/* Portfolios Awaiting Approval Section */}
+            <hr className="my-8 border-gray-600" />
+            <h2 className="text-2xl font-bold mb-4">Portfolios Awaiting Approval</h2>
+            <div className="space-y-4">
+                {pendingPortfolios.map((item) => (
+                    <PortfolioItem
+                        key={item._id}
+                        item={item}
+                        categories={categories}
+                        onEdit={() => handleEditItem(item)}
+                        onDelete={() => handleDeleteItem(item._id)}
+                    />
+                ))}
+                {pendingPortfolios.length === 0 && (
+                    <p className="text-gray-400">No portfolios awaiting approval.</p>
+                )}
+            </div>
         </div>
     );
 };
@@ -201,7 +216,7 @@ const PortfolioTab = () => {
 const PortfolioItem = ({ item, onEdit, onDelete, categories }) => {
     const categoryNames = item.categories
         .map(categoryId => {
-            const category = categories.find(cat => cat._id === categoryId);
+            const category = categories.find(cat => Number(cat._id) === Number(categoryId));
             return category ? category.name : "";
         })
         .filter(name => name !== "")
@@ -271,194 +286,6 @@ const PortfolioItem = ({ item, onEdit, onDelete, categories }) => {
                 </button>
             </div>
         </div>
-    );
-};
-
-const PortfolioForm = ({ item, categories, onSave, onCancel }) => {
-    const [formData, setFormData] = useState(item);
-    const [selectedCategories, setSelectedCategories] = useState(item.categories || []);
-    const [images, setImages] = useState([]);
-    const [files, setFiles] = useState([]);
-
-    const handleCategoryChange = (e) => {
-        const { value, checked } = e.target;
-        if (checked) {
-            setSelectedCategories((prev) => [...prev, value]);
-        } else {
-            setSelectedCategories((prev) => prev.filter((category) => category !== value));
-        }
-    };
-
-    const handleImageChange = (e) => {
-        setImages([...e.target.files]);
-    };
-
-    const handleFileChange = (e) => {
-        setFiles([...e.target.files]);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
-        // Validation
-        if (!formData.title.trim()) {
-            toast.error("Title is required.");
-            return;
-        }
-        if (!formData.phoneNumber.match(/^\d{10}$/)) {
-            toast.error("Phone number must be 10 digits.");
-            return;
-        }
-        if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            toast.error("Invalid email address.");
-            return;
-        }
-        if (!formData.experience.trim()) {
-            toast.error("Experience is required.");
-            return;
-        }
-        if (!formData.qualifications.trim()) {
-            toast.error("Qualifications are required.");
-            return;
-        }
-        if (!formData.description.trim()) {
-            toast.error("Description is required.");
-            return;
-        }
-
-        onSave({ ...formData, categories: selectedCategories }, images, files);
-    };
-
-    return (
-        <form
-            onSubmit={handleSubmit}
-            className="space-y-4 max-w-2xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg"
-        >
-            <h2 className="text-xl font-bold text-white mb-4">Portfolio Form</h2>
-            <div>
-                <label className="block text-gray-300 mb-1">Title</label>
-                <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) =>
-                        setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Phone Number</label>
-                <input
-                    type="text"
-                    value={formData.phoneNumber}
-                    onChange={(e) =>
-                        setFormData({ ...formData, phoneNumber: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Email</label>
-                <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Experience</label>
-                <textarea
-                    value={formData.experience}
-                    onChange={(e) =>
-                        setFormData({ ...formData, experience: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Qualifications</label>
-                <textarea
-                    value={formData.qualifications}
-                    onChange={(e) =>
-                        setFormData({ ...formData, qualifications: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Description</label>
-                <textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                    required
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Categories</label>
-                <div className="space-y-2">
-                    {categories.map((category) => (
-                        <div key={category._id} className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id={`category-${category._id}`}
-                                value={category._id}
-                                checked={selectedCategories.includes(category._id)}
-                                onChange={handleCategoryChange}
-                                className="mr-2"
-                            />
-                            <label htmlFor={`category-${category._id}`} className="text-gray-300">
-                                {category.name}
-                            </label>
-                        </div>
-                    ))}
-                </div>
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Upload Images</label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                />
-            </div>
-            <div>
-                <label className="block text-gray-300 mb-1">Upload Files</label>
-                <input
-                    type="file"
-                    multiple
-                    onChange={handleFileChange}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                />
-            </div>
-            <div className="flex space-x-4">
-                <button
-                    type="submit"
-                    className="px-4 py-2 bg-emerald-600 text-white rounded"
-                >
-                    Save
-                </button>
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-4 py-2 bg-gray-600 text-white rounded"
-                >
-                    Cancel
-                </button>
-            </div>
-        </form>
     );
 };
 

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const ProfileTab = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [profile, setProfile] = useState({ name: "", email: "" });
     const [imageFile, setImageFile] = useState(null);
+    const navigate = useNavigate();
 
     // Fetch profile data
     useEffect(() => {
@@ -22,10 +24,15 @@ const ProfileTab = () => {
         fetchProfile();
     }, []);
 
-
     const handleImageUpload = async () => {
         if (!imageFile) {
             toast.error("Please select an image to upload.");
+            return;
+        }
+
+        // Image validation
+        if (!imageFile.type.startsWith("image/")) {
+            toast.error("Please select a valid image file.");
             return;
         }
 
@@ -53,6 +60,36 @@ const ProfileTab = () => {
             console.error("Error deleting profile picture:", error);
             toast.error("Failed to delete profile picture.");
         }
+    };
+
+    const handleAccountDelete = async () => {
+        toast((t) => (
+            <span>
+                Are you sure you want to delete your account?
+                <button
+                    onClick={async () => {
+                        toast.dismiss(t.id);
+                        try {
+                            await axios.delete("/auth/profile");
+                            toast.success("Account deleted successfully!");
+                            navigate("/signup"); // Redirect to signup page or any other page
+                        } catch (error) {
+                            console.error("Error deleting account:", error);
+                            toast.error("Failed to delete account.");
+                        }
+                    }}
+                    className="ml-2 px-4 py-2 bg-red-600 text-white rounded"
+                >
+                    Yes
+                </button>
+                <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="ml-2 px-4 py-2 bg-gray-600 text-white rounded"
+                >
+                    No
+                </button>
+            </span>
+        ));
     };
 
     return (
@@ -105,10 +142,17 @@ const ProfileTab = () => {
             ) : (
                 <ViewProfile profile={profile} onEdit={() => setIsEditing(true)} />
             )}
+
+            {/* Delete Account Button */}
+            <button
+                onClick={handleAccountDelete}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded"
+            >
+                Delete Account
+            </button>
         </div>
     );
 };
-
 
 const ViewProfile = ({ profile, onEdit }) => (
     <div>
@@ -128,6 +172,18 @@ const EditProfileForm = ({ profile, setProfile, onCancel }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Name validation
+        const nameRegex = /^[A-Za-z\s]+$/;
+        if (formData.name.length < 3) {
+            toast.error("Name must be at least 3 characters long.");
+            return;
+        }
+        if (!nameRegex.test(formData.name)) {
+            toast.error("Name can only contain letters.");
+            return;
+        }
+
 
         try {
             // Send updated data to the backend

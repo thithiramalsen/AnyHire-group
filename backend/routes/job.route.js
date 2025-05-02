@@ -14,6 +14,9 @@ router.get("/get", Jobs.getJobs);
 // Fetch jobs by status
 router.get("/status", protectRoute, Jobs.getJobsByStatus);
 
+// Fetch jobs by status
+router.get("/getApproved", protectRoute, Jobs.getJobsApproved);
+
 // Get a job by ID
 router.get("/:id", Jobs.getJobById);
 

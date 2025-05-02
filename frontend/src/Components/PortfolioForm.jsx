@@ -1,19 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
 const PortfolioForm = ({ item, categories, onSave, onCancel }) => {
     const [formData, setFormData] = useState(item);
-    const [selectedCategories, setSelectedCategories] = useState(item.categories || []);
+    const [selectedCategories, setSelectedCategories] = useState(
+        item.categories ? item.categories.map(id => Number(id)) : []
+    );
     const [images, setImages] = useState([]);
     const [files, setFiles] = useState([]);
 
+    useEffect(() => {
+        if (item.categories) {
+            setSelectedCategories(item.categories.map(id => Number(id)));
+        }
+    }, [item]);
+
     const handleCategoryChange = (e) => {
         const { value, checked } = e.target;
-        if (checked) {
-            setSelectedCategories((prev) => [...prev, value]);
-        } else {
-            setSelectedCategories((prev) => prev.filter((category) => category !== value));
-        }
+        const categoryId = Number(value);
+        
+        setSelectedCategories(prev => {
+            const newCategories = checked 
+                ? [...prev, categoryId]
+                : prev.filter(id => id !== categoryId);
+            return newCategories;
+        });
     };
 
     const handleImageChange = (e) => {
@@ -40,10 +51,12 @@ const PortfolioForm = ({ item, categories, onSave, onCancel }) => {
             toast.error("Invalid email address.");
             return;
         }
+
         if (!formData.experience.trim()) {
             toast.error("Experience is required.");
             return;
         }
+
         if (!formData.qualifications.trim()) {
             toast.error("Qualifications are required.");
             return;
@@ -134,21 +147,25 @@ const PortfolioForm = ({ item, categories, onSave, onCancel }) => {
             <div>
                 <label className="block text-gray-300 mb-1">Categories</label>
                 <div className="space-y-2">
-                    {categories.map((category) => (
-                        <div key={category._id} className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id={`category-${category._id}`}
-                                value={category._id}
-                                checked={selectedCategories.includes(category._id)}
-                                onChange={handleCategoryChange}
-                                className="mr-2"
-                            />
-                            <label htmlFor={`category-${category._id}`} className="text-gray-300">
-                                {category.name}
-                            </label>
-                        </div>
-                    ))}
+                    {categories.map((category) => {
+                        const categoryId = Number(category._id);
+                        const isChecked = selectedCategories.includes(categoryId);
+                        return (
+                            <div key={categoryId} className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id={`category-${categoryId}`}
+                                    value={categoryId}
+                                    checked={isChecked}
+                                    onChange={handleCategoryChange}
+                                    className="mr-2"
+                                />
+                                <label htmlFor={`category-${categoryId}`} className="text-gray-300">
+                                    {category.name}
+                                </label>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
             <div>

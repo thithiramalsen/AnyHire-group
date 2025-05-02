@@ -6,12 +6,15 @@ import LoginPage from "./pages/LoginPage";
 import DashBoard from "./pages/DashBoard";
 import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
+import PaymentPage from "./pages/PaymentPage";
+import MyJobs from "./Components/MyJobs";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
 import { useUserStore } from "./stores/useUserStore";
 import { useEffect } from "react";
 import LoadingSpinner from "./components/LoadingSpinner";
+import ApplyPage from "./pages/ApplyPage";
 
 
 function App() {
@@ -56,6 +59,30 @@ function App() {
 						}
 					/>
 
+                    {/* New Routes */}
+
+					<Route path="/apply/:jobId" element={<ApplyPage />} />
+
+                    <Route
+                        path="/my-applications"
+                        element={
+                            user ? (
+                                <MyJobs />
+                            ) : (
+                                <Navigate to="/jobs" replace />
+                            )
+                        }
+                    />
+                    <Route
+                        path="/payment/:bookingId"
+                        element={
+                            user ? (
+                                <PaymentPage />
+                            ) : (
+                                <Navigate to="/login" replace />
+                            )
+                        }
+                    />
 				</Routes>
 			</div>
 			<Toaster />

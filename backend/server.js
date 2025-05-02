@@ -52,6 +52,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
+app.use("/api/booking", bookingRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/users", userRoutes);

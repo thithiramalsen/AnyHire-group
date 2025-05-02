@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
 import { ChatBubbleLeftIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import { useUserStore } from "../stores/useUserStore";
 
 const SupportUserTab = () => {
     const [tickets, setTickets] = useState([]);
@@ -11,30 +12,46 @@ const SupportUserTab = () => {
         phoneNumber: ""
     });
     const [loading, setLoading] = useState(false);
+    const { user } = useUserStore();
 
     useEffect(() => {
-        fetchTickets();
-    }, []);
+        if (user) {
+            fetchTickets();
+        }
+    }, [user]);
 
     const fetchTickets = async () => {
         try {
-            const response = await axios.get("/tickets/user");
+            const response = await axios.get("/ticket/user");
+            console.log('Fetched tickets:', response.data);
             setTickets(response.data);
         } catch (error) {
+            console.error("Fetch tickets error:", error);
             toast.error("Failed to fetch tickets");
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        if (!user) {
+            toast.error("Please login to create a ticket");
+            return;
+        }
 
+        if (!newTicket.subject || !newTicket.message || !newTicket.phoneNumber) {
+            toast.error("Please fill all required fields");
+            return;
+        }
+
+        setLoading(true);
         try {
-            await axios.post("/tickets/create", newTicket);
+            const response = await axios.post("/ticket/create", newTicket);
+            console.log('Created ticket:', response.data);
             toast.success("Ticket created successfully");
             setNewTicket({ subject: "", message: "", phoneNumber: "" });
-            fetchTickets();
+            await fetchTickets();
         } catch (error) {
+            console.error("Create ticket error:", error);
             toast.error(error.response?.data?.message || "Failed to create ticket");
         } finally {
             setLoading(false);
@@ -143,4 +160,4 @@ const SupportUserTab = () => {
     );
 };
 
-export default SupportUserTab; 
+export default SupportUserTab;

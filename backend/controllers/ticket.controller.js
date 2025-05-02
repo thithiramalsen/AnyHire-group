@@ -5,25 +5,33 @@ import { sendEmail } from "../lib/email.js";
 export const createTicket = async (req, res) => {
     try {
         const { subject, message, phoneNumber } = req.body;
+        
+        // Validate input
+        if (!subject || !message || !phoneNumber) {
+            return res.status(400).json({ 
+                message: "Please provide all required fields" 
+            });
+        }
+
+        // Get user info from auth middleware
         const user = req.user;
 
-        const ticket = await Ticket.create({
+        const ticket = new Ticket({
             userId: user._id,
             name: user.name,
             email: user.email,
             phoneNumber,
             subject,
-            message
+            message,
+            status: "Open"
         });
 
-        // Send confirmation email
-        await sendEmail({
-            to: user.email,
-            subject: "Ticket Created - AnyHire Support",
-            text: `Your support ticket has been created successfully. Ticket ID: ${ticket._id}`
-        });
+        const savedTicket = await ticket.save();
+        
+        // Debug log
+        console.log('Ticket created:', savedTicket);
 
-        res.status(201).json(ticket);
+        res.status(201).json(savedTicket);
     } catch (error) {
         console.error("Error creating ticket:", error);
         res.status(500).json({ message: "Error creating ticket" });
@@ -78,4 +86,25 @@ export const replyToTicket = async (req, res) => {
         console.error("Error replying to ticket:", error);
         res.status(500).json({ message: "Error replying to ticket" });
     }
-}; 
+
+    
+};
+
+export const updateTicketStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const ticket = await Ticket.findById(req.params.id);
+
+        if (!ticket) {
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+
+        ticket.status = status;
+        await ticket.save();
+
+        res.json(ticket);
+    } catch (error) {
+        console.error("Error updating ticket status:", error);
+        res.status(500).json({ message: "Error updating ticket status" });
+    }
+};

@@ -64,21 +64,45 @@ export const getAllTickets = async (req, res) => {
 export const replyToTicket = async (req, res) => {
     try {
         const { reply } = req.body;
+        
+        if (!reply || !reply.trim()) {
+            return res.status(400).json({ message: "Reply cannot be empty" });
+        }
+
         const ticket = await Ticket.findById(req.params.id);
 
         if (!ticket) {
             return res.status(404).json({ message: "Ticket not found" });
         }
 
-        ticket.reply = reply;
-        ticket.status = "Resolved";
+        // Add the reply with timestamp
+        ticket.replies = ticket.replies || [];
+        ticket.replies.push({
+            message: reply.trim(),
+            adminId: req.user._id,
+            adminName: req.user.name,
+            createdAt: new Date()
+        });
+
+        ticket.status = "In Progress";
+        ticket.updatedAt = new Date();
         await ticket.save();
 
-        // Send reply email
+        // Send email notification
         await sendEmail({
             to: ticket.email,
-            subject: "Reply to Your Support Ticket",
-            text: `Your ticket has been resolved. Reply: ${reply}`
+            subject: `Re: ${ticket.subject} - Support Ticket Update`,
+            html: `
+                <h2>Support Ticket Update</h2>
+                <p>Dear ${ticket.name},</p>
+                <p>Our support team has replied to your ticket:</p>
+                <div style="background: #f5f5f5; padding: 15px; margin: 10px 0; border-left: 4px solid #10b981;">
+                    ${reply}
+                </div>
+                <p><strong>Original Ticket:</strong> ${ticket.subject}</p>
+                <p>You can view the full conversation by logging into your account.</p>
+                <p>Best regards,<br>AnyHire Support Team</p>
+            `
         });
 
         res.json(ticket);
@@ -86,8 +110,6 @@ export const replyToTicket = async (req, res) => {
         console.error("Error replying to ticket:", error);
         res.status(500).json({ message: "Error replying to ticket" });
     }
-
-    
 };
 
 export const updateTicketStatus = async (req, res) => {

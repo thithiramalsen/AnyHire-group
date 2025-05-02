@@ -6,8 +6,10 @@ import {
     CheckIcon, 
     XMarkIcon,
     UserGroupIcon,
-    AdjustmentsHorizontalIcon 
+    AdjustmentsHorizontalIcon,
+    PaperAirplaneIcon
 } from "@heroicons/react/24/outline";
+import { sortTickets, statusPriority } from "../utils/ticket.util";
 
 const SupportAdminTab = () => {
     const [tickets, setTickets] = useState([]);
@@ -31,13 +33,12 @@ const SupportAdminTab = () => {
         }
     };
 
-    const handleReply = async (e) => {
-        e.preventDefault();
-        if (!selectedTicket || !reply.trim()) return;
+    const handleReply = async (replyMessage) => {
+        if (!selectedTicket || !replyMessage.trim()) return;
 
         setLoading(true);
         try {
-            await axios.patch(`/ticket/reply/${selectedTicket._id}`, { reply });
+            await axios.patch(`/ticket/reply/${selectedTicket._id}`, { reply: replyMessage });
             toast.success("Reply sent successfully");
             setReply("");
             setSelectedTicket(null);
@@ -69,6 +70,9 @@ const SupportAdminTab = () => {
                 ticket.status.toLowerCase() === filterStatus.toLowerCase()
             );
         }
+
+        // Sort tickets
+        filteredTickets = sortTickets(filteredTickets);
 
         // Group by user if enabled
         if (groupByUser) {
@@ -144,7 +148,6 @@ const SupportAdminTab = () => {
                                     </h3>
                                     <div className="space-y-3">
                                         {tickets.map(ticket => (
-                                            // ... Ticket item component (same as below)
                                             <TicketItem 
                                                 key={ticket._id}
                                                 ticket={ticket}
@@ -173,8 +176,12 @@ const SupportAdminTab = () => {
                         )}
                     </div>
 
-                    {/* Reply Section - Keep existing code */}
-                    {/* ... existing reply section code ... */}
+                    {/* Reply Section */}
+                    <ReplySection 
+                        ticket={selectedTicket} 
+                        onReply={handleReply} 
+                        loading={loading} 
+                    />
                 </div>
             </div>
         </div>
@@ -191,7 +198,14 @@ const TicketItem = ({ ticket, isSelected, onSelect, onStatusChange, getStatusCol
     >
         <div className="flex justify-between items-start mb-2">
             <div>
-                <h4 className="text-lg font-semibold text-white">{ticket.subject}</h4>
+                <div className="flex items-center gap-2">
+                    <h4 className="text-lg font-semibold text-white">
+                        {ticket.subject}
+                    </h4>
+                    <span className="text-sm text-gray-400">
+                        #{String(ticket._id).padStart(6, '0')}
+                    </span>
+                </div>
                 <p className="text-sm text-gray-400">From: {ticket.name} ({ticket.email})</p>
             </div>
             <div className="flex items-center gap-2">
@@ -212,10 +226,103 @@ const TicketItem = ({ ticket, isSelected, onSelect, onStatusChange, getStatusCol
             </div>
         </div>
         <p className="text-gray-300 mb-2">{ticket.message}</p>
+        
+        {ticket.replies && ticket.replies.length > 0 && (
+            <div className="mt-4 space-y-3">
+                {ticket.replies.map((reply, index) => (
+                    <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                        <p className="text-white">{reply.message}</p>
+                        <div className="mt-2 text-xs text-gray-400">
+                            By {reply.adminName} • {new Date(reply.createdAt).toLocaleString()}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+        
         <div className="text-xs text-gray-400">
             Created: {new Date(ticket.createdAt).toLocaleString()}
         </div>
     </div>
 );
+
+// Reply Section Component
+const ReplySection = ({ ticket, onReply, loading }) => {
+    const [reply, setReply] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onReply(reply);
+        setReply('');
+    };
+
+    return (
+        <div className="lg:col-span-1 bg-gray-800 p-4 rounded-lg h-fit sticky top-6">
+            <h3 className="text-lg font-semibold text-white mb-4">
+                Reply to Ticket
+                {ticket && (
+                    <span className="text-sm text-gray-400 ml-2">
+                        #{String(ticket._id).padStart(6, '0')}
+                    </span>
+                )}
+            </h3>
+            {ticket ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">
+                            Replying to: {ticket.subject}
+                        </label>
+                        <textarea
+                            value={reply}
+                            onChange={(e) => setReply(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500"
+                            rows="6"
+                            placeholder="Type your reply..."
+                            required
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full flex items-center justify-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                        {loading ? (
+                            <span className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Sending...
+                            </span>
+                        ) : (
+                            <span className="flex items-center">
+                                <PaperAirplaneIcon className="w-5 h-5 mr-2" />
+                                Send Reply
+                            </span>
+                        )}
+                    </button>
+                </form>
+            ) : (
+                <p className="text-gray-400">Select a ticket to reply</p>
+            )}
+            
+            {ticket && ticket.replies && ticket.replies.length > 0 && (
+                <div className="mt-6">
+                    <h4 className="text-sm font-medium text-gray-400 mb-3">Previous Replies</h4>
+                    <div className="space-y-4">
+                        {ticket.replies.map((reply, index) => (
+                            <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                                <p className="text-white">{reply.message}</p>
+                                <div className="mt-2 text-xs text-gray-400">
+                                    By {reply.adminName} on {new Date(reply.createdAt).toLocaleString()}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export default SupportAdminTab;

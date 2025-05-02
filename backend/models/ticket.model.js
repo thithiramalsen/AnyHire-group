@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
+import Counter from './counter.model.js';
 
 const ticketSchema = new mongoose.Schema({
+    _id: { type: Number },  // Changed to Number for auto-increment
     userId: {
         type: Number,
         ref: 'User',
@@ -40,6 +42,24 @@ const ticketSchema = new mongoose.Schema({
         type: String,
         default: "",
     },
+    replies: [{
+        message: {
+            type: String,
+            required: true
+        },
+        adminId: {
+            type: Number,
+            required: true
+        },
+        adminName: {
+            type: String,
+            required: true
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now,
@@ -50,10 +70,18 @@ const ticketSchema = new mongoose.Schema({
     }
 });
 
-// Update the updatedAt field before saving
-ticketSchema.pre('save', function(next) {
+// Add pre-save middleware for auto-incrementing ID
+ticketSchema.pre('save', async function(next) {
+    if (this.isNew) {
+        const counter = await Counter.findByIdAndUpdate(
+            { _id: 'ticketId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        this._id = counter.seq;
+    }
     this.updatedAt = Date.now();
     next();
 });
 
-export default mongoose.model("Ticket", ticketSchema); 
+export default mongoose.model("Ticket", ticketSchema);

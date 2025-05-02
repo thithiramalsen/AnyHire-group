@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
-import { ChatBubbleLeftIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftIcon, PaperAirplaneIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { useUserStore } from "../stores/useUserStore";
+import { sortTickets, statusPriority } from "../utils/ticket.util";
 
 const SupportUserTab = () => {
     const [tickets, setTickets] = useState([]);
@@ -57,6 +58,17 @@ const SupportUserTab = () => {
             setLoading(false);
         }
     };
+
+    // Group tickets by status
+    const groupedTickets = tickets.reduce((acc, ticket) => {
+        acc[ticket.status] = acc[ticket.status] || [];
+        acc[ticket.status].push(ticket);
+        return acc;
+    }, {});
+
+    // Sort status groups by priority
+    const sortedStatusGroups = Object.entries(groupedTickets)
+        .sort(([statusA], [statusB]) => statusPriority[statusA] - statusPriority[statusB]);
 
     return (
         <div className="p-6">
@@ -118,38 +130,71 @@ const SupportUserTab = () => {
                     </form>
                 </div>
 
-                {/* Tickets List */}
-                <div className="space-y-4">
+                {/* Updated Tickets List */}
+                <div className="space-y-8">
                     <h3 className="text-xl font-semibold text-white mb-4">Your Tickets</h3>
                     {tickets.length === 0 ? (
                         <p className="text-gray-400 text-center py-4">No tickets found</p>
                     ) : (
-                        tickets.map((ticket) => (
-                            <div
-                                key={ticket._id}
-                                className="bg-gray-800 p-4 rounded-lg shadow-lg"
-                            >
-                                <div className="flex justify-between items-start mb-2">
-                                    <h4 className="text-lg font-semibold text-white">
-                                        {ticket.subject}
-                                    </h4>
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        ticket.status === "Open" ? "bg-yellow-500" :
-                                        ticket.status === "Resolved" ? "bg-green-500" :
+                        sortedStatusGroups.map(([status, statusTickets]) => (
+                            <div key={status} className="space-y-4">
+                                <h4 className="text-lg font-medium text-gray-300 flex items-center gap-2">
+                                    <span className={`w-2 h-2 rounded-full ${
+                                        status === "Open" ? "bg-yellow-500" :
+                                        status === "In Progress" ? "bg-blue-500" :
+                                        status === "Resolved" ? "bg-green-500" :
                                         "bg-gray-500"
-                                    }`}>
-                                        {ticket.status}
-                                    </span>
-                                </div>
-                                <p className="text-gray-300 mb-2">{ticket.message}</p>
-                                {ticket.reply && (
-                                    <div className="mt-4 pt-4 border-t border-gray-700">
-                                        <p className="text-sm text-gray-400 mb-1">Admin Reply:</p>
-                                        <p className="text-gray-300">{ticket.reply}</p>
-                                    </div>
-                                )}
-                                <div className="text-xs text-gray-400 mt-2">
-                                    Created: {new Date(ticket.createdAt).toLocaleString()}
+                                    }`}></span>
+                                    {status} ({statusTickets.length})
+                                </h4>
+                                <div className="space-y-4">
+                                    {sortTickets(statusTickets).map((ticket) => (
+                                        <div
+                                            key={ticket._id}
+                                            className="bg-gray-800 p-6 rounded-lg shadow-lg"
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="text-lg font-semibold text-white">
+                                                            {ticket.subject}
+                                                        </h4>
+                                                        <span className="text-sm text-gray-400">
+                                                            #{String(ticket._id).padStart(6, '0')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <span className={`px-3 py-1 rounded-full text-xs ${
+                                                    status === "Open" ? "bg-yellow-500" :
+                                                    status === "In Progress" ? "bg-blue-500" :
+                                                    status === "Resolved" ? "bg-green-500" :
+                                                    "bg-gray-500"
+                                                } text-white`}>
+                                                    {status}
+                                                </span>
+                                            </div>
+                                            <p className="text-gray-300 mb-4">{ticket.message}</p>
+                                            
+                                            {ticket.replies && ticket.replies.length > 0 && (
+                                                <div className="mt-4 space-y-3 pt-4 border-t border-gray-700">
+                                                    <p className="text-sm font-medium text-gray-400">Replies:</p>
+                                                    {ticket.replies.map((reply, index) => (
+                                                        <div key={index} className="bg-gray-700 p-4 rounded-lg">
+                                                            <p className="text-white">{reply.message}</p>
+                                                            <div className="mt-2 text-xs text-gray-400">
+                                                                By {reply.adminName} • {new Date(reply.createdAt).toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            
+                                            <div className="mt-4 text-xs text-gray-400 flex items-center gap-2">
+                                                <ClockIcon className="w-4 h-4" />
+                                                Created: {new Date(ticket.createdAt).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         ))

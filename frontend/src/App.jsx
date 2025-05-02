@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ApplyPage from "./pages/ApplyPage";
 
+import Chatbot from "./Components/Chatbot/Chatbot";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -86,8 +87,10 @@ function App() {
 				</Routes>
 			</div>
 			<Toaster />
+			<Chatbot />
 		</div>
 	);
 }
+
 
 export default App;

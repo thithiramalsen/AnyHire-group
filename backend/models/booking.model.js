@@ -50,5 +50,8 @@ bookingSchema.pre('save', async function(next) {
     next();
 });
 
+// Add compound index to prevent duplicate applications
+bookingSchema.index({ jobId: 1, seekerId: 1 }, { unique: true });
+
 const Booking = mongoose.model("Booking", bookingSchema);
 export default Booking;

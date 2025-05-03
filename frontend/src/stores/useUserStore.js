@@ -29,6 +29,8 @@ export const useUserStore = create((set, get) => ({
 		try {
 			const res = await axios.post("/auth/login", { email, password });
 			set({ user: res.data, loading: false });
+			toast.success("Login successful!");
+			window.location.href = "/jobs"; // Redirect to jobs page after successful login
 		} catch (error) {
 			set({ loading: false });
 			console.error("Login error:", error.response?.data || error.message);
@@ -40,6 +42,8 @@ export const useUserStore = create((set, get) => ({
 		try {
 			await axios.post("/auth/logout");
 			set({ user: null });
+			toast.success("Logged out successfully!");
+			window.location.href = "/"; // Redirect to homepage after successful logout
 		} catch (error) {
 			toast.error(error.response?.data?.message || "An error occurred during logout");
 		}

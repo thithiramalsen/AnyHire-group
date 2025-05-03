@@ -6,7 +6,8 @@ import {
     updateBookingStatus,
     getUserBookings,
     getBookingById,
-    getJobBookings
+    getJobBookings,
+    getMyApplications
 } from '../controllers/booking.controller.js';
 
 const router = express.Router();
@@ -19,6 +20,9 @@ router.patch('/:id/status', protectRoute, updateBookingStatus);
 
 // Get all bookings for logged-in user (both as seeker and poster)
 router.get('/me', protectRoute, getUserBookings);
+
+// Get user's applications (as a job seeker)
+router.get('/my-applications', protectRoute, getMyApplications);
 
 // Get single booking by ID
 router.get('/:id', protectRoute, getBookingById);

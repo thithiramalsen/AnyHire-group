@@ -241,3 +241,16 @@ export const declineJob = async (req, res) => {
     res.status(500).json({ message: "Failed to decline job" });
   }
 };
+
+// Get public approved jobs (no authentication required)
+export const getPublicApprovedJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: "approved" })
+      .populate("createdBy", "name")
+      .select("-__v"); // Exclude version field
+    res.status(200).json(jobs);
+  } catch (err) {
+    console.error("Error fetching public approved jobs:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};

@@ -9,7 +9,7 @@ import JobApprovalTab from "../Components/JobApprovalTab";
 import BookingsTab from "../Components/BookingsTab";
 import JobPostingTab from "../Components/JobPostingTab";
 import PortfolioTab from "../Components/PortfolioTab";
-import JobsTab from "../Components/JobsTab";
+import JobsTab from "../Components/MyJobs";
 import CategoriesTab from "../Components/CategoriesTab";
 import SupportUserTab from "../Components/SupportUserTab";
 import SupportAdminTab from "../Components/SupportAdminTab";

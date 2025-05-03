@@ -1,11 +1,12 @@
 import Booking from '../models/booking.model.js';
 import Job from '../models/job.model.js';
+import User from '../models/user.model.js';
 
 // Apply for a job (creates a booking)
-export const applyForJob = async (req, res, next) => {
+export const applyForJob = async (req, res) => {
     try {
-        const jobId = Number(req.params.jobId); // Convert to number
-        const seekerId = Number(req.user._id); // Use _id and convert to number
+        const jobId = Number(req.params.jobId);
+        const seekerId = Number(req.user._id);
 
         // Add debug logging
         console.log('Application attempt:', {
@@ -19,24 +20,30 @@ export const applyForJob = async (req, res, next) => {
         console.log('Found job:', job);
 
         if (!job) {
-            return next(createError(404, "Job not found or not approved"));
+            return res.status(404).json({ message: "Job not found or not approved" });
         }
 
         // Check if user has already applied
         const existingBooking = await Booking.findOne({ 
-            jobId: Number(jobId), 
-            seekerId: Number(seekerId)
+            jobId: jobId, 
+            seekerId: seekerId
         });
 
         if (existingBooking) {
-            return next(createError(400, "You have already applied for this job"));
+            return res.status(400).json({ message: "You have already applied for this job" });
+        }
+
+        // Get seeker details
+        const seeker = await User.findById(seekerId);
+        if (!seeker) {
+            return res.status(404).json({ message: "Seeker not found" });
         }
 
         const newBooking = new Booking({
-            jobId: Number(jobId),
+            jobId: jobId,
             jobTitle: job.title,
-            seekerId: Number(seekerId),
-            posterId: Number(job.createdBy),
+            seekerId: seekerId,
+            posterId: job.createdBy,
             payment: {
                 amount: job.payment
             },
@@ -53,7 +60,44 @@ export const applyForJob = async (req, res, next) => {
         res.status(201).json(savedBooking);
     } catch (err) {
         console.error('Booking creation error:', err);
-        next(err);
+        if (err.code === 11000) {
+            return res.status(400).json({ message: "You have already applied for this job" });
+        }
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Get user's applications (as a job seeker)
+export const getMyApplications = async (req, res) => {
+    try {
+        const seekerId = Number(req.user._id);
+        
+        // Find all bookings where the user is the seeker
+        const applications = await Booking.find({ seekerId })
+            .sort({ 'dates.applied': -1 }); // Most recent first
+
+        // Get the full job details for each application
+        const applicationsWithJobDetails = await Promise.all(
+            applications.map(async (application) => {
+                const job = await Job.findById(application.jobId);
+                const seeker = await User.findById(application.seekerId);
+                return {
+                    ...application.toObject(),
+                    title: job?.title || application.jobTitle,
+                    description: job?.description,
+                    images: job?.images,
+                    district: job?.district,
+                    category: job?.category,
+                    payment: job?.payment || application.payment.amount,
+                    seekerName: seeker?.name || 'Anonymous'
+                };
+            })
+        );
+
+        res.status(200).json(applicationsWithJobDetails);
+    } catch (err) {
+        console.error('Error fetching applications:', err);
+        res.status(500).json({ message: "Error fetching applications" });
     }
 };
 
@@ -126,7 +170,22 @@ export const getUserBookings = async (req, res, next) => {
             ]
         }).sort({ 'dates.applied': -1 }); // Most recent first
 
-        res.status(200).json(bookings);
+        // Get additional details for each booking
+        const bookingsWithDetails = await Promise.all(
+            bookings.map(async (booking) => {
+                const job = await Job.findById(booking.jobId);
+                const seeker = await User.findById(booking.seekerId);
+                const poster = await User.findById(booking.posterId);
+                return {
+                    ...booking.toObject(),
+                    jobDetails: job,
+                    seekerDetails: seeker,
+                    posterDetails: poster
+                };
+            })
+        );
+
+        res.status(200).json(bookingsWithDetails);
     } catch (err) {
         next(err);
     }
@@ -164,7 +223,19 @@ export const getJobBookings = async (req, res, next) => {
         }
 
         const bookings = await Booking.find({ jobId }).sort({ 'dates.applied': -1 });
-        res.status(200).json(bookings);
+        
+        // Get additional details for each booking
+        const bookingsWithDetails = await Promise.all(
+            bookings.map(async (booking) => {
+                const seeker = await User.findById(booking.seekerId);
+                return {
+                    ...booking.toObject(),
+                    seekerDetails: seeker
+                };
+            })
+        );
+
+        res.status(200).json(bookingsWithDetails);
     } catch (err) {
         next(err);
     }

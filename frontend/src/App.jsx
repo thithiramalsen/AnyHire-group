@@ -20,6 +20,7 @@ import ApplyPage from "./pages/ApplyPage";
 import BookingPage from "./pages/BookingPage";
 
 import Chatbot from "./Components/Chatbot/Chatbot";
+import ChatPage from './pages/ChatPage';
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -89,6 +90,7 @@ function App() {
                         }
                     />
 					<Route path="/booking/:bookingId" element={<BookingPage />} />
+					<Route path="/chat/:bookingId" element={<ChatPage />} />
 				</Routes>
 			</div>
 			<Toaster />

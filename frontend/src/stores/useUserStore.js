@@ -28,12 +28,29 @@ export const useUserStore = create((set, get) => ({
 
 		try {
 			const res = await axios.post("/auth/login", { email, password });
-			set({ user: res.data, loading: false });
+			console.debug('[UserStore] Login response:', res.data);
+			
+			// Ensure we have the access token
+			if (!res.data.accessToken) {
+				console.error('[UserStore] No access token in login response');
+				throw new Error('No access token received');
+			}
+
+			// Store the user data with the access token
+			set({ 
+				user: {
+					...res.data,
+					accessToken: res.data.accessToken
+				}, 
+				loading: false 
+			});
+			
+			console.debug('[UserStore] User state after login:', useUserStore.getState().user);
 			toast.success("Login successful!");
 			window.location.href = "/jobs"; // Redirect to jobs page after successful login
 		} catch (error) {
 			set({ loading: false });
-			console.error("Login error:", error.response?.data || error.message);
+			console.error("[UserStore] Login error:", error.response?.data || error.message);
 			toast.error(error.response?.data?.message || "An error occurred");
 		}
 	},
@@ -53,9 +70,28 @@ export const useUserStore = create((set, get) => ({
 		set({ checkingAuth: true });
 		try {
 			const response = await axios.get("/auth/profile");
-			set({ user: response.data, checkingAuth: false });
+			console.debug('[UserStore] Profile response:', response.data);
+			
+			// Get a fresh access token
+			const tokenResponse = await axios.post("/auth/refresh-token");
+			console.debug('[UserStore] Token refresh response:', tokenResponse.data);
+			
+			if (!tokenResponse.data.accessToken) {
+				throw new Error('No access token received from refresh');
+			}
+
+			// Store the user data with the fresh access token
+			set({ 
+				user: {
+					...response.data,
+					accessToken: tokenResponse.data.accessToken
+				}, 
+				checkingAuth: false 
+			});
+			
+			console.debug('[UserStore] User state after auth check:', useUserStore.getState().user);
 		} catch (error) {
-			console.log(error.message);
+			console.error('[UserStore] Auth check error:', error.message);
 			set({ checkingAuth: false, user: null });
 		}
 	},
@@ -67,7 +103,11 @@ export const useUserStore = create((set, get) => ({
 		set({ checkingAuth: true });
 		try {
 			const response = await axios.post("/auth/refresh-token");
-			set({ checkingAuth: false });
+			// Update the user object with the new access token
+			set(state => ({
+				user: state.user ? { ...state.user, accessToken: response.data.accessToken } : null,
+				checkingAuth: false
+			}));
 			return response.data;
 		} catch (error) {
 			set({ user: null, checkingAuth: false });

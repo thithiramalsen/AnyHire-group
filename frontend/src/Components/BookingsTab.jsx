@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
-import { useNavigate } from 'react-router-dom'; // Add this import at the top
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
+import Chat from './Chat';
 
 const BookingsTab = () => {
     const [bookings, setBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useUserStore();
-    const navigate = useNavigate(); // Add this hook
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -186,12 +188,21 @@ const BookingsTab = () => {
                                     </>
                                 )}
                                 {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid'].includes(booking.status) && (
-                                    <button
-                                        onClick={() => navigate(`/booking/${booking._id}`)}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                    >
-                                        View Job
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={() => navigate(`/booking/${booking._id}`)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                        >
+                                            View Job
+                                        </button>
+                                        <button
+                                            onClick={() => navigate(`/chat/${booking._id}`)}
+                                            className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                                        >
+                                            <MessageCircle size={20} />
+                                            Chat
+                                        </button>
+                                    </>
                                 )}
                                 {booking.status === 'accepted' && (
                                     <button

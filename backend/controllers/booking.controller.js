@@ -23,10 +23,11 @@ export const applyForJob = async (req, res) => {
             return res.status(404).json({ message: "Job not found or not approved" });
         }
 
-        // Check if user has already applied
+        // Check if user has an active booking for this job
         const existingBooking = await Booking.findOne({ 
             jobId: jobId, 
-            seekerId: seekerId
+            seekerId: seekerId,
+            status: { $in: ['applied', 'accepted', 'in_progress'] } // Only check active statuses
         });
 
         if (existingBooking) {
@@ -106,40 +107,30 @@ export const updateBookingStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const userId = req.user._id;
-
+        
         const booking = await Booking.findById(id);
         if (!booking) {
             return res.status(404).json({ message: "Booking not found" });
         }
 
-        // Handle cancellation - revert to applied
+        // If cancelling, delete the booking instead of updating status
         if (status === 'cancelled') {
-            booking.status = 'applied';
-            await booking.save();
-            return res.json({ message: "Booking reverted to applied status", booking });
-        }
+            // Check if any other booking for this job is in progress
+            const otherInProgressBooking = await Booking.findOne({
+                jobId: booking.jobId,
+                _id: { $ne: booking._id },
+                status: 'in_progress'
+            });
 
-        // Handle in_progress - cancel all other bookings
-        if (status === 'in_progress') {
-            // Update current booking to in_progress
-            booking.status = 'in_progress';
-            booking.dates.started = new Date();
-            await booking.save();
-
-            // Cancel all other active bookings for this job
-            await Booking.updateMany(
-                {
-                    jobId: booking.jobId,
-                    _id: { $ne: booking._id },
-                    status: { $in: ['applied', 'accepted'] }
-                },
-                { 
-                    status: 'cancelled',
-                }
-            );
-
-            return res.json({ message: "Booking status updated to in progress", booking });
+            if (otherInProgressBooking) {
+                // If another booking is in progress, just mark as cancelled
+                booking.status = 'cancelled';
+                await booking.save();
+            } else {
+                // If no other booking is in progress, delete this booking
+                await Booking.findByIdAndDelete(id);
+            }
+            return res.json({ message: "Booking cancelled successfully" });
         }
 
         // Handle other status updates normally
@@ -147,10 +138,10 @@ export const updateBookingStatus = async (req, res) => {
         if (status === 'accepted') booking.dates.accepted = new Date();
         await booking.save();
 
-        return res.json({ message: "Booking status updated", booking });
+        res.json({ message: "Booking status updated", booking });
     } catch (error) {
         console.error('Error updating booking status:', error);
-        return res.status(500).json({ message: "Error updating booking status" });
+        res.status(500).json({ message: "Error updating booking status" });
     }
 };
 

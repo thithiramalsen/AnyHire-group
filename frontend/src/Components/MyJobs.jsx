@@ -28,7 +28,38 @@ const MyJobs = () => {
 
     const handleCancelApplication = async (bookingId) => {
         try {
-            await axios.patch(`/booking/${bookingId}/status`, { status: 'declined' });
+            // Show confirmation toast
+            const confirmed = await new Promise((resolve) => {
+                toast.custom((t) => (
+                    <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                        <p className="text-white mb-4">Are you sure you want to cancel this application?</p>
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={() => {
+                                    toast.dismiss(t.id);
+                                    resolve(false);
+                                }}
+                                className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                            >
+                                No
+                            </button>
+                            <button
+                                onClick={() => {
+                                    toast.dismiss(t.id);
+                                    resolve(true);
+                                }}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                                Yes, Cancel
+                            </button>
+                        </div>
+                    </div>
+                ), { duration: 5000 });
+            });
+
+            if (!confirmed) return;
+
+            await axios.patch(`/booking/${bookingId}/status`, { status: 'cancelled' });
             setAppliedJobs(appliedJobs.filter(job => job._id !== bookingId));
             toast.success("Application cancelled successfully");
         } catch (error) {

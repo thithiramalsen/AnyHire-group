@@ -22,10 +22,15 @@ export const getStatusColor = (status) => {
 
 export const sortTickets = (tickets) => {
     return [...tickets].sort((a, b) => {
-        // First sort by status priority
+        // First sort by priority (Urgent first)
+        if (a.priority === "Urgent" && b.priority !== "Urgent") return -1;
+        if (b.priority === "Urgent" && a.priority !== "Urgent") return 1;
+        
+        // Then by status priority
         const statusDiff = statusPriority[a.status] - statusPriority[b.status];
         if (statusDiff !== 0) return statusDiff;
-        // Then sort by date (newest first within same status)
+        
+        // Finally by date
         return new Date(b.createdAt) - new Date(a.createdAt);
     });
 };

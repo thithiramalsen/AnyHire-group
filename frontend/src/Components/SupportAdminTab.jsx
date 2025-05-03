@@ -11,6 +11,17 @@ import {
 } from "@heroicons/react/24/outline";
 import { sortTickets, statusPriority } from "../utils/ticket.util";
 
+// Add this component at the top of both SupportUserTab.jsx and SupportAdminTab.jsx
+const PriorityTag = ({ priority }) => {
+    if (priority !== "Urgent") return null;
+    
+    return (
+        <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full ml-2 animate-pulse">
+            URGENT
+        </span>
+    );
+};
+
 const SupportAdminTab = () => {
     const [tickets, setTickets] = useState([]);
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -58,6 +69,43 @@ const SupportAdminTab = () => {
         } catch (error) {
             toast.error("Failed to update status");
         }
+    };
+
+    const handleDeleteTicket = async (ticketId) => {
+        toast((t) => (
+            <div className="flex items-center gap-4">
+                <p className="text-sm">Delete this ticket?</p>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            toast.promise(
+                                axios.delete(`/ticket/${ticketId}`).then(() => {
+                                    fetchTickets(); // Refresh the tickets list
+                                }),
+                                {
+                                    loading: 'Deleting...',
+                                    success: 'Ticket deleted successfully',
+                                    error: 'Failed to delete ticket'
+                                }
+                            );
+                        }}
+                        className="px-3 py-1 bg-red-500 text-white text-sm rounded-md hover:bg-red-600"
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 6000,
+            position: 'top-center',
+        });
     };
 
     // Filter and group tickets
@@ -108,11 +156,19 @@ const SupportAdminTab = () => {
         }
     };
 
+    const urgentCount = tickets.filter(t => t.priority === "Urgent" && t.status !== "Closed").length;
+
     return (
         <div className="p-6">
             <div className="max-w-6xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-emerald-400">Support Tickets Management</h2>
+                    {urgentCount > 0 && (
+                        <div className="text-red-500 font-semibold animate-pulse flex items-center gap-2">
+                            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                            {urgentCount} Urgent {urgentCount === 1 ? "Ticket" : "Tickets"} Pending
+                        </div>
+                    )}
                     <div className="flex gap-4">
                         <select
                             value={filterStatus}
@@ -154,6 +210,7 @@ const SupportAdminTab = () => {
                                                 isSelected={selectedTicket?._id === ticket._id}
                                                 onSelect={() => setSelectedTicket(ticket)}
                                                 onStatusChange={handleUpdateStatus}
+                                                onDelete={handleDeleteTicket}
                                                 getStatusColor={getStatusColor}
                                             />
                                         ))}
@@ -169,6 +226,7 @@ const SupportAdminTab = () => {
                                         isSelected={selectedTicket?._id === ticket._id}
                                         onSelect={() => setSelectedTicket(ticket)}
                                         onStatusChange={handleUpdateStatus}
+                                        onDelete={handleDeleteTicket}
                                         getStatusColor={getStatusColor}
                                     />
                                 ))}
@@ -189,7 +247,7 @@ const SupportAdminTab = () => {
 };
 
 // Ticket Item Component
-const TicketItem = ({ ticket, isSelected, onSelect, onStatusChange, getStatusColor }) => (
+const TicketItem = ({ ticket, isSelected, onSelect, onStatusChange, onDelete, getStatusColor }) => (
     <div
         className={`bg-gray-800 p-4 rounded-lg shadow-lg cursor-pointer transition duration-300 ${
             isSelected ? "ring-2 ring-emerald-500" : ""
@@ -223,6 +281,17 @@ const TicketItem = ({ ticket, isSelected, onSelect, onStatusChange, getStatusCol
                     <option value="Resolved">Resolved</option>
                     <option value="Closed">Closed</option>
                 </select>
+                <PriorityTag priority={ticket.priority} />
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(ticket._id);
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete Ticket"
+                >
+                    <XMarkIcon className="w-5 h-5" />
+                </button>
             </div>
         </div>
         <p className="text-gray-300 mb-2">{ticket.message}</p>
@@ -233,7 +302,11 @@ const TicketItem = ({ ticket, isSelected, onSelect, onStatusChange, getStatusCol
                     <div key={index} className="bg-gray-700 p-3 rounded-lg">
                         <p className="text-white">{reply.message}</p>
                         <div className="mt-2 text-xs text-gray-400">
-                            By {reply.adminName} • {new Date(reply.createdAt).toLocaleString()}
+                            By {reply.isAdmin ? (
+                                <span className="text-emerald-400">{reply.adminName} (Support Staff)</span>
+                            ) : (
+                                <span className="text-blue-400">{reply.userName} (User)</span>
+                            )} • {new Date(reply.createdAt).toLocaleString()}
                         </div>
                     </div>
                 ))}

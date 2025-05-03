@@ -35,8 +35,8 @@ const ticketSchema = new mongoose.Schema({
     },
     priority: {
         type: String,
-        enum: ["Low", "Normal", "High", "Urgent"],
-        default: "Normal",
+        enum: ["Normal", "Urgent"],  // Change this line to only allow Normal and Urgent
+        default: "Normal"
     },
     reply: {
         type: String,
@@ -47,13 +47,26 @@ const ticketSchema = new mongoose.Schema({
             type: String,
             required: true
         },
+        isAdmin: {
+            type: Boolean,
+            required: true,
+            default: false
+        },
         adminId: {
             type: Number,
-            required: true
+            required: function() { return this.isAdmin; }
         },
         adminName: {
             type: String,
-            required: true
+            required: function() { return this.isAdmin; }
+        },
+        userId: {
+            type: Number,
+            required: function() { return !this.isAdmin; }
+        },
+        userName: {
+            type: String,
+            required: function() { return !this.isAdmin; }
         },
         createdAt: {
             type: Date,

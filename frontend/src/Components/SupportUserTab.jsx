@@ -5,15 +5,30 @@ import { ChatBubbleLeftIcon, PaperAirplaneIcon, ClockIcon } from "@heroicons/rea
 import { useUserStore } from "../stores/useUserStore";
 import { sortTickets, statusPriority } from "../utils/ticket.util";
 
+const PriorityTag = ({ priority }) => {
+    if (priority !== "Urgent") return null;
+    
+    return (
+        <span className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded-full ml-2 animate-pulse">
+            URGENT
+        </span>
+    );
+};
+
 const SupportUserTab = () => {
     const [tickets, setTickets] = useState([]);
     const [newTicket, setNewTicket] = useState({
         subject: "",
         message: "",
-        phoneNumber: ""
+        phoneNumber: "",
+        priority: "Normal" // Add this line
     });
     const [loading, setLoading] = useState(false);
     const { user } = useUserStore();
+
+    // Add these new states
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [reply, setReply] = useState("");
 
     useEffect(() => {
         if (user) {
@@ -49,11 +64,32 @@ const SupportUserTab = () => {
             const response = await axios.post("/ticket/create", newTicket);
             console.log('Created ticket:', response.data);
             toast.success("Ticket created successfully");
-            setNewTicket({ subject: "", message: "", phoneNumber: "" });
+            setNewTicket({ subject: "", message: "", phoneNumber: "", priority: "Normal" });
             await fetchTickets();
         } catch (error) {
             console.error("Create ticket error:", error);
             toast.error(error.response?.data?.message || "Failed to create ticket");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add this new function
+    const handleReply = async (ticketId) => {
+        if (!reply.trim()) {
+            toast.error("Reply cannot be empty");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await axios.post(`/ticket/${ticketId}/reply`, { reply: reply.trim() });
+            toast.success("Reply sent successfully");
+            setReply("");
+            setReplyingTo(null);
+            await fetchTickets();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to send reply");
         } finally {
             setLoading(false);
         }
@@ -91,17 +127,32 @@ const SupportUserTab = () => {
                                 required
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                                Phone Number
-                            </label>
-                            <input
-                                type="tel"
-                                value={newTicket.phoneNumber}
-                                onChange={(e) => setNewTicket({ ...newTicket, phoneNumber: e.target.value })}
-                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                required
-                            />
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Priority
+                                </label>
+                                <select
+                                    value={newTicket.priority}
+                                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="Normal">Normal</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Phone Number
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={newTicket.phoneNumber}
+                                    onChange={(e) => setNewTicket({ ...newTicket, phoneNumber: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    required
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -164,14 +215,17 @@ const SupportUserTab = () => {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <span className={`px-3 py-1 rounded-full text-xs ${
-                                                    status === "Open" ? "bg-yellow-500" :
-                                                    status === "In Progress" ? "bg-blue-500" :
-                                                    status === "Resolved" ? "bg-green-500" :
-                                                    "bg-gray-500"
-                                                } text-white`}>
-                                                    {status}
-                                                </span>
+                                                <div className="flex items-center">
+                                                    <span className={`px-3 py-1 rounded-full text-xs ${
+                                                        status === "Open" ? "bg-yellow-500" :
+                                                        status === "In Progress" ? "bg-blue-500" :
+                                                        status === "Resolved" ? "bg-green-500" :
+                                                        "bg-gray-500"
+                                                    } text-white`}>
+                                                        {status}
+                                                    </span>
+                                                    <PriorityTag priority={ticket.priority} />
+                                                </div>
                                             </div>
                                             <p className="text-gray-300 mb-4">{ticket.message}</p>
                                             
@@ -182,10 +236,61 @@ const SupportUserTab = () => {
                                                         <div key={index} className="bg-gray-700 p-4 rounded-lg">
                                                             <p className="text-white">{reply.message}</p>
                                                             <div className="mt-2 text-xs text-gray-400">
-                                                                By {reply.adminName} • {new Date(reply.createdAt).toLocaleString()}
+                                                                By {reply.isAdmin ? (
+                                                                    <span className="text-emerald-400">{reply.adminName} (Support Staff)</span>
+                                                                ) : (
+                                                                    <span className="text-blue-400">{reply.userName} (You)</span>
+                                                                )} • {new Date(reply.createdAt).toLocaleString()}
                                                             </div>
                                                         </div>
                                                     ))}
+                                                </div>
+                                            )}
+                                            
+                                            {ticket.status !== "Closed" && (
+                                                <div className="mt-4 pt-4 border-t border-gray-700">
+                                                    {replyingTo === ticket._id ? (
+                                                        <div className="space-y-3">
+                                                            <textarea
+                                                                value={reply}
+                                                                onChange={(e) => setReply(e.target.value)}
+                                                                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                                rows="4"
+                                                                placeholder="Type your reply..."
+                                                            />
+                                                            <div className="flex justify-end gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setReplyingTo(null);
+                                                                        setReply("");
+                                                                    }}
+                                                                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleReply(ticket._id)}
+                                                                    disabled={loading}
+                                                                    className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                                                                >
+                                                                    {loading ? (
+                                                                        <span className="animate-spin mr-2">⏳</span>
+                                                                    ) : (
+                                                                        <PaperAirplaneIcon className="w-5 h-5 mr-2" />
+                                                                    )}
+                                                                    Send Reply
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setReplyingTo(ticket._id)}
+                                                            className="flex items-center text-emerald-400 hover:text-emerald-300"
+                                                        >
+                                                            <ChatBubbleLeftIcon className="w-5 h-5 mr-2" />
+                                                            Reply to Support
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                             

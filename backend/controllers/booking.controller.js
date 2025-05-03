@@ -102,59 +102,55 @@ export const getMyApplications = async (req, res) => {
 };
 
 // Accept/Decline application
-export const updateBookingStatus = async (req, res, next) => {
+export const updateBookingStatus = async (req, res) => {
     try {
+        const { id } = req.params;
         const { status } = req.body;
-        const bookingId = req.params.id;
-        const userId = req.user.id;
+        const userId = req.user._id;
 
-        const booking = await Booking.findById(bookingId);
+        const booking = await Booking.findById(id);
         if (!booking) {
-            return next(createError(404, "Booking not found"));
+            return res.status(404).json({ message: "Booking not found" });
         }
 
-        // Verify user is authorized
-        const isSeeker = booking.seekerId === userId;
-        const isPoster = booking.posterId === userId;
-        if (!isSeeker && !isPoster) {
-            return next(createError(403, "Not authorized"));
+        // Handle cancellation - revert to applied
+        if (status === 'cancelled') {
+            booking.status = 'applied';
+            await booking.save();
+            return res.json({ message: "Booking reverted to applied status", booking });
         }
 
-        // Define valid status transitions
-        const validTransitions = {
-            // Poster actions
-            'applied': isPoster ? ['accepted', 'declined'] : [],
-            // Seeker actions
-            'accepted': isSeeker ? ['in_progress'] : [],
-            'in_progress': isSeeker ? ['completed_by_seeker'] : [],
-            // Poster confirms completion
-            'completed_by_seeker': isPoster ? ['completed'] : [],
-            // System updates these automatically
-            'completed': ['payment_pending'],
-            'payment_pending': ['paid']
-        };
+        // Handle in_progress - cancel all other bookings
+        if (status === 'in_progress') {
+            // Update current booking to in_progress
+            booking.status = 'in_progress';
+            booking.dates.started = new Date();
+            await booking.save();
 
-        if (!validTransitions[booking.status]?.includes(status)) {
-            return next(createError(400, "Invalid status transition"));
+            // Cancel all other active bookings for this job
+            await Booking.updateMany(
+                {
+                    jobId: booking.jobId,
+                    _id: { $ne: booking._id },
+                    status: { $in: ['applied', 'accepted'] }
+                },
+                { 
+                    status: 'cancelled',
+                }
+            );
+
+            return res.json({ message: "Booking status updated to in progress", booking });
         }
 
-        // Update status and corresponding date
+        // Handle other status updates normally
         booking.status = status;
-        booking.dates[status] = new Date();
+        if (status === 'accepted') booking.dates.accepted = new Date();
+        await booking.save();
 
-        // If job is completed by both parties, update job status
-        if (status === 'completed') {
-            const job = await Job.findById(booking.jobId);
-            if (job) {
-                job.status = 'completed';
-                await job.save();
-            }
-        }
-
-        const updatedBooking = await booking.save();
-        res.status(200).json(updatedBooking);
-    } catch (err) {
-        next(err);
+        return res.json({ message: "Booking status updated", booking });
+    } catch (error) {
+        console.error('Error updating booking status:', error);
+        return res.status(500).json({ message: "Error updating booking status" });
     }
 };
 

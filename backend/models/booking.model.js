@@ -17,7 +17,8 @@ const bookingSchema = new mongoose.Schema({
             "completed_by_seeker", // When seeker marks as complete
             "completed",         // When both parties confirm completion
             "payment_pending",   // Ready for payment
-            "paid"              // Payment completed
+            "paid",             // Payment completed
+            "cancelled"          // When another booking goes to in_progress
         ],
         default: "applied" 
     },

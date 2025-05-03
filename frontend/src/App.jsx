@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import HomePage from "./pages/HomePage";
+import IndexPage from "./pages/IndexPage";
+import JobsPage from "./pages/JobsPage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import DashBoard from "./pages/DashBoard";
@@ -8,6 +9,7 @@ import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
 import MyJobs from "./Components/MyJobs";
+import UpgradeAccount from "./pages/UpgradeAccount";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
@@ -43,7 +45,8 @@ function App() {
 			<div className='relative z-50 pt-20'>
 				<Navbar />
 				<Routes>
-					<Route path='/' element={<HomePage />} />
+					<Route path='/' element={<IndexPage />} />
+					<Route path='/jobs' element={<JobsPage />} />
 					<Route path='/signup' element={!user ? <SignUpPage /> : <Navigate to='/' />} />
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
@@ -61,16 +64,16 @@ function App() {
 					/>
 
                     {/* New Routes */}
-
 					<Route path="/apply/:jobId" element={<ApplyPage />} />
+                    <Route path="/upgrade-account" element={<UpgradeAccount />} />
 
                     <Route
-                        path="/my-applications"
+                        path="/my-jobs"
                         element={
                             user ? (
                                 <MyJobs />
                             ) : (
-                                <Navigate to="/jobs" replace />
+                                <Navigate to="/login" replace />
                             )
                         }
                     />
@@ -91,6 +94,5 @@ function App() {
 		</div>
 	);
 }
-
 
 export default App;

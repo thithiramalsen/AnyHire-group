@@ -241,3 +241,39 @@ export const declineJob = async (req, res) => {
     res.status(500).json({ message: "Failed to decline job" });
   }
 };
+
+// Set job to pending
+export const setJobToPending = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Set job to pending request received for ID:", id);
+
+    const job = await Job.findById(id);
+    if (!job) {
+      console.log("Job not found for ID:", id);
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    job.status = "pending";
+    await job.save();
+    console.log("Job set to pending successfully:", job);
+
+    res.status(200).json({ message: "Job set to pending successfully", job });
+  } catch (error) {
+    console.error("Error setting job to pending:", error);
+    res.status(500).json({ message: "Failed to set job to pending" });
+  }
+};
+
+// Get public approved jobs (no authentication required)
+export const getPublicApprovedJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: "approved" })
+      .populate("createdBy", "name")
+      .select("-__v"); // Exclude version field
+    res.status(200).json(jobs);
+  } catch (err) {
+    console.error("Error fetching public approved jobs:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};

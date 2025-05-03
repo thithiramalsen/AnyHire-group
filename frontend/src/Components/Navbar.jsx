@@ -1,4 +1,4 @@
-import { ShoppingCart, UserPlus, LogIn, LogOut, Lock } from "lucide-react";
+import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUserStore } from "../stores/useUserStore";
 
@@ -19,6 +19,14 @@ const Navbar = () => {
                             className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out'
                         >
                             Home
+                        </Link>
+
+                        <Link
+                            to={"/jobs"}
+                            className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                        >
+                            <Briefcase className="mr-1" size={18} />
+                            Jobs
                         </Link>
 
                         {/* Show Dashboard link for any logged-in user */}

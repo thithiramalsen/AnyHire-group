@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
+import { toast } from "react-hot-toast";
 
-const HomePage = () => {
+const JobsPage = () => {
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -15,11 +16,12 @@ const HomePage = () => {
     useEffect(() => {
         const fetchJobs = async () => {
             try {
-                const response = await axios.get("/job/getApproved");
+                const response = await axios.get("/job/public/approved");
                 setJobs(response.data);
                 setFilteredJobs(response.data);
             } catch (error) {
                 console.error("Error fetching jobs:", error);
+                toast.error("Failed to load jobs. Please try again later.");
             } finally {
                 setIsLoading(false);
             }
@@ -40,11 +42,13 @@ const HomePage = () => {
 
     const handleApply = (jobId) => {
         if (!user) {
+            toast.error("Please login to apply for jobs");
             navigate("/login");
             return;
         }
 
         if (user.role === "jobposter") {
+            toast.error("Job posters cannot apply for jobs. Please upgrade your account.");
             navigate("/upgrade-account");
             return;
         }
@@ -120,7 +124,7 @@ const HomePage = () => {
                                         onClick={() => handleApply(job._id)}
                                         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                                     >
-                                        Apply Now
+                                        {user ? "Apply Now" : "Login to Apply"}
                                     </button>
                                 </div>
                             </div>
@@ -132,4 +136,4 @@ const HomePage = () => {
     );
 };
 
-export default HomePage;
+export default JobsPage; 

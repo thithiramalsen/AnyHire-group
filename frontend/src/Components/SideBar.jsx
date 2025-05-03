@@ -12,7 +12,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: "analytics", label: "Analytics", icon: BarChart2 },
         { id: "portfolio", label: "Portfolio", icon: Folder },
         { id: "bookings", label: "Bookings", icon: Calendar },
-        { id: "jobs", label: "Jobs", icon: Briefcase },
+        { id: "my-jobs", label: "My Jobs", icon: Briefcase },
         { id: "admin-job-approval", label: "Admin Approval", icon: Clock },
         { id: "post_job", label: "Post Job", icon: PlusCircle },
         { id: "pending-jobs", label: "Pending Jobs", icon: Clock },

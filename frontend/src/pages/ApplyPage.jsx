@@ -39,7 +39,7 @@ const ApplyPage = () => {
             setApplying(true);
             await axios.post(`/booking/apply/${jobId}`);
             toast.success('Application submitted successfully!');
-            navigate('/my-applications');
+            navigate('/my-jobs');
         } catch (error) {
             console.error('Error applying for job:', error);
             toast.error(error.response?.data?.message || 'Error submitting application');
@@ -65,7 +65,7 @@ const ApplyPage = () => {
                 <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
                 {job.images && (
                         <img
-                            src={job.images} // Remove http://localhost:5000 since it's handled by axios
+                            src={`http://localhost:5000${job.images}`}
                             alt={job.title}
                             className="w-full h-64 object-cover"
                         />

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
+import { MessageCircle } from 'lucide-react';
+import Chat from './Chat';
 
 const MyJobs = () => {
     const [appliedJobs, setAppliedJobs] = useState([]);
@@ -129,12 +131,21 @@ const MyJobs = () => {
                                         </button>
                                     )}
                                     {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid'].includes(job.status) && (
-                                        <button
-                                            onClick={() => navigate(`/booking/${job._id}`)}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                        >
-                                            View Job
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => navigate(`/booking/${job._id}`)}
+                                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                            >
+                                                View Job
+                                            </button>
+                                            <button
+                                                onClick={() => navigate(`/chat/${job._id}`)}
+                                                className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                                            >
+                                                <MessageCircle size={20} />
+                                                Chat
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>

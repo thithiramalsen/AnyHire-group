@@ -4,6 +4,7 @@ import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
 import { Play, MessageCircle } from 'lucide-react'; // Replace HeroIcon import with Lucide
+import Chat from '../Components/Chat';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
@@ -72,7 +73,7 @@ const BookingPage = () => {
                     <p className="text-gray-400">{relevantUser?.name}</p>
                 </div>
                 <button
-                    onClick={() => {/* Chat functionality will go here */}}
+                    onClick={() => navigate(`/chat/${booking._id}`)}
                     className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                     <MessageCircle size={20} />

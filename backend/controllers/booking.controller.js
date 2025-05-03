@@ -179,21 +179,35 @@ export const getUserBookings = async (req, res, next) => {
 };
 
 // Get single booking by ID
-export const getBookingById = async (req, res, next) => {
+export const getBookingById = async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id);
+        
         if (!booking) {
-            return next(createError(404, "Booking not found"));
+            return res.status(404).json({ message: "Booking not found" });
         }
 
         // Verify user is either seeker or poster
-        if (booking.seekerId !== req.user.id && booking.posterId !== req.user.id) {
-            return next(createError(403, "Not authorized to view this booking"));
+        if (booking.seekerId !== req.user._id && booking.posterId !== req.user._id) {
+            return res.status(403).json({ message: "Not authorized to view this booking" });
         }
 
-        res.status(200).json(booking);
+        // Get additional details
+        const job = await Job.findById(booking.jobId);
+        const seeker = await User.findById(booking.seekerId);
+        const poster = await User.findById(booking.posterId);
+
+        const bookingWithDetails = {
+            ...booking.toObject(),
+            jobDetails: job,
+            seekerDetails: seeker,
+            posterDetails: poster
+        };
+
+        res.status(200).json(bookingWithDetails);
     } catch (err) {
-        next(err);
+        console.error('Error fetching booking:', err);
+        res.status(500).json({ message: "Error fetching booking details" });
     }
 };
 

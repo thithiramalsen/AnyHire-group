@@ -119,14 +119,24 @@ const MyJobs = () => {
                                         </span>
                                     </p>
                                 </div>
-                                {job.status === 'applied' && (
-                                    <button
-                                        onClick={() => handleCancelApplication(job._id)}
-                                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                                    >
-                                        Cancel Application
-                                    </button>
-                                )}
+                                <div className="flex gap-2">
+                                    {job.status === 'applied' && (
+                                        <button
+                                            onClick={() => handleCancelApplication(job._id)}
+                                            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                    {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid'].includes(job.status) && (
+                                        <button
+                                            onClick={() => navigate(`/booking/${job._id}`)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                        >
+                                            View Job
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

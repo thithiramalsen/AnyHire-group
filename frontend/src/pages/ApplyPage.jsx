@@ -71,7 +71,14 @@ const ApplyPage = () => {
                         />
                     )}
                     <div className="p-8">
-                        <h1 className="text-3xl font-bold mb-4">{job.title}</h1>
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
+                                <p className="text-gray-400">
+                                    Posted by: {job.posterDetails?.name}
+                                </p>
+                            </div>
+                        </div>
                         
                         <div className="grid md:grid-cols-2 gap-6 mb-6">
                             <div>
@@ -121,4 +128,4 @@ const ApplyPage = () => {
     );
 };
 
-export default ApplyPage; 
+export default ApplyPage;

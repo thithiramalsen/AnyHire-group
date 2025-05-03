@@ -17,6 +17,7 @@ import { useUserStore } from "./stores/useUserStore";
 import { useEffect } from "react";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ApplyPage from "./pages/ApplyPage";
+import BookingPage from "./pages/BookingPage";
 
 import Chatbot from "./Components/Chatbot/Chatbot";
 
@@ -87,6 +88,7 @@ function App() {
                             )
                         }
                     />
+					<Route path="/booking/:bookingId" element={<BookingPage />} />
 				</Routes>
 			</div>
 			<Toaster />

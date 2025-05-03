@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
+import Counter from './counter.model.js';
 
 const ticketSchema = new mongoose.Schema({
+    _id: { type: Number },  // Changed to Number for auto-increment
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Number,
         ref: 'User',
         required: true
     },
@@ -33,13 +35,44 @@ const ticketSchema = new mongoose.Schema({
     },
     priority: {
         type: String,
-        enum: ["Low", "Normal", "High", "Urgent"],
-        default: "Normal",
+        enum: ["Normal", "Urgent"],  // Change this line to only allow Normal and Urgent
+        default: "Normal"
     },
     reply: {
         type: String,
         default: "",
     },
+    replies: [{
+        message: {
+            type: String,
+            required: true
+        },
+        isAdmin: {
+            type: Boolean,
+            required: true,
+            default: false
+        },
+        adminId: {
+            type: Number,
+            required: function() { return this.isAdmin; }
+        },
+        adminName: {
+            type: String,
+            required: function() { return this.isAdmin; }
+        },
+        userId: {
+            type: Number,
+            required: function() { return !this.isAdmin; }
+        },
+        userName: {
+            type: String,
+            required: function() { return !this.isAdmin; }
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now,
@@ -50,10 +83,18 @@ const ticketSchema = new mongoose.Schema({
     }
 });
 
-// Update the updatedAt field before saving
-ticketSchema.pre('save', function(next) {
+// Add pre-save middleware for auto-incrementing ID
+ticketSchema.pre('save', async function(next) {
+    if (this.isNew) {
+        const counter = await Counter.findByIdAndUpdate(
+            { _id: 'ticketId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        this._id = counter.seq;
+    }
     this.updatedAt = Date.now();
     next();
 });
 
-export default mongoose.model("Ticket", ticketSchema); 
+export default mongoose.model("Ticket", ticketSchema);

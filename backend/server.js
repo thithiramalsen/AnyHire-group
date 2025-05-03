@@ -54,7 +54,7 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/category", categoryRoutes);
-app.use("/api/tickets", ticketRoutes);
+app.use("/api/ticket", ticketRoutes);
 app.use("/api/users", userRoutes);
 
 // Error-handling middleware

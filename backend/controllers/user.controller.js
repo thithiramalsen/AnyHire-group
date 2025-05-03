@@ -62,3 +62,24 @@ export const deleteUser = async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 }; 
+
+// Get limited user information for bookings
+export const getUserBookingInfo = async (req, res) => {
+    try {
+        const userId = Number(req.params.id);
+        const user = await User.findById(userId).select('name image role');
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            name: user.name,
+            image: user.image,
+            role: user.role
+        });
+    } catch (err) {
+        console.error("Error fetching user booking info:", err);
+        res.status(500).json({ message: "Error fetching user information" });
+    }
+}; 

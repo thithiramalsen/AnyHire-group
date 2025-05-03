@@ -38,4 +38,7 @@ router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob);
 // Decline a job
 router.patch("/decline/:id", protectRoute, adminRoute, Jobs.declineJob);
 
+// Set job to pending
+router.patch("/pending/:id", protectRoute, adminRoute, Jobs.setJobToPending);
+
 export default router;

@@ -23,10 +23,11 @@ export const applyForJob = async (req, res) => {
             return res.status(404).json({ message: "Job not found or not approved" });
         }
 
-        // Check if user has already applied
+        // Check if user has an active booking for this job
         const existingBooking = await Booking.findOne({ 
             jobId: jobId, 
-            seekerId: seekerId
+            seekerId: seekerId,
+            status: { $in: ['applied', 'accepted', 'in_progress'] } // Only check active statuses
         });
 
         if (existingBooking) {
@@ -102,59 +103,45 @@ export const getMyApplications = async (req, res) => {
 };
 
 // Accept/Decline application
-export const updateBookingStatus = async (req, res, next) => {
+export const updateBookingStatus = async (req, res) => {
     try {
+        const { id } = req.params;
         const { status } = req.body;
-        const bookingId = req.params.id;
-        const userId = req.user.id;
-
-        const booking = await Booking.findById(bookingId);
+        
+        const booking = await Booking.findById(id);
         if (!booking) {
-            return next(createError(404, "Booking not found"));
+            return res.status(404).json({ message: "Booking not found" });
         }
 
-        // Verify user is authorized
-        const isSeeker = booking.seekerId === userId;
-        const isPoster = booking.posterId === userId;
-        if (!isSeeker && !isPoster) {
-            return next(createError(403, "Not authorized"));
-        }
+        // If cancelling, delete the booking instead of updating status
+        if (status === 'cancelled') {
+            // Check if any other booking for this job is in progress
+            const otherInProgressBooking = await Booking.findOne({
+                jobId: booking.jobId,
+                _id: { $ne: booking._id },
+                status: 'in_progress'
+            });
 
-        // Define valid status transitions
-        const validTransitions = {
-            // Poster actions
-            'applied': isPoster ? ['accepted', 'declined'] : [],
-            // Seeker actions
-            'accepted': isSeeker ? ['in_progress'] : [],
-            'in_progress': isSeeker ? ['completed_by_seeker'] : [],
-            // Poster confirms completion
-            'completed_by_seeker': isPoster ? ['completed'] : [],
-            // System updates these automatically
-            'completed': ['payment_pending'],
-            'payment_pending': ['paid']
-        };
-
-        if (!validTransitions[booking.status]?.includes(status)) {
-            return next(createError(400, "Invalid status transition"));
-        }
-
-        // Update status and corresponding date
-        booking.status = status;
-        booking.dates[status] = new Date();
-
-        // If job is completed by both parties, update job status
-        if (status === 'completed') {
-            const job = await Job.findById(booking.jobId);
-            if (job) {
-                job.status = 'completed';
-                await job.save();
+            if (otherInProgressBooking) {
+                // If another booking is in progress, just mark as cancelled
+                booking.status = 'cancelled';
+                await booking.save();
+            } else {
+                // If no other booking is in progress, delete this booking
+                await Booking.findByIdAndDelete(id);
             }
+            return res.json({ message: "Booking cancelled successfully" });
         }
 
-        const updatedBooking = await booking.save();
-        res.status(200).json(updatedBooking);
-    } catch (err) {
-        next(err);
+        // Handle other status updates normally
+        booking.status = status;
+        if (status === 'accepted') booking.dates.accepted = new Date();
+        await booking.save();
+
+        res.json({ message: "Booking status updated", booking });
+    } catch (error) {
+        console.error('Error updating booking status:', error);
+        res.status(500).json({ message: "Error updating booking status" });
     }
 };
 

@@ -10,24 +10,31 @@ const BookingPage = () => {
     const { bookingId } = useParams();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [categories, setCategories] = useState([]); // Add categories state
     const { user } = useUserStore();
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchBooking();
-    }, [bookingId]);
+        const fetchData = async () => {
+            try {
+                // Fetch both booking and categories
+                const [bookingResponse, categoriesResponse] = await Promise.all([
+                    axios.get(`/booking/${bookingId}`),
+                    axios.get("/category")
+                ]);
+                
+                setBooking(bookingResponse.data);
+                setCategories(categoriesResponse.data.categories || []);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                toast.error('Error loading booking details');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const fetchBooking = async () => {
-        try {
-            const response = await axios.get(`/booking/${bookingId}`);
-            setBooking(response.data);
-        } catch (error) {
-            console.error('Error fetching booking:', error);
-            toast.error('Error loading booking details');
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchData();
+    }, [bookingId]);
 
     const handleStartJob = async () => {
         try {
@@ -41,6 +48,11 @@ const BookingPage = () => {
             console.error('Error starting job:', error);
             toast.error(error.response?.data?.message || 'Error starting job');
         }
+    };
+
+    const getCategoryName = (categoryId) => {
+        const category = categories.find(cat => Number(cat._id) === Number(categoryId));
+        return category ? category.name : "Unknown Category";
     };
 
     const renderActionButton = () => {
@@ -131,7 +143,7 @@ const BookingPage = () => {
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Category</h3>
-                                <p className="text-gray-400">{booking.jobDetails?.category}</p>
+                                <p className="text-gray-400">{getCategoryName(booking.jobDetails?.category)}</p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Payment</h3>

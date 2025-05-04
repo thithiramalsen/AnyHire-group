@@ -56,6 +56,30 @@ const JobsPage = () => {
         navigate(`/apply/${jobId}`);
     };
 
+    const handleAddToCart = async (jobId) => {
+        if (!user) {
+            toast.error("Please login to add jobs to cart");
+            navigate("/login");
+            return;
+        }
+
+        if (user.role !== "jobSeeker") {
+            toast.error("Only job seekers can add jobs to cart");
+            return;
+        }
+
+        try {
+            await axios.post(`/cart/add/${jobId}`);
+            toast.success("Job added to cart successfully");
+        } catch (error) {
+            if (error.response?.status === 400) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("Failed to add job to cart");
+            }
+        }
+    };
+
     const categories = [...new Set(jobs.map(job => job.category))];
 
     if (isLoading) {
@@ -120,12 +144,20 @@ const JobsPage = () => {
                                             Due: {new Date(job.deadline).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={() => handleApply(job._id)}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                    >
-                                        {user ? "Apply Now" : "Login to Apply"}
-                                    </button>
+                                    <div className="space-x-2">
+                                        <button
+                                            onClick={() => handleAddToCart(job._id)}
+                                            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                        >
+                                            Add to Cart
+                                        </button>
+                                        <button
+                                            onClick={() => handleApply(job._id)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                        >
+                                            {user ? "Apply Now" : "Login to Apply"}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -136,4 +168,4 @@ const JobsPage = () => {
     );
 };
 
-export default JobsPage; 
+export default JobsPage;

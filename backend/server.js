@@ -16,6 +16,7 @@ import categoryRoutes from "./routes/category.route.js";
 import ticketRoutes from "./routes/ticket.route.js";
 import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
+import cartRoutes from "./routes/cart.route.js";
 import { initializeSocket } from "./lib/socket.js";
 
 import { connectDB } from "./lib/db.js";
@@ -64,6 +65,7 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/ticket", ticketRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/cart", cartRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { rolePermissions } from "../lib/rolePermissions";
 import { useUserStore } from "../stores/useUserStore";
+import SideBar from "../Components/SideBar";
 
 // Import all tab components
 import ProfileTab from "../Components/ProfileTab";
@@ -14,7 +15,8 @@ import CategoriesTab from "../Components/CategoriesTab";
 import SupportUserTab from "../Components/SupportUserTab";
 import SupportAdminTab from "../Components/SupportAdminTab";
 import UserManagementTab from "../Components/UserManagementTab";
-import PendingJobsTab from "../Components/PendingJobsTab";  
+import PendingJobsTab from "../Components/PendingJobsTab";
+import CartTab from "../Components/CartTab";
 
 // Component mapping
 const componentMap = {
@@ -29,7 +31,8 @@ const componentMap = {
     SupportUserTab,
     SupportAdminTab,
     UserManagementTab,
-    PendingJobsTab
+    PendingJobsTab,
+    CartTab
 };
 
 const DashBoard = () => {
@@ -47,26 +50,7 @@ const DashBoard = () => {
     return (
         <div className="flex">
             {/* Sidebar */}
-            <div className="w-64 bg-gray-800 h-screen fixed">
-                <div className="p-4">
-                    <h2 className="text-xl font-bold mb-4">Dashboard</h2>
-                    <nav>
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`w-full text-left px-4 py-2 mb-2 rounded ${
-                                    activeTab === tab.id 
-                                        ? 'bg-green-600 text-white' 
-                                        : 'text-gray-300 hover:bg-gray-700'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </nav>
-                </div>
-            </div>
+            <SideBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
             {/* Main Content */}
             <div className="flex-1 ml-64 p-8">

@@ -10,6 +10,7 @@ import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
 import MyJobs from "./Components/MyJobs";
 import UpgradeAccount from "./pages/UpgradeAccount";
+import Cart from "../../backend/models/cart.model";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
@@ -91,6 +92,7 @@ function App() {
                     />
 					<Route path="/booking/:bookingId" element={<BookingPage />} />
 					<Route path="/chat/:bookingId" element={<ChatPage />} />
+					<Route path='/cart' element={<Cart />} />
 				</Routes>
 			</div>
 			<Toaster />

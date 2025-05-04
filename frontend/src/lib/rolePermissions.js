@@ -23,6 +23,7 @@ export const rolePermissions = {
             { id: "profile", label: "Profile", component: "ProfileTab" },
             { id: "portfolio", label: "Portfolio", component: "PortfolioTab" },
             { id: "jobs", label: "Jobs", component: "JobsTab" },
+            { id: "cart", label: "Cart", component: "CartTab" },
             { id: "support", label: "Support", component: "SupportUserTab" }
         ]
     }

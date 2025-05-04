@@ -2,7 +2,7 @@ import Axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from '../lib/axios';
-
+import LocationPicker from './Map/LocationPicker';
 
 const districts = [
   "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle",
@@ -70,22 +70,21 @@ const JobPostingTab = () => {
 
   const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setInputs((prevState) => ({
-            ...prevState,
-            location: `Latitude: ${latitude}, Longitude: ${longitude}`,
-          }));
-          setUseCurrentLocation(true);
-          setShowLocationInput(false);
-        },
-        (error) => {
-          console.error("Error fetching location:", error);
-        }
-      );
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setInputs((prevState) => ({
+                    ...prevState,
+                    location: `${latitude},${longitude}`
+                }));
+            },
+            (error) => {
+                console.error("Error fetching location:", error);
+                toast.error("Could not get your location");
+            }
+        );
     } else {
-      toast.error("Geolocation is not supported by this browser.");
+        toast.error("Geolocation is not supported by this browser.");
     }
   };
 
@@ -212,18 +211,25 @@ const JobPostingTab = () => {
 
         <div className="mb-4">
           <label className="block mb-2 text-white">Location:</label>
-          <div className="flex space-x-4">
-            <button type="button" onClick={handleUseCurrentLocation} className="px-4 py-2 bg-blue-600 text-white rounded">Use Current Location</button>
-            <button type="button" onClick={handleShowLocationInput} className="px-4 py-2 bg-blue-600 text-white rounded">Enter Different Location</button>
+          <LocationPicker 
+              onLocationSelect={(location) => {
+                  setInputs(prev => ({ ...prev, location }));
+              }}
+              initialLocation={inputs.location ? parseLocationString(inputs.location) : null}
+          />
+          <div className="mt-2 flex space-x-4">
+              <button
+                  type="button"
+                  onClick={handleUseCurrentLocation}
+                  className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                  Use Current Location
+              </button>
           </div>
-          {useCurrentLocation && (
-            <p className="mt-2 text-white">Current Location: {inputs.location}</p>
-          )}
-          {showLocationInput && (
-            <div className="mt-4">
-              <label className="block mb-2 text-white">Google Maps Link:</label>
-              <input type="text" name="location" onChange={handleChange} value={inputs.location} required className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white" />
-            </div>
+          {inputs.location && (
+              <p className="mt-2 text-sm text-gray-400">
+                  Selected location: {inputs.location}
+              </p>
           )}
         </div>
 

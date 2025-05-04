@@ -78,6 +78,16 @@ export const initializeSocket = (server) => {
             console.log(`User ${socket.user._id} left booking room: ${bookingId}`);
         });
 
+        // Handle typing indicators
+        socket.on('typing', (data) => {
+            const room = `booking_${data.bookingId}`;
+            socket.to(room).emit('typing', {
+                userId: socket.user._id,
+                userName: socket.user.name,
+                isTyping: data.isTyping
+            });
+        });
+
         // Handle chat messages
         socket.on('send_message', async (data) => {
             try {
@@ -105,10 +115,94 @@ export const initializeSocket = (server) => {
                 // Emit message to all users in the booking room
                 io.to(`booking_${bookingId}`).emit('receive_message', messageData);
                 
+                // Update message status to delivered
+                io.to(`booking_${bookingId}`).emit('message_status', {
+                    messageId: newMessage._id,
+                    status: 'delivered'
+                });
+                
                 console.log('Message broadcast to room:', `booking_${bookingId}`);
             } catch (error) {
                 console.error('Error handling message:', error);
                 socket.emit('error', { message: 'Failed to process message' });
+            }
+        });
+
+        // Handle message deletion
+        socket.on('delete_message', async (data) => {
+            try {
+                const { messageId, bookingId } = data;
+                
+                // Verify the message belongs to the user trying to delete it
+                const message = await Chat.findById(messageId);
+                if (!message) {
+                    throw new Error('Message not found');
+                }
+                
+                if (message.senderId.toString() !== socket.user._id.toString()) {
+                    throw new Error('Unauthorized to delete this message');
+                }
+
+                // Delete the message from the database
+                await Chat.findByIdAndDelete(messageId);
+                
+                // Notify all users in the room about the deletion
+                io.to(`booking_${bookingId}`).emit('message_deleted', { messageId });
+                
+                console.log(`Message ${messageId} deleted by ${socket.user._id}`);
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                socket.emit('error', { message: 'Failed to delete message' });
+            }
+        });
+
+        // Handle message editing
+        socket.on('edit_message', async (data) => {
+            try {
+                const { messageId, bookingId, message } = data;
+                
+                // Verify the message belongs to the user trying to edit it
+                const existingMessage = await Chat.findById(messageId);
+                if (!existingMessage) {
+                    throw new Error('Message not found');
+                }
+                
+                if (existingMessage.senderId.toString() !== socket.user._id.toString()) {
+                    throw new Error('Unauthorized to edit this message');
+                }
+
+                // Update the message in the database
+                existingMessage.message = message;
+                await existingMessage.save();
+                
+                // Notify all users in the room about the edit
+                io.to(`booking_${bookingId}`).emit('message_edited', { 
+                    messageId, 
+                    message 
+                });
+                
+                console.log(`Message ${messageId} edited by ${socket.user._id}`);
+            } catch (error) {
+                console.error('Error editing message:', error);
+                socket.emit('error', { message: 'Failed to edit message' });
+            }
+        });
+
+        // Handle message read receipts
+        socket.on('mark_message_read', async (data) => {
+            try {
+                const { messageId, bookingId } = data;
+                const room = `booking_${bookingId}`;
+                
+                // Update message status to read
+                io.to(room).emit('message_status', {
+                    messageId,
+                    status: 'read'
+                });
+                
+                console.log(`Message ${messageId} marked as read by ${socket.user._id}`);
+            } catch (error) {
+                console.error('Error marking message as read:', error);
             }
         });
 

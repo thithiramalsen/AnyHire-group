@@ -97,7 +97,8 @@ const JobApprovalTab = () => {
   };
 
   const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat._id === categoryId);
+    // Convert both IDs to numbers for comparison
+    const category = categories.find((cat) => Number(cat._id) === Number(categoryId));
     return category ? category.name : "Unknown Category";
   };
 

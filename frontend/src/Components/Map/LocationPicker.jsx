@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import { mapConfig } from '../../lib/map.config';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import './LocationPicker.css';
 
 const LocationMarker = ({ position, onLocationChange }) => {
     const map = useMap();
-    
+
     useEffect(() => {
         if (position) {
-            map.flyTo(position, map.getZoom());
+            map.flyTo(position, 16);
         }
     }, [position, map]);
 
     const handleClick = (e) => {
-        onLocationChange(e.latlng);
+        const { lat, lng } = e.latlng;
+        onLocationChange([lat, lng]);
     };
 
     useEffect(() => {
@@ -24,29 +25,47 @@ const LocationMarker = ({ position, onLocationChange }) => {
         };
     }, [map, handleClick]);
 
-    return position ? <Marker position={position} /> : null;
+    return position ? (
+        <Marker 
+            position={position}
+            icon={new L.Icon.Default()}
+        />
+    ) : null;
 };
 
-const LocationPicker = ({ onLocationSelect, initialLocation }) => {
-    const [position, setPosition] = useState(initialLocation || null);
+const LocationPicker = ({ onLocationSelect, initialLocation, selectedLocation }) => {
+    const [position, setPosition] = useState(
+        initialLocation ? [initialLocation.lat, initialLocation.lng] : null
+    );
 
-    const handleLocationChange = (latlng) => {
-        setPosition([latlng.lat, latlng.lng]);
-        onLocationSelect(`${latlng.lat},${latlng.lng}`);
+    // Update position when selectedLocation changes (from current location button)
+    useEffect(() => {
+        if (selectedLocation) {
+            const [lat, lng] = selectedLocation.split(',').map(Number);
+            setPosition([lat, lng]);
+        }
+    }, [selectedLocation]);
+
+    const handleLocationChange = (newPosition) => {
+        setPosition(newPosition);
+        onLocationSelect(`${newPosition[0]},${newPosition[1]}`);
     };
 
     return (
-        <div className="map-container">
+        <div className="h-[400px] rounded-lg overflow-hidden">
             <MapContainer
                 center={position || mapConfig.defaultCenter}
-                zoom={mapConfig.defaultZoom}
-                style={{ height: '400px', width: '100%' }}
+                zoom={position ? 16 : mapConfig.defaultZoom}
+                className="h-full w-full"
             >
                 <TileLayer
                     url={mapConfig.tileLayer}
                     attribution={mapConfig.attribution}
                 />
-                <LocationMarker position={position} onLocationChange={handleLocationChange} />
+                <LocationMarker 
+                    position={position}
+                    onLocationChange={handleLocationChange}
+                />
             </MapContainer>
         </div>
     );

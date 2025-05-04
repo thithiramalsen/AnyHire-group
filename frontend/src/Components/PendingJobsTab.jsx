@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
+import { Edit2, Trash2, Clock, Check, X, MapPin, Calendar, Banknote, Briefcase, Tag } from "lucide-react";
 
 const PendingJobsTab = () => {
   const [pendingJobs, setPendingJobs] = useState([]);
@@ -86,48 +87,87 @@ const PendingJobsTab = () => {
   };
 
   const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat._id === categoryId);
+    const category = categories.find(cat => Number(cat._id) === Number(categoryId));
     return category ? category.name : "Unknown Category";
   };
 
   const renderJobList = (jobs, allowEdit = false) => (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {jobs.length === 0 ? (
-        <p>No jobs found.</p>
+        <div className="col-span-2 text-center py-8 bg-gray-800 rounded-lg">
+          <p className="text-gray-400">No jobs found.</p>
+        </div>
       ) : (
         jobs.map((job) => (
-          <div key={job._id} className="p-4 bg-gray-800 rounded shadow">
-            <p><strong>Title:</strong> {job.title}</p>
-            <p><strong>Description:</strong> {job.description}</p>
-            <p><strong>Location:</strong> {job.location}</p>
-            <p><strong>District:</strong> {job.district}</p>
-            <p><strong>Category:</strong> {getCategoryName(job.category)}</p>
-            <p><strong>Job Type:</strong> {job.jobType}</p>
-            <p><strong>Payment:</strong> {job.payment}</p>
-            <p><strong>Deadline:</strong> {new Date(job.deadline).toLocaleDateString()}</p>
+          <div key={job._id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-all hover:shadow-2xl">
+            {/* Job Image */}
             {job.images && (
-              <img
-                src={`http://localhost:5000${job.images}`}
-                alt={job.title}
-                className="mt-4 w-full h-auto rounded"
-                style={{ maxWidth: "300px", maxHeight: "300px" }}
-              />
+              <div className="relative h-48">
+                <img
+                  src={`http://localhost:5000${job.images}`}
+                  alt={job.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm ${
+                  job.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                  job.status === 'approved' ? 'bg-green-500/20 text-green-500' :
+                  'bg-red-500/20 text-red-500'
+                }`}>
+                  {job.status}
+                </div>
+              </div>
             )}
-            <div className="flex space-x-2 mt-2">
-              {allowEdit && (
-                <button
-                  onClick={() => handleEdit(job)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
-                >
-                  Edit
-                </button>
-              )}
-              <button
-                onClick={() => handleDelete(job._id)}
-                className="px-4 py-2 bg-red-600 text-white rounded"
-              >
-                Delete
-              </button>
+
+            {/* Job Details */}
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-emerald-400 mb-4">{job.title}</h3>
+              
+              <div className="space-y-3">
+                <p className="text-gray-300">{job.description}</p>
+
+                <div className="grid grid-cols-2 gap-4 my-4">
+                  <div className="flex items-center space-x-2 text-gray-300">
+                    <MapPin size={16} className="text-emerald-500" />
+                    <span>{job.district}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-300">
+                    <Tag size={16} className="text-emerald-500" />
+                    <span>{getCategoryName(job.category)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-300">
+                    <Briefcase size={16} className="text-emerald-500" />
+                    <span>{job.jobType}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-300">
+                    <Banknote size={16} className="text-emerald-500" />
+                    <span>Rs. {job.payment}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-300 col-span-2">
+                    <Calendar size={16} className="text-emerald-500" />
+                    <span>Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3 mt-4">
+                  {allowEdit && (
+                    <button
+                      onClick={() => handleEdit(job)}
+                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(job._id)}
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ))
@@ -136,23 +176,36 @@ const PendingJobsTab = () => {
   );
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Pending Jobs</h2>
-      {editingJob ? (
-        <JobEditForm job={editingJob} onSave={handleSaveEdit} onCancel={() => setEditingJob(null)} categories={categories} />
-      ) : (
-        renderJobList(pendingJobs, true)
-      )}
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold mb-6 flex items-center text-emerald-500">
+          <Clock className="mr-2" /> Pending Jobs
+        </h2>
+        {editingJob ? (
+          <JobEditForm 
+            job={editingJob} 
+            onSave={handleSaveEdit} 
+            onCancel={() => setEditingJob(null)} 
+            categories={categories} 
+          />
+        ) : (
+          renderJobList(pendingJobs, true)
+        )}
+      </div>
 
-      <hr className="my-8 border-gray-600" />
+      <div>
+        <h2 className="text-2xl font-bold mb-6 flex items-center text-green-500">
+          <Check className="mr-2" /> Approved Jobs
+        </h2>
+        {renderJobList(approvedJobs)}
+      </div>
 
-      <h2 className="text-2xl font-bold mb-4">Approved Jobs</h2>
-      {renderJobList(approvedJobs)}
-
-      <hr className="my-8 border-gray-600" />
-
-      <h2 className="text-2xl font-bold mb-4">Declined Jobs</h2>
-      {renderJobList(declinedJobs)}
+      <div>
+        <h2 className="text-2xl font-bold mb-6 flex items-center text-red-500">
+          <X className="mr-2" /> Declined Jobs
+        </h2>
+        {renderJobList(declinedJobs)}
+      </div>
     </div>
   );
 };

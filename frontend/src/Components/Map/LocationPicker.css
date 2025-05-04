@@ -2,10 +2,16 @@
     position: relative;
     border-radius: 8px;
     overflow: hidden;
+    height: 400px;
 }
 
 .leaflet-container {
-    height: 400px;
+    height: 100%;
     width: 100%;
     border-radius: 8px;
+}
+
+.leaflet-div-icon {
+    background: transparent;
+    border: none;
 }

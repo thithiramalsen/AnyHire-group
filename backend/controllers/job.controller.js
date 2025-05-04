@@ -1,5 +1,6 @@
 import Job from "../models/job.model.js";
 import multer from "multer";
+import Booking from "../models/booking.model.js";
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -268,12 +269,69 @@ export const setJobToPending = async (req, res) => {
 // Get public approved jobs (no authentication required)
 export const getPublicApprovedJobs = async (req, res) => {
   try {
+    // Get all approved jobs
     const jobs = await Job.find({ status: "approved" })
       .populate("createdBy", "name")
-      .select("-__v"); // Exclude version field
-    res.status(200).json(jobs);
+      .select("-__v");
+
+    // Get all bookings with statuses that make a job unavailable
+    const unavailableBookings = await Booking.find({
+      status: {
+        $in: [
+          'accepted',
+          'in_progress',
+          'completed_by_seeker',
+          'completed',
+          'payment_pending',
+          'paid'
+        ]
+      }
+    });
+
+    // Create a Set of unavailable job IDs for faster lookup
+    const unavailableJobIds = new Set(unavailableBookings.map(booking => booking.jobId.toString()));
+
+    // Filter out jobs that are unavailable
+    const availableJobs = jobs.filter(job => !unavailableJobIds.has(job._id.toString()));
+
+    res.status(200).json(availableJobs);
   } catch (err) {
     console.error("Error fetching public approved jobs:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get available jobs for application (filters out jobs with certain statuses)
+export const getAvailableJobs = async (req, res) => {
+  try {
+    // Get all approved jobs
+    const jobs = await Job.find({ status: "approved" })
+      .populate("createdBy", "name")
+      .select("-__v");
+
+    // Get all bookings with statuses that make a job unavailable
+    const unavailableJobIds = await Booking.distinct('jobId', {
+      status: {
+        $in: [
+          'accepted',
+          'in_progress',
+          'completed_by_seeker',
+          'completed',
+          'payment_pending',
+          'paid'
+        ]
+      }
+    });
+
+    // Convert job IDs to numbers for comparison
+    const unavailableJobIdsNumbers = unavailableJobIds.map(id => Number(id));
+
+    // Filter out jobs that are unavailable
+    const availableJobs = jobs.filter(job => !unavailableJobIdsNumbers.includes(job._id));
+
+    res.status(200).json(availableJobs);
+  } catch (err) {
+    console.error("Error fetching available jobs:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

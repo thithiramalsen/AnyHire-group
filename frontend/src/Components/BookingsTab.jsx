@@ -107,9 +107,12 @@ const BookingsTab = () => {
     const postedJobs = bookings.filter(booking => booking.posterId === user._id);
 
     // Separate bookings into different sections
-    const activeBookings = postedJobs.filter(booking => 
-        ['applied', 'accepted', 'in_progress', 'completed_by_seeker', 'completed'].includes(booking.status)
+    const activeApplications = postedJobs.filter(booking => booking.status === 'applied');
+    const ongoingBookings = postedJobs.filter(booking => 
+        ['in_progress', 'completed_by_seeker'].includes(booking.status)
     );
+    const paymentPendingBookings = postedJobs.filter(booking => booking.status === 'payment_pending');
+    const completedBookings = postedJobs.filter(booking => booking.status === 'paid');
     const declinedBookings = postedJobs.filter(booking => booking.status === 'declined');
     const cancelledBookings = postedJobs.filter(booking => booking.status === 'cancelled');
 
@@ -224,19 +227,41 @@ const BookingsTab = () => {
         <div className="container mx-auto px-4 py-8">
             <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
             
-            {/* Active Bookings Section */}
-            <div className="space-y-6">
-                <h3 className="text-xl font-semibold mb-4">Active Applications</h3>
-                {activeBookings.length > 0 ? (
-                    activeBookings.map(renderBookingCard)
-                ) : (
-                    <p className="text-gray-400 text-center py-4">No active applications.</p>
-                )}
-            </div>
+            {/* Active Applications Section */}
+            {activeApplications.length > 0 && (
+                <div className="space-y-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-4">Active Applications</h3>
+                    {activeApplications.map(renderBookingCard)}
+                </div>
+            )}
+
+            {/* Ongoing Bookings Section */}
+            {ongoingBookings.length > 0 && (
+                <div className="space-y-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-4">Ongoing Bookings</h3>
+                    {ongoingBookings.map(renderBookingCard)}
+                </div>
+            )}
+
+            {/* Payment Pending Section */}
+            {paymentPendingBookings.length > 0 && (
+                <div className="space-y-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-4">Bookings Pending Payment</h3>
+                    {paymentPendingBookings.map(renderBookingCard)}
+                </div>
+            )}
+
+            {/* Completed Bookings Section */}
+            {completedBookings.length > 0 && (
+                <div className="space-y-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-4">Completed Bookings</h3>
+                    {completedBookings.map(renderBookingCard)}
+                </div>
+            )}
 
             {/* Declined Bookings Section */}
             {declinedBookings.length > 0 && (
-                <div className="mt-8 space-y-6">
+                <div className="space-y-6 mb-8">
                     <h3 className="text-xl font-semibold mb-4">Declined Applications</h3>
                     {declinedBookings.map(renderBookingCard)}
                 </div>
@@ -244,10 +269,21 @@ const BookingsTab = () => {
 
             {/* Cancelled Bookings Section */}
             {cancelledBookings.length > 0 && (
-                <div className="mt-8 space-y-6">
+                <div className="space-y-6 mb-8">
                     <h3 className="text-xl font-semibold mb-4">Cancelled Bookings</h3>
                     {cancelledBookings.map(renderBookingCard)}
                 </div>
+            )}
+
+            {/* Show message if no bookings in any section */}
+            {postedJobs.length > 0 && 
+             activeApplications.length === 0 && 
+             ongoingBookings.length === 0 && 
+             paymentPendingBookings.length === 0 && 
+             completedBookings.length === 0 && 
+             declinedBookings.length === 0 && 
+             cancelledBookings.length === 0 && (
+                <p className="text-gray-400 text-center py-4">No bookings to display.</p>
             )}
         </div>
     );

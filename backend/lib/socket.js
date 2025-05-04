@@ -78,16 +78,6 @@ export const initializeSocket = (server) => {
             console.log(`User ${socket.user._id} left booking room: ${bookingId}`);
         });
 
-        // Handle typing indicators
-        socket.on('typing', (data) => {
-            const room = `booking_${data.bookingId}`;
-            socket.to(room).emit('typing', {
-                userId: socket.user._id,
-                userName: socket.user.name,
-                isTyping: data.isTyping
-            });
-        });
-
         // Handle chat messages
         socket.on('send_message', async (data) => {
             try {
@@ -185,24 +175,6 @@ export const initializeSocket = (server) => {
             } catch (error) {
                 console.error('Error editing message:', error);
                 socket.emit('error', { message: 'Failed to edit message' });
-            }
-        });
-
-        // Handle message read receipts
-        socket.on('mark_message_read', async (data) => {
-            try {
-                const { messageId, bookingId } = data;
-                const room = `booking_${bookingId}`;
-                
-                // Update message status to read
-                io.to(room).emit('message_status', {
-                    messageId,
-                    status: 'read'
-                });
-                
-                console.log(`Message ${messageId} marked as read by ${socket.user._id}`);
-            } catch (error) {
-                console.error('Error marking message as read:', error);
             }
         });
 

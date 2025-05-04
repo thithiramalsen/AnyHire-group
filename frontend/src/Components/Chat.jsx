@@ -75,12 +75,6 @@ const Chat = ({ bookingId }) => {
                     timestamp: message.timestamp,
                     status: 'delivered'
                 }]);
-                
-                // Mark message as read
-                socketRef.current.emit('mark_message_read', {
-                    messageId: message._id,
-                    bookingId
-                });
             });
 
             socketRef.current.on('message_status', ({ messageId, status }) => {
@@ -93,6 +87,14 @@ const Chat = ({ bookingId }) => {
                 setMessages(prev => prev.filter(msg => msg._id !== messageId));
             });
 
+            socketRef.current.on('message_edited', ({ messageId, message }) => {
+                setMessages(prev => prev.map(msg => 
+                    msg._id === messageId 
+                        ? { ...msg, message } 
+                        : msg
+                ));
+            });
+
             socketRef.current.on('typing', ({ userId, userName, isTyping }) => {
                 setTypingUsers(prev => {
                     if (isTyping) {
@@ -101,14 +103,6 @@ const Chat = ({ bookingId }) => {
                         return prev.filter(u => u.id !== userId);
                     }
                 });
-            });
-
-            socketRef.current.on('message_edited', ({ messageId, message }) => {
-                setMessages(prev => prev.map(msg => 
-                    msg._id === messageId 
-                        ? { ...msg, message } 
-                        : msg
-                ));
             });
 
             socketRef.current.on('disconnect', () => {

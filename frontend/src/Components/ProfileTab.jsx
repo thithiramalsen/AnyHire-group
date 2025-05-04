@@ -2,6 +2,16 @@ import { useEffect, useState } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { 
+    User, 
+    Mail, 
+    Upload, 
+    Trash2, 
+    Edit2, 
+    Save, 
+    X, 
+    AlertTriangle 
+} from "lucide-react";
 
 const ProfileTab = () => {
     const [isEditing, setIsEditing] = useState(false);
@@ -93,76 +103,113 @@ const ProfileTab = () => {
     };
 
     return (
-        <div>
-            <h2 className="text-2xl font-bold mb-4">Profile</h2>
+        <div className="max-w-3xl mx-auto">
+            <div className="bg-gray-800 rounded-lg shadow-lg p-8">
+                <h2 className="text-3xl font-bold mb-8 text-center text-emerald-500">My Profile</h2>
 
-            {/* Profile Picture Section */}
-            <div className="mb-4">
-                <div className="text-center">
-                    <img
-                        src={`http://localhost:5000/uploads/${profile.image || "default-profile.png"}`}
-                        alt="Profile"
-                        className="w-32 h-32 rounded-full object-cover mx-auto mb-4"
-                    />
-                    {profile.image && (
-                        <button
-                            onClick={handleImageDelete}
-                            className="px-4 py-2 bg-red-600 text-white rounded"
-                        >
-                            Delete Profile Picture
-                        </button>
+                {/* Profile Picture Section */}
+                <div className="mb-8">
+                    <div className="text-center">
+                        <div className="relative inline-block">
+                            <img
+                                src={`http://localhost:5000/uploads/${profile.image || "default-profile.png"}`}
+                                alt="Profile"
+                                className="w-40 h-40 rounded-full object-cover mx-auto mb-4 border-4 border-emerald-500"
+                            />
+                            {profile.image && (
+                                <button
+                                    onClick={handleImageDelete}
+                                    className="absolute bottom-0 right-0 p-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                                    title="Delete profile picture"
+                                >
+                                    <Trash2 size={20} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Upload Profile Picture */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-center space-x-4">
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setImageFile(e.target.files[0])}
+                                className="hidden"
+                                id="image-upload"
+                            />
+                            <label
+                                htmlFor="image-upload"
+                                className="flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition-colors"
+                            >
+                                <Upload size={20} />
+                                <span>Choose Image</span>
+                            </label>
+                        </div>
+                        {imageFile && (
+                            <button
+                                onClick={handleImageUpload}
+                                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+                            >
+                                <Save size={20} />
+                                <span>Upload</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Profile Details */}
+                <div className="bg-gray-900 rounded-lg p-6">
+                    {isEditing ? (
+                        <EditProfileForm
+                            profile={profile}
+                            setProfile={setProfile}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    ) : (
+                        <ViewProfile profile={profile} onEdit={() => setIsEditing(true)} />
                     )}
                 </div>
+
+                {/* Delete Account Button */}
+                <div className="mt-8 pt-6 border-t border-gray-700">
+                    <button
+                        onClick={handleAccountDelete}
+                        className="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                    >
+                        <AlertTriangle size={20} />
+                        <span>Delete Account</span>
+                    </button>
+                </div>
             </div>
-
-            {/* Upload Profile Picture */}
-            <div className="mb-4">
-                <label className="block text-gray-300 mb-1">Upload Profile Picture</label>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files[0])}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
-                />
-                <button
-                    onClick={handleImageUpload}
-                    className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded"
-                >
-                    Upload
-                </button>
-            </div>
-
-            {/* Profile Details */}
-            {isEditing ? (
-                <EditProfileForm
-                    profile={profile}
-                    setProfile={setProfile}
-                    onCancel={() => setIsEditing(false)}
-                />
-            ) : (
-                <ViewProfile profile={profile} onEdit={() => setIsEditing(true)} />
-            )}
-
-            {/* Delete Account Button */}
-            <button
-                onClick={handleAccountDelete}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded"
-            >
-                Delete Account
-            </button>
         </div>
     );
 };
 
 const ViewProfile = ({ profile, onEdit }) => (
-    <div>
-        <p>Name: {profile.name}</p>
-        <p>Email: {profile.email}</p>
+    <div className="space-y-6">
+        <div className="flex items-center space-x-4 p-4 bg-gray-800 rounded-lg">
+            <User className="text-emerald-500" size={24} />
+            <div className="flex-1">
+                <p className="text-sm text-gray-400">Name</p>
+                <p className="text-lg">{profile.name}</p>
+            </div>
+        </div>
+        <div className="flex items-center space-x-4 p-4 bg-gray-800 rounded-lg">
+            <Mail className="text-emerald-500" size={24} />
+            <div className="flex-1">
+                <p className="text-sm text-gray-400">Email</p>
+                <p className="text-lg">{profile.email}</p>
+            </div>
+        </div>
         <button
             onClick={onEdit}
-            className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded"
+            className="flex items-center justify-center space-x-2 w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
         >
-            Edit Profile
+            <Edit2 size={20} />
+            <span>Edit Profile</span>
         </button>
     </div>
 );
@@ -184,7 +231,6 @@ const EditProfileForm = ({ profile, setProfile, onCancel }) => {
             return;
         }
 
-
         try {
             // Send updated data to the backend
             const response = await axios.put("/auth/profile", formData);
@@ -198,42 +244,46 @@ const EditProfileForm = ({ profile, setProfile, onCancel }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-                <label className="block text-gray-300 mb-1">Name</label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+                <label className="flex items-center space-x-2 text-gray-300 mb-2">
+                    <User size={20} />
+                    <span>Name</span>
+                </label>
                 <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-emerald-500 transition-colors"
                 />
             </div>
-            <div className="mb-4">
-                <label className="block text-gray-300 mb-1">Email</label>
+            <div>
+                <label className="flex items-center space-x-2 text-gray-300 mb-2">
+                    <Mail size={20} />
+                    <span>Email</span>
+                </label>
                 <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-emerald-500 transition-colors"
                 />
             </div>
             <div className="flex space-x-4">
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-emerald-600 text-white rounded"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                 >
-                    Save
+                    <Save size={20} />
+                    <span>Save Changes</span>
                 </button>
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 bg-gray-600 text-white rounded"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
                 >
-                    Cancel
+                    <X size={20} />
+                    <span>Cancel</span>
                 </button>
             </div>
         </form>

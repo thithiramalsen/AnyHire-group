@@ -82,6 +82,34 @@ export const getMyApplications = async (req, res) => {
             applications.map(async (application) => {
                 const job = await Job.findById(application.jobId);
                 const seeker = await User.findById(application.seekerId);
+
+                // Check if this job has any active bookings by other users
+                const otherActiveBookings = await Booking.findOne({
+                    jobId: application.jobId,
+                    _id: { $ne: application._id },
+                    seekerId: { $ne: seekerId }, // Exclude user's own bookings
+                    status: {
+                        $in: [
+                            'accepted',
+                            'in_progress',
+                            'completed_by_seeker',
+                            'completed',
+                            'payment_pending',
+                            'paid'
+                        ]
+                    }
+                });
+
+                // Determine if this is an active application for the user
+                const isActiveApplication = [
+                    'accepted',
+                    'in_progress',
+                    'completed_by_seeker',
+                    'completed',
+                    'payment_pending',
+                    'paid'
+                ].includes(application.status);
+
                 return {
                     ...application.toObject(),
                     title: job?.title || application.jobTitle,
@@ -90,7 +118,9 @@ export const getMyApplications = async (req, res) => {
                     district: job?.district,
                     category: job?.category,
                     payment: job?.payment || application.payment.amount,
-                    seekerName: seeker?.name || 'Anonymous'
+                    seekerName: seeker?.name || 'Anonymous',
+                    isJobTaken: !!otherActiveBookings,
+                    isActiveApplication
                 };
             })
         );

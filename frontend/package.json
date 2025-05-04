@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@react-leaflet/core": "^3.0.0",
+    "leaflet": "^1.9.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.3.0",
     "socket.io-client": "^4.8.1"
   },

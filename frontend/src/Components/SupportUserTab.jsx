@@ -29,6 +29,8 @@ const SupportUserTab = () => {
     // Add these new states
     const [replyingTo, setReplyingTo] = useState(null);
     const [reply, setReply] = useState("");
+    const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
 
     useEffect(() => {
         if (user) {
@@ -47,27 +49,59 @@ const SupportUserTab = () => {
         }
     };
 
+    const validate = (fields = newTicket) => {
+        const errs = {};
+        if (!fields.subject || fields.subject.trim().length < 5) {
+            errs.subject = 'Subject must be at least 5 characters.';
+        }
+        if (!fields.phoneNumber) {
+            errs.phoneNumber = 'Phone number is required.';
+        } else if (!/^[0-9]{10}$/.test(fields.phoneNumber)) {
+            errs.phoneNumber = 'Phone number must be exactly 10 digits.';
+        }
+        if (!fields.message || fields.message.trim().length < 10) {
+            errs.message = 'Message must be at least 10 characters.';
+        }
+        return errs;
+    };
+
+    // Validate on every change
+    const handleFieldChange = (field, value) => {
+        const updatedTicket = { ...newTicket, [field]: value };
+        setNewTicket(updatedTicket);
+        const validationErrors = validate(updatedTicket);
+        setErrors(validationErrors);
+    };
+
+    // Mark field as touched on blur
+    const handleBlur = (field) => {
+        setTouched((prev) => ({ ...prev, [field]: true }));
+        const validationErrors = validate(newTicket);
+        setErrors(validationErrors);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!user) {
             toast.error("Please login to create a ticket");
             return;
         }
-
-        if (!newTicket.subject || !newTicket.message || !newTicket.phoneNumber) {
-            toast.error("Please fill all required fields");
+        // Mark all fields as touched
+        setTouched({ subject: true, phoneNumber: true, message: true });
+        const validationErrors = validate();
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length > 0) {
             return;
         }
-
         setLoading(true);
         try {
             const response = await axios.post("/ticket/create", newTicket);
-            console.log('Created ticket:', response.data);
             toast.success("Ticket created successfully");
             setNewTicket({ subject: "", message: "", phoneNumber: "", priority: "Normal" });
+            setErrors({});
+            setTouched({});
             await fetchTickets();
         } catch (error) {
-            console.error("Create ticket error:", error);
             toast.error(error.response?.data?.message || "Failed to create ticket");
         } finally {
             setLoading(false);
@@ -122,10 +156,14 @@ const SupportUserTab = () => {
                             <input
                                 type="text"
                                 value={newTicket.subject}
-                                onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+                                onChange={(e) => handleFieldChange('subject', e.target.value)}
+                                onBlur={() => handleBlur('subject')}
                                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 required
                             />
+                            {touched.subject && errors.subject && (
+                                <div className="text-red-500 text-xs mt-1">{errors.subject}</div>
+                            )}
                         </div>
                         <div className="flex gap-4">
                             <div className="flex-1">
@@ -134,7 +172,7 @@ const SupportUserTab = () => {
                                 </label>
                                 <select
                                     value={newTicket.priority}
-                                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+                                    onChange={(e) => handleFieldChange('priority', e.target.value)}
                                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="Normal">Normal</option>
@@ -148,10 +186,14 @@ const SupportUserTab = () => {
                                 <input
                                     type="tel"
                                     value={newTicket.phoneNumber}
-                                    onChange={(e) => setNewTicket({ ...newTicket, phoneNumber: e.target.value })}
+                                    onChange={(e) => handleFieldChange('phoneNumber', e.target.value)}
+                                    onBlur={() => handleBlur('phoneNumber')}
                                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                     required
                                 />
+                                {touched.phoneNumber && errors.phoneNumber && (
+                                    <div className="text-red-500 text-xs mt-1">{errors.phoneNumber}</div>
+                                )}
                             </div>
                         </div>
                         <div>
@@ -160,11 +202,15 @@ const SupportUserTab = () => {
                             </label>
                             <textarea
                                 value={newTicket.message}
-                                onChange={(e) => setNewTicket({ ...newTicket, message: e.target.value })}
+                                onChange={(e) => handleFieldChange('message', e.target.value)}
+                                onBlur={() => handleBlur('message')}
                                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 rows="4"
                                 required
                             />
+                            {touched.message && errors.message && (
+                                <div className="text-red-500 text-xs mt-1">{errors.message}</div>
+                            )}
                         </div>
                         <button
                             type="submit"

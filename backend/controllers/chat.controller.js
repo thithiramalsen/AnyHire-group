@@ -121,3 +121,96 @@ export const sendMessage = async (req, res) => {
         res.status(500).json({ message: "Error sending message" });
     }
 };
+
+export const deleteMessage = async (req, res) => {
+    console.log('deleteMessage called with:', {
+        messageId: req.params.messageId,
+        userId: req.user?._id
+    });
+
+    try {
+        const messageId = parseInt(req.params.messageId);
+        console.log('Parsed messageId:', messageId);
+
+        if (isNaN(messageId)) {
+            console.warn('Invalid message ID format received');
+            return res.status(400).json({ message: "Invalid message ID format" });
+        }
+
+        // Find the message
+        const message = await Chat.findById(messageId);
+        if (!message) {
+            console.warn('Message not found:', messageId);
+            return res.status(404).json({ message: "Message not found" });
+        }
+
+        // Check if the user is the sender of the message
+        if (message.senderId.toString() !== req.user._id.toString()) {
+            console.warn('Unauthorized deletion attempt:', {
+                userId: req.user._id,
+                messageId
+            });
+            return res.status(403).json({ message: "Not authorized to delete this message" });
+        }
+
+        // Delete the message
+        await Chat.findByIdAndDelete(messageId);
+        console.log('Message deleted successfully:', messageId);
+
+        res.status(200).json({ message: "Message deleted successfully" });
+    } catch (error) {
+        console.error("Error in deleteMessage:", error);
+        res.status(500).json({ message: "Error deleting message" });
+    }
+};
+
+export const editMessage = async (req, res) => {
+    console.log('editMessage called with:', {
+        messageId: req.params.messageId,
+        userId: req.user?._id,
+        message: req.body.message
+    });
+
+    try {
+        const messageId = parseInt(req.params.messageId);
+        const { message } = req.body;
+
+        console.log('Parsed messageId:', messageId);
+
+        if (isNaN(messageId)) {
+            console.warn('Invalid message ID format received');
+            return res.status(400).json({ message: "Invalid message ID format" });
+        }
+
+        if (!message || message.trim() === '') {
+            console.warn('Empty message received');
+            return res.status(400).json({ message: "Message cannot be empty" });
+        }
+
+        // Find the message
+        const existingMessage = await Chat.findById(messageId);
+        if (!existingMessage) {
+            console.warn('Message not found:', messageId);
+            return res.status(404).json({ message: "Message not found" });
+        }
+
+        // Check if the user is the sender of the message
+        if (existingMessage.senderId.toString() !== req.user._id.toString()) {
+            console.warn('Unauthorized edit attempt:', {
+                userId: req.user._id,
+                messageId
+            });
+            return res.status(403).json({ message: "Not authorized to edit this message" });
+        }
+
+        // Update the message
+        existingMessage.message = message;
+        await existingMessage.save();
+        console.log('Message updated successfully:', messageId);
+
+        res.status(200).json({ message: "Message updated successfully" });
+    } catch (error) {
+        console.error("Error in editMessage:", error);
+        res.status(500).json({ message: "Error updating message" });
+    }
+};

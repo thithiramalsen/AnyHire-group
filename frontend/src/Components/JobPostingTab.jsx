@@ -2,7 +2,8 @@ import Axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from '../lib/axios';
-
+import LocationPicker from './Map/LocationPicker';
+import { parseLocationString } from '../lib/map.config'; // Assuming you have a utility function to parse location strings
 
 const districts = [
   "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle",
@@ -29,8 +30,6 @@ const JobPostingTab = () => {
   console.log(inputs);
   const [jobImage,setJobImage] = useState();
   const [categories, setCategories] = useState([]);
-  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
-  const [showLocationInput, setShowLocationInput] = useState(false);
   const [imagePreviews, setImagePreviews] = useState();
 
   useEffect(() => {
@@ -55,8 +54,9 @@ const JobPostingTab = () => {
     const file = e.target.files[0];
     if (file && file.type.startsWith("image/")) {
       setJobImage(file);
-    setImagePreviews(URL.createObjectURL(file));
-  }};
+      setImagePreviews(URL.createObjectURL(file));
+    }
+  };
 
   const handleRemoveImage = (index) => {
     const newImages = inputs.images.filter((_, i) => i !== index);
@@ -73,41 +73,36 @@ const JobPostingTab = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setInputs((prevState) => ({
-            ...prevState,
-            location: `Latitude: ${latitude}, Longitude: ${longitude}`,
+          const locationString = `${latitude},${longitude}`;
+          setInputs(prev => ({
+            ...prev,
+            location: locationString
           }));
-          setUseCurrentLocation(true);
-          setShowLocationInput(false);
+          toast.success('Current location set successfully');
         },
         (error) => {
-          console.error("Error fetching location:", error);
+          console.error('Error getting location:', error);
+          toast.error('Failed to get current location');
         }
       );
     } else {
-      toast.error("Geolocation is not supported by this browser.");
+      toast.error('Geolocation is not supported by your browser');
     }
-  };
-
-  const handleShowLocationInput = () => {
-    setUseCurrentLocation(false);
-    setShowLocationInput(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!jobImage) {
-      toast.error("You must uploa an image.");
+      toast.error("You must upload an image.");
       return;
     }
 
     const formDataToSend = new FormData();
     formDataToSend.append('title', inputs.title);
     formDataToSend.append('description', inputs.description);
-
     formDataToSend.append('location', inputs.location);
     formDataToSend.append('district', inputs.district);
-    formDataToSend.append('category', inputs.category); // Category is appended here
+    formDataToSend.append('category', inputs.category);
     formDataToSend.append('jobType', inputs.jobType);
     formDataToSend.append('payment', inputs.jobType === 'One-time Gig' ? Number(inputs.payment) : Number(inputs.payRate));
     formDataToSend.append('deadline', inputs.deadline);
@@ -115,7 +110,6 @@ const JobPostingTab = () => {
     if (jobImage) {
       formDataToSend.append('images', jobImage);
     }
-
 
     try {
       await axios.post("/job/add", formDataToSend, {
@@ -143,8 +137,6 @@ const JobPostingTab = () => {
       toast.error('Failed to post job. Please try again.');
     }
   };
-
- 
 
   return (
     <div className="p-4 bg-gray-800 rounded shadow">
@@ -212,18 +204,44 @@ const JobPostingTab = () => {
 
         <div className="mb-4">
           <label className="block mb-2 text-white">Location:</label>
-          <div className="flex space-x-4">
-            <button type="button" onClick={handleUseCurrentLocation} className="px-4 py-2 bg-blue-600 text-white rounded">Use Current Location</button>
-            <button type="button" onClick={handleShowLocationInput} className="px-4 py-2 bg-blue-600 text-white rounded">Enter Different Location</button>
+          <div className="flex gap-2 mb-2">
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              Use Current Location
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setInputs(prev => ({ ...prev, location: '' }));
+                toast.success('Click on the map to select a location');
+              }}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Pick Location
+            </button>
           </div>
-          {useCurrentLocation && (
-            <p className="mt-2 text-white">Current Location: {inputs.location}</p>
-          )}
-          {showLocationInput && (
-            <div className="mt-4">
-              <label className="block mb-2 text-white">Google Maps Link:</label>
-              <input type="text" name="location" onChange={handleChange} value={inputs.location} required className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white" />
-            </div>
+          <LocationPicker 
+              onLocationSelect={(location) => {
+                  setInputs(prev => ({ ...prev, location }));
+              }}
+              initialLocation={inputs.location ? parseLocationString(inputs.location) : null}
+              selectedLocation={inputs.location}
+          />
+          {inputs.location && (
+              <p className="mt-2 text-sm text-gray-400">
+                  Selected location: {inputs.location}
+              </p>
           )}
         </div>
 

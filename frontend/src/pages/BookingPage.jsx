@@ -3,31 +3,38 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Play, MessageCircle } from 'lucide-react'; // Replace HeroIcon import with Lucide
+import { Play, MessageCircle, Check, CreditCard } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [categories, setCategories] = useState([]); // Add categories state
     const { user } = useUserStore();
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchBooking();
-    }, [bookingId]);
+        const fetchData = async () => {
+            try {
+                // Fetch both booking and categories
+                const [bookingResponse, categoriesResponse] = await Promise.all([
+                    axios.get(`/booking/${bookingId}`),
+                    axios.get("/category")
+                ]);
+                
+                setBooking(bookingResponse.data);
+                setCategories(categoriesResponse.data.categories || []);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                toast.error('Error loading booking details');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const fetchBooking = async () => {
-        try {
-            const response = await axios.get(`/booking/${bookingId}`);
-            setBooking(response.data);
-        } catch (error) {
-            console.error('Error fetching booking:', error);
-            toast.error('Error loading booking details');
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchData();
+    }, [bookingId]);
 
     const handleStartJob = async () => {
         try {
@@ -43,6 +50,50 @@ const BookingPage = () => {
         }
     };
 
+    const handleCompleteJob = async () => {
+        try {
+            await axios.patch(`/booking/${bookingId}/status`, { 
+                status: 'completed_by_seeker',
+                date: new Date()
+            });
+            toast.success('Job marked as completed!');
+            fetchBooking(); // Refresh booking data
+        } catch (error) {
+            console.error('Error completing job:', error);
+            toast.error(error.response?.data?.message || 'Error completing job');
+        }
+    };
+
+    const handleConfirmCompletion = async () => {
+        try {
+            // Update both booking and job status
+            await Promise.all([
+                axios.patch(`/booking/${bookingId}/status`, { 
+                    status: 'payment_pending',
+                    date: new Date()
+                }),
+                axios.patch(`/job/${booking.jobId}/status`, {
+                    status: 'completed'
+                })
+            ]);
+            toast.success('Job completion confirmed!');
+            fetchBooking(); // Refresh booking data
+        } catch (error) {
+            console.error('Error confirming completion:', error);
+            toast.error(error.response?.data?.message || 'Error confirming completion');
+        }
+    };
+
+    const handleProceedToPayment = () => {
+        // Navigate to payment page with booking details
+        navigate(`/payment/${bookingId}`);
+    };
+
+    const getCategoryName = (categoryId) => {
+        const category = categories.find(cat => Number(cat._id) === Number(categoryId));
+        return category ? category.name : "Unknown Category";
+    };
+
     const renderActionButton = () => {
         if (booking.status === 'accepted') {
             return (
@@ -50,8 +101,38 @@ const BookingPage = () => {
                     onClick={handleStartJob}
                     className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
                 >
-                    <Play size={20} /> {/* Replace PlayIcon with Lucide Play */}
+                    <Play size={20} />
                     Start Job
+                </button>
+            );
+        } else if (booking.status === 'in_progress' && user.role === 'jobSeeker') {
+            return (
+                <button
+                    onClick={handleCompleteJob}
+                    className="w-full bg-green-500 text-white py-3 px-6 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                >
+                    <Check size={20} />
+                    Complete Job
+                </button>
+            );
+        } else if (booking.status === 'completed_by_seeker' && user.role === 'customer') {
+            return (
+                <button
+                    onClick={handleConfirmCompletion}
+                    className="w-full bg-purple-500 text-white py-3 px-6 rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                >
+                    <Check size={20} />
+                    Confirm Job Completion
+                </button>
+            );
+        } else if (booking.status === 'payment_pending' && user.role === 'customer') {
+            return (
+                <button
+                    onClick={handleProceedToPayment}
+                    className="w-full bg-emerald-500 text-white py-3 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                >
+                    <CreditCard size={20} />
+                    Proceed to Payment
                 </button>
             );
         }
@@ -131,7 +212,7 @@ const BookingPage = () => {
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Category</h3>
-                                <p className="text-gray-400">{booking.jobDetails?.category}</p>
+                                <p className="text-gray-400">{getCategoryName(booking.jobDetails?.category)}</p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Payment</h3>

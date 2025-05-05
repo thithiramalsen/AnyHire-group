@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 const JobsPage = () => {
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
@@ -14,20 +15,25 @@ const JobsPage = () => {
     const { user } = useUserStore();
 
     useEffect(() => {
-        const fetchJobs = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get("/job/public/approved");
-                setJobs(response.data);
-                setFilteredJobs(response.data);
+                const [jobsResponse, categoriesResponse] = await Promise.all([
+                    axios.get("/job/public/approved"),
+                    axios.get("/category")
+                ]);
+                
+                setJobs(jobsResponse.data);
+                setCategories(categoriesResponse.data.categories);
+                setFilteredJobs(jobsResponse.data);
             } catch (error) {
-                console.error("Error fetching jobs:", error);
+                console.error("Error fetching data:", error);
                 toast.error("Failed to load jobs. Please try again later.");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchJobs();
+        fetchData();
     }, []);
 
     useEffect(() => {
@@ -80,7 +86,10 @@ const JobsPage = () => {
         }
     };
 
-    const categories = [...new Set(jobs.map(job => job.category))];
+    const getCategoryName = (categoryId) => {
+        const category = categories.find(cat => Number(cat._id) === Number(categoryId));
+        return category ? category.name : "Unknown Category";
+    };
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-64">
@@ -107,8 +116,8 @@ const JobsPage = () => {
                     >
                         <option value="">All Categories</option>
                         {categories.map((category) => (
-                            <option key={category} value={category}>
-                                {category}
+                            <option key={category._id} value={category._id}>
+                                {category.name}
                             </option>
                         ))}
                     </select>
@@ -134,7 +143,7 @@ const JobsPage = () => {
                                     <p className="text-gray-400 line-clamp-2">{job.description}</p>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">📍 {job.district}</span>
-                                        <span className="text-gray-400">📁 {job.category}</span>
+                                        <span className="text-gray-400">📁 {getCategoryName(job.category)}</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center pt-4 border-t border-gray-700">

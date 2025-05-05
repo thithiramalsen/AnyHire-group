@@ -9,18 +9,26 @@ import Chat from './Chat';
 const MyJobs = () => {
     const [activeApplications, setActiveApplications] = useState([]);
     const [pendingApplications, setPendingApplications] = useState([]);
+    const [categories, setCategories] = useState([]); // Add categories state
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
     const { user } = useUserStore();
 
     useEffect(() => {
-        const fetchAppliedJobs = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get("/booking/my-applications");
+                // Fetch both applications and categories
+                const [applicationsResponse, categoriesResponse] = await Promise.all([
+                    axios.get("/booking/my-applications"),
+                    axios.get("/category")
+                ]);
                 
+                // Set categories
+                setCategories(categoriesResponse.data.categories || []);
+
                 // Separate active and pending applications
-                const active = response.data.filter(job => job.isActiveApplication);
-                const pending = response.data.filter(job => 
+                const active = applicationsResponse.data.filter(job => job.isActiveApplication);
+                const pending = applicationsResponse.data.filter(job => 
                     !job.isActiveApplication && 
                     !job.isJobTaken && 
                     job.status === 'applied'
@@ -29,14 +37,14 @@ const MyJobs = () => {
                 setActiveApplications(active);
                 setPendingApplications(pending);
             } catch (error) {
-                console.error("Error fetching applied jobs:", error);
+                console.error("Error fetching data:", error);
                 toast.error("Failed to load your applications");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchAppliedJobs();
+        fetchData();
     }, []);
 
     const handleCancelApplication = async (bookingId) => {
@@ -81,6 +89,12 @@ const MyJobs = () => {
         }
     };
 
+    // Add getCategoryName helper function
+    const getCategoryName = (categoryId) => {
+        const category = categories.find(cat => Number(cat._id) === Number(categoryId));
+        return category ? category.name : "Unknown Category";
+    };
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -102,7 +116,7 @@ const MyJobs = () => {
                     <p className="text-gray-400 line-clamp-2">{job.description}</p>
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-400">📍 {job.district}</span>
-                        <span className="text-gray-400">📁 {job.category}</span>
+                        <span className="text-gray-400">📁 {getCategoryName(job.category)}</span>
                     </div>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t border-gray-700">

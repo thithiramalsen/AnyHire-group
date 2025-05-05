@@ -10,23 +10,35 @@ const ApplyPage = () => {
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState(false);
+    const [categories, setCategories] = useState([]); // Add categories state
     const { user } = useUserStore();
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchJob();
+        const fetchData = async () => {
+            try {
+                // Fetch both job and categories
+                const [jobResponse, categoriesResponse] = await Promise.all([
+                    axios.get(`/job/${jobId}`),
+                    axios.get("/category")
+                ]);
+                
+                setJob(jobResponse.data);
+                setCategories(categoriesResponse.data.categories || []);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                toast.error('Error loading job details');
+                setLoading(false);
+            }
+        };
+
+        fetchData();
     }, [jobId]);
 
-    const fetchJob = async () => {
-        try {
-            const response = await axios.get(`/job/${jobId}`);
-            setJob(response.data);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching job:', error);
-            setLoading(false);
-            toast.error('Error loading job details');
-        }
+    const getCategoryName = (categoryId) => {
+        const category = categories.find(cat => Number(cat._id) === Number(categoryId));
+        return category ? category.name : "Unknown Category";
     };
 
     const handleApply = async () => {
@@ -87,7 +99,7 @@ const ApplyPage = () => {
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Category</h3>
-                                <p className="text-gray-400">{job.category}</p>
+                                <p className="text-gray-400">{getCategoryName(job.category)}</p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Payment</h3>

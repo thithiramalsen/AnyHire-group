@@ -79,7 +79,7 @@ export const addJob = async (req, res) => {
       images: req.file ? `/uploads/${req.file.filename}` : "",
       location,
       district,
-      category,
+      category: Number(category), // Convert to number when saving
       jobType,
       payment,
       deadline,

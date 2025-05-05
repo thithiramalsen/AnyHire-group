@@ -97,7 +97,8 @@ const JobApprovalTab = () => {
   };
 
   const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat._id === categoryId);
+    // Convert both IDs to numbers for comparison
+    const category = categories.find((cat) => Number(cat._id) === Number(categoryId));
     return category ? category.name : "Unknown Category";
   };
 
@@ -136,7 +137,13 @@ const JobApprovalTab = () => {
                   <p className="text-gray-400">Payment: <span className="text-green-400">Rs. {job.payment}</span></p>
                 </div>
                 <p className="text-sm text-gray-400 mt-1">
-                  Posted: {new Date(job.createdAt).toLocaleDateString()}
+                <p className="text-sm text-gray-400 mt-1">
+                    Posted: {new Date(job.postedDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
                 </p>
               </div>
               

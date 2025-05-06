@@ -8,6 +8,7 @@ import DashBoard from "./pages/DashBoard";
 import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
+import PaymentConfirmation from "./components/PaymentConfirmation";
 import MyJobs from "./Components/MyJobs";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";
@@ -90,7 +91,18 @@ function App() {
                             )
                         }
                     />
+                    <Route
+                        path="/confirm-payment/:bookingId"
+                        element={
+                            user ? (
+                                <PaymentConfirmation />
+                            ) : (
+                                <Navigate to="/login" replace />
+                            )
+                        }
+                    />
 					<Route path="/booking/:bookingId" element={<BookingPage />} />
+					<Route path="/bookings" element={<BookingPage />} />
 					<Route path="/chat/:bookingId" element={<ChatPage />} />
 					<Route path='/cart' element={<Cart />} />
 				</Routes>

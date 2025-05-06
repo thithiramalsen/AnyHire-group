@@ -5,40 +5,23 @@ import upload from "../lib/multer.js";
 
 const router = express.Router();
 
-// Job posting
-router.post("/add", protectRoute, upload.single("images"), Jobs.addJob);
+// Public routes (no authentication required)
+router.get("/public/approved", Jobs.getPublicApprovedJobs); // Get all approved jobs for public view
+router.get("/available", Jobs.getAvailableJobs); // Get available jobs for application
 
-// Get all jobs
-router.get("/get", Jobs.getJobs);
+// Protected routes (requires authentication)
+router.post("/add", protectRoute, upload.single("images"), Jobs.addJob); // Create new job
+router.get("/get", Jobs.getJobs); // Get all jobs
+router.get("/status", protectRoute, Jobs.getJobsByStatus); // Get jobs by status
+router.get("/getApproved", protectRoute, Jobs.getJobsApproved); // Get approved jobs
+router.get("/:id", Jobs.getJobById); // Get job by ID
+router.get("/user/:userId", protectRoute, Jobs.getJobsByUserId); // Get jobs by user ID
+router.patch("/up/:id", protectRoute, Jobs.updateJob); // Update job
+router.delete("/del/:id", protectRoute, Jobs.deleteJob); // Delete job
 
-// Fetch jobs by status
-router.get("/status", protectRoute, Jobs.getJobsByStatus);
-
-// Public route to get approved jobs
-router.get("/public/approved", Jobs.getPublicApprovedJobs);
-
-// Protected route to get approved jobs (for authenticated users)
-router.get("/getApproved", protectRoute, Jobs.getJobsApproved);
-
-// Get a job by ID
-router.get("/:id", Jobs.getJobById);
-
-// Fetch jobs by user ID
-router.get("/user/:userId", protectRoute, Jobs.getJobsByUserId);
-
-// Update a job
-router.patch("/up/:id", protectRoute, Jobs.updateJob);
-
-// Delete a job
-router.delete("/del/:id", protectRoute, Jobs.deleteJob);
-
-// Approve a job
-router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob);
-
-// Decline a job
-router.patch("/decline/:id", protectRoute, adminRoute, Jobs.declineJob);
-
-// Set job to pending
-router.patch("/pending/:id", protectRoute, adminRoute, Jobs.setJobToPending);
+// Admin routes (requires admin privileges)
+router.patch("/approve/:id", protectRoute, adminRoute, Jobs.approveJob); // Approve job
+router.patch("/decline/:id", protectRoute, adminRoute, Jobs.declineJob); // Decline job
+router.patch("/pending/:id", protectRoute, adminRoute, Jobs.setJobToPending); // Set job to pending
 
 export default router;

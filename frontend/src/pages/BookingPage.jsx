@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Play, MessageCircle, Check, CreditCard } from 'lucide-react'; // Replace HeroIcon import with Lucide
+import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
+import PaymentConfirmation from '../components/PaymentConfirmation';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
@@ -13,28 +14,39 @@ const BookingPage = () => {
     const [categories, setCategories] = useState([]); // Add categories state
     const { user } = useUserStore();
     const navigate = useNavigate();
+    const [payment, setPayment] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch both booking and categories
-                const [bookingResponse, categoriesResponse] = await Promise.all([
+                if (!bookingId) {
+                    toast.error("Invalid booking ID");
+                    navigate('/bookings');
+                    return;
+                }
+
+                const [bookingRes, paymentRes] = await Promise.all([
                     axios.get(`/booking/${bookingId}`),
-                    axios.get("/category")
+                    axios.get(`/payment/booking/${bookingId}`).catch(err => {
+                        if (err.response?.status === 404) {
+                            return { data: { success: false, payment: null } };
+                        }
+                        throw err;
+                    })
                 ]);
-                
-                setBooking(bookingResponse.data);
-                setCategories(categoriesResponse.data.categories || []);
+
+                setBooking(bookingRes.data);
+                setPayment(paymentRes.data.payment);
+                setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
-                toast.error('Error loading booking details');
-            } finally {
+                toast.error(error.response?.data?.message || "Error loading booking details");
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [bookingId]);
+    }, [bookingId, navigate]);
 
     const handleStartJob = async () => {
         try {
@@ -125,7 +137,8 @@ const BookingPage = () => {
                     Confirm Job Completion
                 </button>
             );
-        } else if (booking.status === 'payment_pending' && user.role === 'customer') {
+        } else if (booking.status === 'payment_pending' && user.role === 'customer' && !payment) {
+            // Only show payment button if there's no existing payment
             return (
                 <button
                     onClick={handleProceedToPayment}
@@ -162,6 +175,78 @@ const BookingPage = () => {
                 </button>
             </div>
         );
+    };
+
+    const renderPaymentSection = () => {
+        if (payment) {
+            return (
+                <div className="mb-8">
+                    <h2 className="text-xl font-semibold mb-4">Payment Details</h2>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-gray-400">
+                                    Status: <span className={`font-semibold ${
+                                        payment.status === 'completed' ? 'text-emerald-500' :
+                                        payment.status === 'pending' ? 'text-yellow-500' :
+                                        payment.status === 'awaiting_confirmation' ? 'text-blue-500' :
+                                        payment.status === 'reported' ? 'text-red-500' :
+                                        'text-gray-500'
+                                    }`}>
+                                        {payment.status.replace('_', ' ').toUpperCase()}
+                                    </span>
+                                </p>
+                                <p className="text-gray-400 mt-1">
+                                    Amount: <span className="text-emerald-500 font-semibold">Rs. {payment.amount}</span>
+                                </p>
+                                {payment.paymentType === 'payment_proof' && (
+                                    <p className="text-gray-400 mt-1">
+                                        Type: <span className="font-semibold">Payment Proof</span>
+                                    </p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    // Fix the navigation path for job seekers
+                                    if (user.role === 'jobSeeker') {
+                                        navigate(`/confirm-payment/${bookingId}`); // Changed from /payment/${bookingId}/confirm
+                                    } else {
+                                        navigate(`/payment/${bookingId}`);
+                                    }
+                                }}
+                                className="bg-emerald-500 text-white py-2 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                            >
+                                <CreditCard size={20} />
+                                {user.role === 'jobSeeker' ? 'Review Payment' : 'View Payment'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // If payment is pending and user is customer
+        if (booking.status === 'payment_pending' && user?._id === booking.posterId) {
+            return (
+                <div className="mb-8">
+                    <h2 className="text-xl font-semibold mb-4">Payment Required</h2>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                        <p className="text-gray-400 mb-4">
+                            Please complete the payment to proceed with the booking.
+                        </p>
+                        <button
+                            onClick={() => navigate(`/payment/${bookingId}`)}
+                            className="bg-emerald-500 text-white py-2 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                        >
+                            <CreditCard size={20} />
+                            Proceed to Payment
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
     };
 
     if (loading) {
@@ -248,6 +333,8 @@ const BookingPage = () => {
                                 )}
                             </div>
                         </div>
+
+                        {renderPaymentSection()}
                     </div>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import Booking from '../models/booking.model.js';
 import Job from '../models/job.model.js';
 import User from '../models/user.model.js';
+import Payment from '../models/payment.model.js';
 
 // Apply for a job (creates a booking)
 export const applyForJob = async (req, res) => {
@@ -269,5 +270,112 @@ export const getJobBookings = async (req, res, next) => {
         res.status(200).json(bookingsWithDetails);
     } catch (err) {
         next(err);
+    }
+};
+
+// Get all bookings (admin only)
+export const getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find()
+            .populate('jobId', 'title category')
+            .populate('seekerId', 'name email')
+            .populate('posterId', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.json(bookings);
+    } catch (error) {
+        console.error('Error fetching all bookings:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch bookings", 
+            error: error.message 
+        });
+    }
+};
+
+// Delete booking (admin only)
+export const deleteBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const booking = await Booking.findOne({ _id: Number(id) });
+        if (!booking) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Booking not found" 
+            });
+        }
+
+        // Delete associated payment if exists
+        const payment = await Payment.findOne({ bookingId: booking._id });
+        if (payment) {
+            await Payment.deleteOne({ _id: payment._id });
+        }
+
+        await Booking.deleteOne({ _id: Number(id) });
+
+        res.json({
+            success: true,
+            message: "Booking deleted successfully"
+        });
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to delete booking", 
+            error: error.message 
+        });
+    }
+};
+
+// Add this new controller method
+export const updateBookingStatusAdmin = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = [
+            "applied",
+            "accepted",
+            "declined",
+            "in_progress",
+            "completed_by_seeker",
+            "completed",
+            "payment_pending",
+            "paid",
+            "cancelled"
+        ];
+
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid booking status"
+            });
+        }
+
+        const booking = await Booking.findOne({ _id: Number(bookingId) });
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        booking.status = status;
+        booking.dates[status] = new Date();
+        await booking.save();
+
+        res.json({
+            success: true,
+            message: "Booking status updated successfully",
+            booking
+        });
+    } catch (error) {
+        console.error('Error updating booking status:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update booking status",
+            error: error.message
+        });
     }
 };

@@ -7,7 +7,6 @@ import {
     upload,
     getAllPayments,
     deletePayment,
-    createPaymentForBooking,
     getPaymentProof,
     deleteCustomerPayment,
     updatePaymentStatus,
@@ -43,9 +42,6 @@ router.get('/booking/:bookingId', protectRoute, getPaymentByBooking);
 
 // Confirm payment (job seeker only)
 router.post('/:paymentId/confirm', protectRoute, confirmPayment);
-
-// Create payment for booking
-router.post('/booking/:bookingId', protectRoute, createPaymentForBooking);
 
 // Get payment proof
 router.get('/:paymentId/proof', protectRoute, getPaymentProof);

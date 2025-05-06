@@ -8,7 +8,7 @@ import DashBoard from "./pages/DashBoard";
 import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
-import PaymentConfirmation from "./components/PaymentConfirmation";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
 import MyJobs from "./Components/MyJobs";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";

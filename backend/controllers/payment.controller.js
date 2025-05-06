@@ -53,7 +53,17 @@ export const initializePayment = async (req, res) => {
             });
         }
 
-        // Create new payment record
+        // Check if payment already exists for this booking
+        const existingPayment = await Payment.findOne({ bookingId: Number(bookingId) });
+        if (existingPayment) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Payment already exists for this booking",
+                payment: existingPayment
+            });
+        }
+
+        // Create new payment record - the _id will be auto-incremented by the pre-save middleware
         const payment = new Payment({
             bookingId: Number(bookingId),
             amount: booking.payment.amount,
@@ -89,6 +99,13 @@ export const initializePayment = async (req, res) => {
 export const uploadPaymentProof = async (req, res) => {
     try {
         const { paymentId } = req.params;
+
+        if (!paymentId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Payment ID is required" 
+            });
+        }
 
         if (!req.file) {
             return res.status(400).json({ 
@@ -127,15 +144,15 @@ export const uploadPaymentProof = async (req, res) => {
             message: "Payment proof uploaded successfully",
             payment: {
                 _id: payment._id,
-                status: payment.status
+                status: payment.status,
+                proofFilename: payment.proofFilename
             }
         });
     } catch (err) {
         console.error('Payment proof upload error:', err);
         res.status(500).json({ 
             success: false, 
-            message: "Failed to upload payment proof", 
-            error: err.message 
+            message: err.message || "Failed to upload payment proof" 
         });
     }
 };
@@ -363,39 +380,6 @@ export const deletePayment = async (req, res) => {
             message: "Failed to delete payment", 
             error: error.message 
         });
-    }
-};
-
-export const createPaymentForBooking = async (req, res) => {
-    try {
-        const bookingId = Number(req.params.bookingId);
-        const { paymentType, paymentMethod } = req.body;
-
-        // Check if payment already exists
-        const existing = await Payment.findOne({ bookingId });
-        if (existing) {
-            return res.status(400).json({ success: false, message: "Payment already exists for this booking" });
-        }
-
-        // Find booking and get amount
-        const booking = await Booking.findById(bookingId);
-        if (!booking) {
-            return res.status(404).json({ success: false, message: "Booking not found" });
-        }
-
-        const payment = new Payment({
-            bookingId,
-            amount: booking.payment.amount,
-            paymentType,
-            paymentMethod: paymentMethod || 'bank-transfer',
-            status: paymentType === 'manual' ? 'awaiting_confirmation' : 'pending'
-        });
-
-        await payment.save();
-
-        res.status(201).json({ success: true, payment });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
     }
 };
 

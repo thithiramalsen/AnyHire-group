@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
 import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
-import PaymentConfirmation from '../components/PaymentConfirmation';
+import PaymentConfirmation from './PaymentConfirmation';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
@@ -84,7 +84,7 @@ const BookingPage = () => {
                     status: 'payment_pending',
                     date: new Date()
                 }),
-                axios.patch(`/job/${booking.jobId}/status`, {
+                axios.patch(`/job/up/${booking.jobId}`, {
                     status: 'completed'
                 })
             ]);
@@ -107,7 +107,7 @@ const BookingPage = () => {
     };
 
     const renderActionButton = () => {
-        if (booking.status === 'accepted') {
+        if (booking.status === 'accepted' && user.role === 'jobSeeker') {
             return (
                 <button
                     onClick={handleStartJob}
@@ -138,7 +138,6 @@ const BookingPage = () => {
                 </button>
             );
         } else if (booking.status === 'payment_pending' && user.role === 'customer' && !payment) {
-            // Only show payment button if there's no existing payment
             return (
                 <button
                     onClick={handleProceedToPayment}

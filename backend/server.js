@@ -19,6 +19,7 @@ import chatRoutes from "./routes/chat.route.js";
 import cartRoutes from "./routes/cart.route.js";
 import { initializeSocket } from "./lib/socket.js";
 import paymentRoutes from './routes/payment.routes.js';
+import reviewRoutes from './routes/review.routes.js';
 
 import { connectDB } from "./lib/db.js";
 
@@ -68,6 +69,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

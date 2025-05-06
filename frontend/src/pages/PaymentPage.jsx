@@ -65,7 +65,15 @@ const PaymentPage = () => {
             }
 
             // First create the payment
-            const paymentRes = await axios.post(`/payment/booking/${bookingId}`, form);
+            const paymentRes = await axios.post('/payment/initialize', {
+                ...form,
+                bookingId
+            });
+            
+            if (!paymentRes.data.success || !paymentRes.data.payment?._id) {
+                throw new Error('Failed to create payment');
+            }
+
             const paymentId = paymentRes.data.payment._id;
 
             // If payment type is payment_proof, handle file upload
@@ -91,6 +99,7 @@ const PaymentPage = () => {
             const res = await axios.get(`/payment/booking/${bookingId}`);
             setPayment(res.data.payment);
         } catch (err) {
+            console.error('Payment error:', err);
             toast.error(err.response?.data?.message || 'Error creating payment');
         } finally {
             setSubmitting(false);

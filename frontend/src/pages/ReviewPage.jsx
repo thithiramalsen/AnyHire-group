@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Star, ArrowLeft, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from '../lib/axios';
@@ -8,11 +8,49 @@ import { useUserStore } from '../stores/useUserStore';
 const ReviewPage = () => {
     const { bookingId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [hoveredStar, setHoveredStar] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const { user } = useUserStore();
+    const [booking, setBooking] = useState(null);
+    const [fromBookingsTab, setFromBookingsTab] = useState(false);
+    const [existingReview, setExistingReview] = useState(null);
+
+    useEffect(() => {
+        // Check if navigated from BookingsTab via location state
+        if (location.state && location.state.fromBookingsTab) {
+            setFromBookingsTab(true);
+        }
+        const fetchBooking = async () => {
+            try {
+                const response = await axios.get(`/booking/${bookingId}`);
+                setBooking(response.data);
+            } catch (error) {
+                console.error('Error fetching booking:', error);
+                toast.error('Failed to load booking details');
+                navigate(-1);
+            }
+        };
+        fetchBooking();
+        // Fetch existing review if any
+        const fetchReview = async () => {
+            try {
+                const reviewType = user.role === 'customer' ? 'customer_to_seeker' : 'seeker_to_customer';
+                const res = await axios.get(`/reviews/user/${user._id}?type=given`);
+                const found = res.data.find(r => r.bookingId === Number(bookingId) && r.reviewType === reviewType);
+                if (found) {
+                    setExistingReview(found);
+                    setRating(found.rating);
+                    setComment(found.comment || '');
+                }
+            } catch (e) {
+                // ignore
+            }
+        };
+        fetchReview();
+    }, [bookingId, navigate, location.state, user]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,15 +58,22 @@ const ReviewPage = () => {
             toast.error('Please select a rating');
             return;
         }
-
         setSubmitting(true);
         try {
-            await axios.post(`/review/${bookingId}`, {
+            const reviewType = user.role === 'customer' ? 'customer_to_seeker' : 'seeker_to_customer';
+            const payload = {
+                bookingId,
                 rating,
-                comment
-            });
+                reviewType,
+                ...(comment.trim() && { comment })
+            };
+            await axios.post('/reviews', payload);
             toast.success('Review submitted successfully!');
-            navigate(`/payment/${bookingId}`);
+            if (fromBookingsTab) {
+                navigate('/dashboard/bookings');
+            } else {
+                navigate(user?.role === 'jobSeeker' ? `/confirm-payment/${bookingId}` : `/payment/${bookingId}`);
+            }
         } catch (error) {
             console.error('Error submitting review:', error);
             toast.error(error.response?.data?.message || 'Failed to submit review');
@@ -37,16 +82,40 @@ const ReviewPage = () => {
         }
     };
 
+    const handleDelete = async () => {
+        if (!existingReview) return;
+        setSubmitting(true);
+        try {
+            await axios.delete(`/reviews/${existingReview._id}`);
+            toast.success('Review deleted successfully!');
+            setExistingReview(null);
+            setRating(0);
+            setComment('');
+        } catch (error) {
+            toast.error('Failed to delete review');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (!booking) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-2xl mx-auto">
                 <div className="flex items-center justify-between mb-6">
                     <button
-                        onClick={() => navigate(user?.role === 'jobSeeker' ? `/confirm-payment/${bookingId}` : `/payment/${bookingId}`)}
+                        onClick={() => fromBookingsTab ? navigate('/dashboard/bookings') : navigate(-1)}
                         className="flex items-center gap-2 text-gray-400 hover:text-white"
                     >
                         <ArrowLeft size={20} />
-                        Back to Payment
+                        Back
                     </button>
                     {user?.role === 'jobSeeker' && (
                         <button
@@ -115,6 +184,17 @@ const ReviewPage = () => {
                             )}
                         </button>
                     </form>
+
+                    {existingReview && (
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            className="w-full bg-red-500 text-white py-2 px-6 rounded-lg hover:bg-red-600 transition-colors mt-2"
+                            disabled={submitting}
+                        >
+                            Delete Review
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

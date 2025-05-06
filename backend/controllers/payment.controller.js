@@ -522,3 +522,58 @@ export const updatePaymentStatus = async (req, res) => {
         });
     }
 };
+
+// Add this new method
+export const completePayment = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const userId = Number(req.user._id);
+
+        const payment = await Payment.findOne({ _id: Number(paymentId) });
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+
+        // Get the booking to verify the user is the customer
+        const booking = await Booking.findOne({ _id: payment.bookingId });
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Associated booking not found"
+            });
+        }
+
+        // Verify user is the customer
+        if (Number(booking.posterId) !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: "Only the customer can complete the payment"
+            });
+        }
+
+        // Update payment status
+        payment.status = 'completed';
+        payment.completedAt = new Date();
+        await payment.save();
+
+        res.json({
+            success: true,
+            message: "Payment completed successfully",
+            payment: {
+                _id: payment._id,
+                status: payment.status,
+                completedAt: payment.completedAt
+            }
+        });
+    } catch (error) {
+        console.error('Error completing payment:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to complete payment",
+            error: error.message
+        });
+    }
+};

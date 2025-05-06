@@ -23,6 +23,7 @@ import BookingPage from "./pages/BookingPage";
 
 import Chatbot from "./Components/Chatbot/Chatbot";
 import ChatPage from './pages/ChatPage';
+import ReviewPage from './pages/ReviewPage';
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -105,6 +106,16 @@ function App() {
 					<Route path="/bookings" element={<BookingPage />} />
 					<Route path="/chat/:bookingId" element={<ChatPage />} />
 					<Route path='/cart' element={<Cart />} />
+					<Route
+						path="/review/:bookingId"
+						element={
+							user ? (
+								<ReviewPage />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
 				</Routes>
 			</div>
 			<Toaster />

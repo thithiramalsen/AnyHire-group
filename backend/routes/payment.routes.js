@@ -9,8 +9,9 @@ import {
     deletePayment,
     createPaymentForBooking,
     getPaymentProof,
-    deleteCustomerPayment, // Add this new import
-    updatePaymentStatus // Add this new import
+    deleteCustomerPayment,
+    updatePaymentStatus,
+    completePayment 
 } from '../controllers/payment.controller.js';
 import { protectRoute, adminRoute } from '../middleware/auth.middleware.js';
 
@@ -27,6 +28,9 @@ router.delete('/:paymentId/customer', protectRoute, deleteCustomerPayment);
 
 // Add this new route for admin to update payment status
 router.patch('/admin/:paymentId/status', protectRoute, adminRoute, updatePaymentStatus);
+
+// Add this new route
+router.patch('/:paymentId/complete', protectRoute, completePayment);
 
 // Initialize payment
 router.post('/initialize', protectRoute, initializePayment);

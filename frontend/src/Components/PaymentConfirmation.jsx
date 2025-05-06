@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
-import { CheckCircle2, XCircle, AlertCircle, ArrowLeft, FileText } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, ArrowLeft, FileText, Star, Home, Search } from 'lucide-react';
 import { useUserStore } from '../stores/useUserStore';
 
 const PaymentConfirmation = () => {
@@ -111,6 +111,20 @@ const PaymentConfirmation = () => {
             link.remove();
         } catch (err) {
             toast.error('Error downloading proof file');
+        }
+    };
+
+    const handleCompleteBooking = async () => {
+        try {
+            await axios.post(`/payment/${payment._id}/complete`);
+            await axios.patch(`/booking/${payment.bookingId}/status`, {
+                status: 'completed'
+            });
+            toast.success('Booking completed successfully!');
+            navigate('/bookings');
+        } catch (error) {
+            console.error('Error completing booking:', error);
+            toast.error(error.response?.data?.message || 'Failed to complete booking');
         }
     };
 
@@ -243,9 +257,27 @@ const PaymentConfirmation = () => {
                     )}
 
                     {/* Show status if already confirmed or reported */}
-                    {payment.status === 'completed' && (
-                        <div className="flex items-center gap-2 text-emerald-500 mt-6">
-                            <CheckCircle2 size={24} /> Payment has been confirmed
+                    {payment.status === 'confirmed' && (
+                        <div className="border-t border-gray-700 pt-6 mt-6">
+                            <div className="flex items-center gap-2 text-emerald-500 mb-4">
+                                <CheckCircle2 size={24} /> Payment has been confirmed
+                            </div>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => navigate(`/review/${payment.bookingId}`)}
+                                    className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Star size={20} />
+                                    Leave Review
+                                </button>
+                                <button
+                                    onClick={() => navigate('/jobs')}
+                                    className="flex-1 bg-emerald-500 text-white py-3 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Search size={20} />
+                                    Find More Jobs
+                                </button>
+                            </div>
                         </div>
                     )}
                     {payment.status === 'reported' && (

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react'; // Replace HeroIcon import with Lucide
+import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
 import PaymentConfirmation from './PaymentConfirmation';
 
@@ -15,6 +15,9 @@ const BookingPage = () => {
     const { user } = useUserStore();
     const navigate = useNavigate();
     const [payment, setPayment] = useState(null);
+    const [reviewsByBooking, setReviewsByBooking] = useState({}); // Add reviews state
+
+    const canShowReview = payment && ['confirmed', 'completed'].includes(payment.status);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -88,7 +91,7 @@ const BookingPage = () => {
                     status: 'completed'
                 })
             ]);
-            toast.success('Job completion confirmed!');
+            toast.success('Job completion confirmed! Payment pending.');
             fetchBooking(); // Refresh booking data
         } catch (error) {
             console.error('Error confirming completion:', error);
@@ -150,6 +153,30 @@ const BookingPage = () => {
         }
         return null;
     };
+
+    const renderActionButtons = () => (
+        <div className="flex gap-4">
+            {renderActionButton()}
+            
+            {canShowReview && !reviewsByBooking?.[booking._id] && (
+                <button
+                    onClick={() => navigate(`/review/${booking._id}`)}
+                    className="w-full bg-yellow-500 text-white py-3 px-6 rounded-lg hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                >
+                    <Star size={20} />
+                    Leave Review
+                </button>
+            )}
+            
+            <button
+                onClick={() => navigate(`/chat/${booking._id}`)}
+                className="w-full bg-emerald-500 text-white py-3 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+            >
+                <MessageCircle size={20} />
+                Chat
+            </button>
+        </div>
+    );
 
     const renderUserInfo = () => {
         if (!booking) return null;
@@ -324,7 +351,7 @@ const BookingPage = () => {
 
                         <div className="mt-8 border-t border-gray-700 pt-6">
                             <div className="flex flex-col items-center space-y-4">
-                                {renderActionButton()}
+                                {renderActionButtons()}
                                 {booking.dates?.started && (
                                     <p className="text-sm text-gray-400">
                                         Started on: {new Date(booking.dates.started).toLocaleString()}

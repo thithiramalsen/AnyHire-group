@@ -62,15 +62,19 @@ const paymentSchema = new mongoose.Schema({
 
 // Add pre-save middleware to handle auto-incrementing
 paymentSchema.pre('save', async function(next) {
-    if (this.isNew) {
-        const counter = await Counter.findByIdAndUpdate(
-            { _id: 'paymentId' },
-            { $inc: { seq: 1 } },
-            { new: true, upsert: true }
-        );
-        this._id = counter.seq;
+    try {
+        if (this.isNew) {
+            const counter = await Counter.findByIdAndUpdate(
+                'paymentId',
+                { $inc: { seq: 1 } },
+                { new: true, upsert: true }
+            );
+            this._id = counter.seq;
+        }
+        next();
+    } catch (error) {
+        next(error);
     }
-    next();
 });
 
 const Payment = mongoose.model("Payment", paymentSchema);

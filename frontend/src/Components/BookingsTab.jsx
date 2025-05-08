@@ -131,7 +131,7 @@ const BookingsTab = () => {
     const activeApplications = postedJobs.filter(booking => booking.status === 'applied');
     
     const ongoingBookings = postedJobs.filter(booking => 
-        ['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending'].includes(booking.status) ||
+        ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending'].includes(booking.status) ||
         ['pending', 'awaiting_confirmation'].includes(booking.payment?.status)
     );
     
@@ -142,93 +142,99 @@ const BookingsTab = () => {
     const declinedBookings = postedJobs.filter(booking => booking.status === 'declined');
     const cancelledBookings = postedJobs.filter(booking => booking.status === 'cancelled');
 
-    // Update the renderBookingCard function
-    const renderBookingCard = (booking) => (
-        <div key={booking._id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {booking.jobDetails?.images && (
-                <img
-                    src={`http://localhost:5000${booking.jobDetails.images}`}
-                    alt={booking.jobTitle}
-                    className="w-full h-48 object-cover"
-                />
-            )}
-            <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">{booking.jobTitle}</h3>
-                <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">📍 {booking.jobDetails?.district || 'Not specified'}</span>
-                        <span className="text-gray-400">📁 {categories[booking.jobDetails?.category] || 'Not specified'}</span>
+    const renderBookingCard = (booking) => {
+        const canShowReview = booking.payment?.status === 'confirmed' || 
+                            booking.payment?.status === 'completed';
+
+        return (
+            <div key={booking._id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                {booking.jobDetails?.images && (
+                    <img
+                        src={`http://localhost:5000${booking.jobDetails.images}`}
+                        alt={booking.jobTitle}
+                        className="w-full h-48 object-cover"
+                    />
+                )}
+                <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2">{booking.jobTitle}</h3>
+                    <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">📍 {booking.jobDetails?.district || 'Not specified'}</span>
+                            <span className="text-gray-400">📁 {categories[booking.jobDetails?.category] || 'Not specified'}</span>
+                        </div>
+                        <p className="text-gray-400">Seeker: {booking.seekerDetails?.name || booking.seekerName || 'Anonymous'}</p>
                     </div>
-                    <p className="text-gray-400">Seeker: {booking.seekerDetails?.name || booking.seekerName || 'Anonymous'}</p>
-                </div>
-                <div className="flex justify-between items-center pt-4 border-t border-gray-700">
-                    <div>
-                        <p className="text-green-400 font-semibold">Rs. {booking.payment.amount}</p>
-                        <p className="text-sm text-gray-400">
-                            Status: <span className={`${
-                                booking.status === 'applied' ? 'text-yellow-400' :
-                                booking.status === 'accepted' ? 'text-green-400' :
-                                booking.status === 'in_progress' ? 'text-blue-400' :
-                                booking.status === 'completed_by_seeker' ? 'text-purple-400' :
-                                booking.status === 'payment_pending' ? 'text-orange-400' :
-                                booking.status === 'completed' ? 'text-emerald-400' :
-                                booking.status === 'declined' ? 'text-red-400' :
-                                'text-gray-400'
-                            }`}>
-                                {booking.status.split('_').map(word => 
-                                    word.charAt(0).toUpperCase() + word.slice(1)
-                                ).join(' ')}
-                            </span>
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        {booking.status === 'applied' && (
-                            <>
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-700">
+                        <div>
+                            <p className="text-green-400 font-semibold">Rs. {booking.payment.amount}</p>
+                            <p className="text-sm text-gray-400">
+                                Status: <span className={`${
+                                    booking.status === 'applied' ? 'text-yellow-400' :
+                                    booking.status === 'accepted' ? 'text-green-400' :
+                                    booking.status === 'in_progress' ? 'text-blue-400' :
+                                    booking.status === 'completed_by_seeker' ? 'text-purple-400' :
+                                    booking.status === 'payment_pending' ? 'text-orange-400' :
+                                    booking.status === 'completed' ? 'text-emerald-400' :
+                                    booking.status === 'declined' ? 'text-red-400' :
+                                    'text-gray-400'
+                                }`}>
+                                    {booking.status.split('_').map(word => 
+                                        word.charAt(0).toUpperCase() + word.slice(1)
+                                    ).join(' ')}
+                                </span>
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            {booking.status === 'applied' && (
+                                <>
+                                    <button
+                                        onClick={() => handleAcceptApplication(booking._id)}
+                                        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                    >
+                                        Accept
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeclineApplication(booking._id)}
+                                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                    >
+                                        Decline
+                                    </button>
+                                </>
+                            )}
+                            {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid', 'confirmed'].includes(booking.status) && (
+                                <>
+                                    <button
+                                        onClick={() => navigate(`/booking/${booking._id}`)}
+                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                    >
+                                        View Job
+                                    </button>
+                                    <button
+                                        onClick={() => navigate(`/chat/${booking._id}`)}
+                                        className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                                    >
+                                        <MessageCircle size={20} />
+                                        Chat
+                                    </button>
+                                </>
+                            )}
+                            {canShowReview && !reviewsByBooking[booking._id] && (
                                 <button
-                                    onClick={() => handleAcceptApplication(booking._id)}
-                                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                    onClick={() => navigate(`/review/${booking._id}`, { 
+                                        state: { fromBookingsTab: true } 
+                                    })}
+                                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
                                 >
-                                    Accept
+                                    <Star size={20} />
+                                    Review
                                 </button>
-                                <button
-                                    onClick={() => handleDeclineApplication(booking._id)}
-                                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                                >
-                                    Decline
-                                </button>
-                            </>
-                        )}
-                        {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid', 'confirmed'].includes(booking.status) && (
-                            <>
-                                <button
-                                    onClick={() => navigate(`/booking/${booking._id}`)}
-                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                >
-                                    View Job
-                                </button>
-                                <button
-                                    onClick={() => navigate(`/chat/${booking._id}`)}
-                                    className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
-                                >
-                                    <MessageCircle size={20} />
-                                    Chat
-                                </button>
-                            </>
-                        )}
-                        {booking.payment?.status === 'completed' && !reviewsByBooking[booking._id] && (
-                            <button
-                                onClick={() => navigate(`/review/${booking._id}`, { state: { fromBookingsTab: true } })}
-                                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
-                            >
-                                <Star size={20} />
-                                Review
-                            </button>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     // Update the return statement to use grid layout
     return (

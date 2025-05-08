@@ -241,11 +241,6 @@ export const confirmPayment = async (req, res) => {
 
         // Verify user is the job seeker
         if (Number(booking.seekerId) !== userId) {
-            console.debug('User verification failed:', {
-                userId,
-                seekerId: booking.seekerId,
-                bookingId: booking._id
-            });
             return res.status(403).json({ 
                 success: false, 
                 message: "Only the job seeker can confirm the payment" 
@@ -267,13 +262,16 @@ export const confirmPayment = async (req, res) => {
         };
 
         if (confirmed) {
-            payment.status = 'confirmed'; // Changed from 'completed'
+            payment.status = 'confirmed';
+            payment.completedAt = new Date();
             
-            // Update booking status to match the new flow
+            // Update both booking status and payment status in the booking model
             await Booking.findOneAndUpdate(
                 { _id: payment.bookingId },
                 { 
-                    status: 'paid' // Update booking status to paid
+                    status: 'paid',
+                    'payment.status': 'confirmed', // Add this line to update payment status
+                    'dates.paid': new Date()
                 }
             );
         } else {

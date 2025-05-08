@@ -164,9 +164,14 @@ export const updateBookingStatus = async (req, res) => {
             return res.json({ message: "Booking cancelled successfully" });
         }
 
-        // Handle other status updates normally
+        // Update the status and corresponding date
         booking.status = status;
         if (status === 'accepted') booking.dates.accepted = new Date();
+        if (status === 'in_progress') booking.dates.started = new Date();
+        if (status === 'completed_by_seeker') booking.dates.completed_by_seeker = new Date();
+        if (status === 'payment_pending') booking.dates.completed = new Date();
+        if (status === 'paid') booking.dates.paid = new Date();
+        
         await booking.save();
 
         res.json({ message: "Booking status updated", booking });

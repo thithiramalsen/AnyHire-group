@@ -2,6 +2,7 @@ export const rolePermissions = {
     admin: {
         tabs: [
             { id: "profile", label: "Profile", component: "ProfileTab" },
+            { id: "notifications", label: "Notifications", component: "NotificationTab" },
             { 
                 id: "analytics", 
                 label: "Analytics", 
@@ -20,6 +21,7 @@ export const rolePermissions = {
             { id: "payments", label: "Payments", component: "PaymentsManagement" },
             { id: "reviews", label: "Reviews", component: "ReviewManagementTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
+            {id:"contact", label: "Contact", component: "ContactAdminTab"},
             { id: "user-management", label: "User Management", component: "UserManagementTab" },
             { id: "categories", label: "Categories", component: "CategoriesTab" }
         ]
@@ -27,6 +29,7 @@ export const rolePermissions = {
     customer: {
         tabs: [
             { id: "profile", label: "Profile", component: "ProfileTab" },
+            { id: "notifications", label: "Notifications", component: "NotificationTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
             { id: "post-job", label: "Post Job", component: "JobPostingTab" },
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
@@ -37,6 +40,7 @@ export const rolePermissions = {
     jobSeeker: {
         tabs: [
             { id: "profile", label: "Profile", component: "ProfileTab" },
+            { id: "notifications", label: "Notifications", component: "NotificationTab" },
             { id: "worker-profile", label: "Worker Profile", component: "WorkerProfileTab" },
             { id: "jobs", label: "My Jobs", component: "JobsTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },

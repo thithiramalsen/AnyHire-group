@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Briefcase, UserPlus, ArrowRight } from "lucide-react";
+import ContactForm from '../Components/Support/ContactForm';
 
 const IndexPage = () => {
     return (
@@ -66,8 +67,16 @@ const IndexPage = () => {
                     <ArrowRight className="ml-2" />
                 </Link>
             </div>
+
+            {/* Contact Form Section */}
+            <div className="mt-16">
+                <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Get in Touch</h2>
+                <div className="max-w-2xl mx-auto">
+                    <ContactForm />
+                </div>
+            </div>
         </div>
     );
 };
 
-export default IndexPage; 
+export default IndexPage;

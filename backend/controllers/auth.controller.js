@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import multer from "../lib/multer.js";
+import NotificationService from "../services/notification.service.js";
 
 const generateTokens = (userId) => {
 	const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
@@ -83,6 +84,14 @@ export const signup = async (req, res) => {
         await storeRefreshToken(user._id, refreshToken);
 
         setCookies(res, accessToken, refreshToken);
+
+        await NotificationService.createNotification(
+            user._id,
+            'WELCOME',
+            'Welcome to AnyHire!',
+            'Thank you for joining AnyHire. We\'re excited to have you on board!',
+            '/profile' // Optional link to profile page
+        );
 
         res.status(201).json({
             _id: user._id,

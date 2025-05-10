@@ -206,7 +206,7 @@ const ReviewManagementTab = () => {
                     <div className="flex items-center">
                       {review.reviewerId.image ? (
                         <img
-                          src={`http://localhost:5000${review.reviewerId.image}`}
+                          src={`http://localhost:5000/uploads/${review.reviewerId.image}`}
                           alt={review.reviewerId.name}
                           className="w-8 h-8 rounded-full mr-2"
                         />
@@ -222,7 +222,7 @@ const ReviewManagementTab = () => {
                     <div className="flex items-center">
                       {review.revieweeId.image ? (
                         <img
-                          src={`http://localhost:5000${review.revieweeId.image}`}
+                          src={`http://localhost:5000/uploads/${review.revieweeId.image}`}
                           alt={review.revieweeId.name}
                           className="w-8 h-8 rounded-full mr-2"
                         />

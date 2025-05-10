@@ -13,6 +13,7 @@ import portfolioRoutes from "./routes/portfolio.route.js";
 import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
 import categoryRoutes from "./routes/category.route.js";
+import contactRoutes from "./routes/contact.route.js";
 import ticketRoutes from "./routes/ticket.route.js";
 import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
@@ -21,6 +22,7 @@ import { initializeSocket } from "./lib/socket.js";
 import paymentRoutes from './routes/payment.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import { updateLastActive } from './middleware/updateLastActive.middleware.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 import { connectDB } from "./lib/db.js";
 
@@ -66,12 +68,17 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/category", categoryRoutes);
+
+app.use("/api/contact", contactRoutes);
 app.use("/api/ticket", ticketRoutes);
+
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
+
+app.use("/api/notifications", notificationRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

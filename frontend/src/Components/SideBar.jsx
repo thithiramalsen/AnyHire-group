@@ -1,7 +1,7 @@
 import { 
     User, Edit, Settings, List, BarChart2, Folder, Calendar, 
     Briefcase, Clock, PlusCircle, MessageSquare, ShoppingCart,
-    Home, LogOut, ChevronRight, CreditCard
+    Home, LogOut, ChevronRight, CreditCard, Star, Users, FileText
 } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { rolePermissions } from "../lib/rolePermissions";
@@ -59,10 +59,14 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 <nav className="p-4 space-y-2">
                     {accessibleTabs.map((tab) => {
                         const Icon = tabIcons[tab.id] || Home;
+                        
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    console.log("[SideBar] Clicking tab:", tab.id);
+                                    setActiveTab(tab.id);
+                                }}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
                                     activeTab === tab.id
                                         ? 'bg-emerald-500 text-white'

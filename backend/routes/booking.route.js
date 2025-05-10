@@ -9,7 +9,8 @@ import {
     getJobBookings,
     getMyApplications,
     getAllBookings,
-    updateBookingStatusAdmin
+    updateBookingStatusAdmin,
+    deleteBooking
 } from '../controllers/booking.controller.js';
 
 const router = express.Router();
@@ -25,6 +26,9 @@ router.patch('/:id/status', protectRoute, updateBookingStatus);
 
 // Add this new route for admin to update booking status
 router.patch('/admin/:bookingId/status', protectRoute, adminRoute, updateBookingStatusAdmin);
+
+// Add this line for admin delete
+router.delete('/admin/:id', protectRoute, adminRoute, deleteBooking);
 
 // Get all bookings for logged-in user (both as seeker and poster)
 router.get('/me', protectRoute, getUserBookings);

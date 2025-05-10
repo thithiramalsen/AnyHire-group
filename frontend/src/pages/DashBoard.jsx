@@ -17,8 +17,9 @@ import SupportAdminTab from "../Components/SupportAdminTab";
 import UserManagementTab from "../Components/UserManagementTab";
 import PendingJobsTab from "../Components/PendingJobsTab";
 import CartTab from "../Components/CartTab";
-import BookingsManagement from "../components/admin/BookingsManagement";
-import PaymentsManagement from "../components/admin/PaymentsManagement";
+import BookingsManagement from "../Components/admin/BookingsManagement";
+import PaymentsManagement from "../Components/admin/PaymentsManagement";
+import ReviewManagementTab from "../Components/admin/ReviewManagementTab";
 
 // Component mapping
 const componentMap = {
@@ -36,7 +37,8 @@ const componentMap = {
     PendingJobsTab,
     CartTab,
     BookingsManagement,
-    PaymentsManagement
+    PaymentsManagement,
+    ReviewManagementTab
 };
 
 const DashBoard = () => {

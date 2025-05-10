@@ -13,7 +13,7 @@ const BookingList = ({ userType }) => {
 
     const fetchBookings = async () => {
         try {
-            const response = await axios.get('/api/bookings/me');
+            const response = await axios.get('/bookings/me');
             // Filter bookings based on userType if specified
             const filteredBookings = userType 
                 ? response.data.filter(booking => 
@@ -32,7 +32,7 @@ const BookingList = ({ userType }) => {
 
     const handleStatusUpdate = async (bookingId, newStatus) => {
         try {
-            await axios.patch(`/api/bookings/${bookingId}/seeker-status`, {
+            await axios.patch(`/bookings/${bookingId}/seeker-status`, {
                 status: newStatus
             });
             fetchBookings(); // Refresh the list
@@ -43,7 +43,7 @@ const BookingList = ({ userType }) => {
 
     const handleConfirmCompletion = async (bookingId) => {
         try {
-            await axios.patch(`/api/bookings/${bookingId}/confirm-completion`);
+            await axios.patch(`/bookings/${bookingId}/confirm-completion`);
             fetchBookings(); // Refresh the list
         } catch (error) {
             console.error('Error confirming completion:', error);

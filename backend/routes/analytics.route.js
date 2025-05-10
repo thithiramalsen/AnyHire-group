@@ -1,26 +1,27 @@
-import express from "express";
-import { adminRoute, protectRoute } from "../middleware/auth.middleware.js";
-import { getAnalyticsData, getDailySalesData } from "../controllers/analytics.controller.js";
+import { Router } from 'express';
+const router = Router();
+import { getUserAnalytics, getJobsAnalytics, getBookingsAnalytics, getPaymentsAnalytics, getRatingsAnalytics, getSupportAnalytics } from '../controllers/analytics.controller.js';
+import { protectRoute, adminRoute } from '../middleware/auth.middleware.js';
 
-const router = express.Router();
+// All analytics routes require admin authentication
+router.use(protectRoute, adminRoute);
 
-router.get("/", protectRoute, adminRoute, async (req, res) => {
-	try {
-		const analyticsData = await getAnalyticsData();
+// Users analytics
+router.get('/users', getUserAnalytics);
 
-		const endDate = new Date();
-		const startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+// Jobs analytics
+router.get('/jobs', getJobsAnalytics);
 
-		const dailySalesData = await getDailySalesData(startDate, endDate);
+// Bookings analytics
+router.get('/bookings', getBookingsAnalytics);
 
-		res.json({
-			analyticsData,
-			dailySalesData,
-		});
-	} catch (error) {
-		console.log("Error in analytics route", error.message);
-		res.status(500).json({ message: "Server error", error: error.message });
-	}
-});
+// Payments analytics
+router.get('/payments', getPaymentsAnalytics);
 
-export default router;
+// Ratings analytics
+router.get('/ratings', getRatingsAnalytics);
+
+// Support analytics
+router.get('/support', getSupportAnalytics);
+
+export default router; 

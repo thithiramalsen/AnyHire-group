@@ -32,7 +32,11 @@ const userSchema = new mongoose.Schema({
         default: null, // Default to null if no image is provided
     },
 
-    
+    lastActive: {
+        type: Date,
+        default: Date.now
+    },
+
 }, {
      //createdAt, updatedAt
     timestamps: true 

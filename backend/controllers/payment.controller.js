@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { updateJobStatus } from '../middleware/jobStatus.middleware.js';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -270,10 +271,13 @@ export const confirmPayment = async (req, res) => {
                 { _id: payment.bookingId },
                 { 
                     status: 'paid',
-                    'payment.status': 'confirmed', // Add this line to update payment status
+                    'payment.status': 'confirmed',
                     'dates.paid': new Date()
                 }
             );
+
+            // Update job status after payment confirmation
+            await updateJobStatus(booking.jobId);
         } else {
             payment.status = 'reported';
         }

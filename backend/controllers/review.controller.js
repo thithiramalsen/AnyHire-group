@@ -131,3 +131,37 @@ export const getUserAverageRating = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Get all reviews for admin
+export const getAdminReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find()
+            .populate('reviewerId', 'name image')
+            .populate('revieweeId', 'name image')
+            .populate('bookingId', 'jobTitle')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(reviews);
+    } catch (error) {
+        console.error("Error fetching admin reviews:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Delete a review (admin only)
+export const deleteReview = async (req, res) => {
+    try {
+        const reviewId = req.params.id;
+        const review = await Review.findById(reviewId);
+        
+        if (!review) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        await Review.deleteOne({ _id: reviewId });
+        res.status(200).json({ message: "Review deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting review:", error);
+        res.status(500).json({ message: error.message });
+    }
+};

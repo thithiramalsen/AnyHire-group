@@ -4,6 +4,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { toast } from 'react-hot-toast';
 import axios from '../lib/axios';
 import { Trash2, Edit2, Check, X, Send, User } from 'lucide-react';
+import chatBg from '../assets/chat-bg.jpg'; // adjust path if needed
 
 const Chat = ({ bookingId }) => {
     console.debug('[Chat] Component initialized with bookingId:', bookingId);
@@ -14,11 +15,42 @@ const Chat = ({ bookingId }) => {
     const [typingUsers, setTypingUsers] = useState([]);
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [editMessageText, setEditMessageText] = useState('');
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const messagesEndRef = useRef(null);
     const { user } = useUserStore();
     const socketRef = useRef(null);
     const loginToastShownRef = useRef(false);
     const typingTimeoutRef = useRef(null);
+    const lastMessageTimestampRef = useRef(null);
+    const autoRefreshIntervalRef = useRef(null);
+    const REFRESH_INTERVAL = 30000; // 30 seconds
+
+    const fetchMessages = async () => {
+        try {
+            setIsRefreshing(true);
+            console.debug('[Chat] Fetching messages for booking:', bookingId);
+            const response = await axios.get(`/chat/${bookingId}`);
+            console.debug('[Chat] Messages fetched:', response.data.length);
+            
+            // Only update messages if we have new ones
+            if (response.data.length > 0) {
+                const lastMessage = response.data[response.data.length - 1];
+                if (!lastMessageTimestampRef.current || 
+                    new Date(lastMessage.timestamp) > new Date(lastMessageTimestampRef.current)) {
+                    setMessages(response.data.map(msg => ({
+                        ...msg,
+                        status: 'delivered'
+                    })));
+                    lastMessageTimestampRef.current = lastMessage.timestamp;
+                }
+            }
+        } catch (error) {
+            console.error('[Chat] Error fetching messages:', error);
+            toast.error('Failed to load chat history');
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         console.debug('[Chat] Effect triggered. User:', user);
@@ -67,14 +99,25 @@ const Chat = ({ bookingId }) => {
 
             socketRef.current.on('receive_message', (message) => {
                 console.debug('[Chat] Message received:', message);
-                setMessages(prev => [...prev, {
-                    _id: message._id,
-                    senderId: message.senderId,
-                    senderName: message.senderName,
-                    message: message.message,
-                    timestamp: message.timestamp,
-                    status: 'delivered'
-                }]);
+                // Only add message if it's not from the current user
+                if (message.senderId !== user._id) {
+                    setMessages(prev => {
+                        // Check if message already exists
+                        const messageExists = prev.some(msg => msg._id === message._id);
+                        if (messageExists) {
+                            return prev;
+                        }
+                        return [...prev, {
+                            _id: message._id,
+                            senderId: message.senderId,
+                            senderName: message.senderName,
+                            message: message.message,
+                            timestamp: message.timestamp,
+                            status: 'delivered'
+                        }];
+                    });
+                    lastMessageTimestampRef.current = message.timestamp;
+                }
             });
 
             socketRef.current.on('message_status', ({ messageId, status }) => {
@@ -110,23 +153,11 @@ const Chat = ({ bookingId }) => {
                 setIsConnected(false);
             });
 
-            // Fetch existing messages after connection
-            const fetchMessages = async () => {
-                try {
-                    console.debug('[Chat] Fetching messages for booking:', bookingId);
-                    const response = await axios.get(`/chat/${bookingId}`);
-                    console.debug('[Chat] Messages fetched:', response.data.length);
-                    setMessages(response.data.map(msg => ({
-                        ...msg,
-                        status: 'delivered'
-                    })));
-                } catch (error) {
-                    console.error('[Chat] Error fetching messages:', error);
-                    toast.error('Failed to load chat history');
-                }
-            };
-
+            // Initial message fetch
             fetchMessages();
+
+            // Set up auto-refresh interval
+            autoRefreshIntervalRef.current = setInterval(fetchMessages, REFRESH_INTERVAL);
         }
 
         return () => {
@@ -135,6 +166,10 @@ const Chat = ({ bookingId }) => {
                 socketRef.current.emit('leave_booking', bookingId);
                 socketRef.current.disconnect();
                 socketRef.current = null;
+            }
+            if (autoRefreshIntervalRef.current) {
+                clearInterval(autoRefreshIntervalRef.current);
+                autoRefreshIntervalRef.current = null;
             }
         };
     }, [bookingId, user]);
@@ -169,7 +204,7 @@ const Chat = ({ bookingId }) => {
         }, 2000);
     };
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !isConnected || !socketRef.current) return;
 
@@ -178,9 +213,37 @@ const Chat = ({ bookingId }) => {
             message: newMessage.trim()
         };
 
-        console.debug('[Chat] Sending message:', messageData);
-        socketRef.current.emit('send_message', messageData);
-        setNewMessage('');
+        try {
+            // First save the message to the database
+            const response = await axios.post(`/chat/${bookingId}`, messageData);
+            console.debug('[Chat] Message saved to database:', response.data);
+
+            // Add the message to local state with the database ID
+            const newMessageObj = {
+                _id: response.data._id,
+                senderId: user._id,
+                senderName: user.name,
+                message: newMessage.trim(),
+                timestamp: new Date(),
+                status: 'delivered'
+            };
+            
+            setMessages(prev => [...prev, newMessageObj]);
+            setNewMessage('');
+
+            // Then emit through socket with sender info
+            socketRef.current.emit('send_message', {
+                ...messageData,
+                _id: response.data._id,
+                senderId: user._id,
+                senderName: user.name,
+                timestamp: newMessageObj.timestamp,
+                isSender: true // Add flag to identify sender
+            });
+        } catch (error) {
+            console.error('[Chat] Error sending message:', error);
+            toast.error('Failed to send message');
+        }
     };
 
     const handleDeleteMessage = async (messageId) => {
@@ -240,7 +303,10 @@ const Chat = ({ bookingId }) => {
     return (
         <div className="relative flex flex-col h-[600px] rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
             {/* Background Image with Overlay */}
-            <div className="absolute inset-0 bg-[url('/image.png')] bg-cover bg-center" />
+            <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${chatBg})` }}
+            />
             <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 to-gray-800/85 backdrop-blur-[2px]" />
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiA4YzAgMi0yIDQtNCA0cy00LTItNC00IDItNCA0LTQgNCAyIDQgNHY0YzAgMi0yIDQtNCA0cy00LTItNC00IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9Ii4wMiIvPjwvZz48L3N2Zz4=')] opacity-5" />
 
@@ -253,8 +319,15 @@ const Chat = ({ bookingId }) => {
                             isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
                         }`} />
                     </div>
-                    <div className="text-sm text-gray-300">
-                        {isConnected ? 'Connected' : 'Disconnected'}
+                    <div className="flex items-center gap-2">
+                        {isRefreshing && (
+                            <div className="text-sm text-gray-400 animate-pulse">
+                                Refreshing...
+                            </div>
+                        )}
+                        <div className="text-sm text-gray-300">
+                            {isConnected ? 'Connected' : 'Disconnected'}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -298,10 +371,10 @@ const Chat = ({ bookingId }) => {
 
                             {/* Message Content */}
                             <div
-                                className={`max-w-[70%] rounded-2xl p-3 shadow-lg transition-all duration-200 hover:shadow-xl backdrop-blur-sm ${
+                                className={`max-w-[70%] rounded-2xl p-3 shadow-2xl transition-all duration-200 hover:shadow-2xl backdrop-blur-md text-white ${
                                     msg.senderId === user._id
-                                        ? 'bg-gradient-to-br from-emerald-600/90 to-emerald-700/90 text-white'
-                                        : 'bg-gradient-to-br from-cyan-700/90 to-cyan-800/90 text-white'
+                                        ? 'bg-emerald-700/90'
+                                        : 'bg-cyan-800/90'
                                 }`}
                             >
                                 <div className="text-sm font-semibold mb-1">
@@ -348,8 +421,8 @@ const Chat = ({ bookingId }) => {
                                                 {msg.senderId === user._id && (
                                                     <div className="flex items-center gap-2">
                                                         <div className="text-xs opacity-70">
-                                                            {msg.status === 'delivered' && '✓'}
-                                                            {msg.status === 'read' && '✓✓'}
+                                                            {msg.status === 'delivered' && <span title="Delivered">✓</span>}
+                                                            {msg.status === 'read' && <span title="Seen">✓✓</span>}
                                                         </div>
                                                         <button
                                                             onClick={() => handleEditMessage(msg._id, msg.message)}

@@ -7,16 +7,24 @@ import {
     getUserBookings,
     getBookingById,
     getJobBookings,
-    getMyApplications
+    getMyApplications,
+    getAllBookings,
+    updateBookingStatusAdmin
 } from '../controllers/booking.controller.js';
 
 const router = express.Router();
+
+// Admin route to get all bookings
+router.get('/', protectRoute, adminRoute, getAllBookings);
 
 // Apply for a job (creates booking)
 router.post('/apply/:jobId', protectRoute, applyForJob);
 
 // Update booking status (accept/decline/progress/complete)
 router.patch('/:id/status', protectRoute, updateBookingStatus);
+
+// Add this new route for admin to update booking status
+router.patch('/admin/:bookingId/status', protectRoute, adminRoute, updateBookingStatusAdmin);
 
 // Get all bookings for logged-in user (both as seeker and poster)
 router.get('/me', protectRoute, getUserBookings);

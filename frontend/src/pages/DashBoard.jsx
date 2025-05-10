@@ -17,6 +17,8 @@ import SupportAdminTab from "../Components/SupportAdminTab";
 import UserManagementTab from "../Components/UserManagementTab";
 import PendingJobsTab from "../Components/PendingJobsTab";
 import CartTab from "../Components/CartTab";
+import BookingsManagement from "../components/admin/BookingsManagement";
+import PaymentsManagement from "../components/admin/PaymentsManagement";
 
 // Component mapping
 const componentMap = {
@@ -32,7 +34,9 @@ const componentMap = {
     SupportAdminTab,
     UserManagementTab,
     PendingJobsTab,
-    CartTab
+    CartTab,
+    BookingsManagement,
+    PaymentsManagement
 };
 
 const DashBoard = () => {
@@ -54,7 +58,13 @@ const DashBoard = () => {
 
             {/* Main Content */}
             <div className="flex-1 ml-64 p-8">
-                {TabComponent && <TabComponent />}
+                {TabComponent ? (
+                    <TabComponent />
+                ) : (
+                    <div className="text-center text-gray-400">
+                        Select a tab from the sidebar
+                    </div>
+                )}
             </div>
         </div>
     );

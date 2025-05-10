@@ -8,6 +8,7 @@ import DashBoard from "./pages/DashBoard";
 import SignUpChoicePage from "./pages/SignUpChoicePage";
 import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
 import MyJobs from "./Components/MyJobs";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";
@@ -22,6 +23,7 @@ import BookingPage from "./pages/BookingPage";
 
 import Chatbot from "./Components/Chatbot/Chatbot";
 import ChatPage from './pages/ChatPage';
+import ReviewPage from './pages/ReviewPage';
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -90,9 +92,30 @@ function App() {
                             )
                         }
                     />
+                    <Route
+                        path="/confirm-payment/:bookingId"
+                        element={
+                            user ? (
+                                <PaymentConfirmation />
+                            ) : (
+                                <Navigate to="/login" replace />
+                            )
+                        }
+                    />
 					<Route path="/booking/:bookingId" element={<BookingPage />} />
+					<Route path="/bookings" element={<BookingPage />} />
 					<Route path="/chat/:bookingId" element={<ChatPage />} />
 					<Route path='/cart' element={<Cart />} />
+					<Route
+						path="/review/:bookingId"
+						element={
+							user ? (
+								<ReviewPage />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
 				</Routes>
 			</div>
 			<Toaster />

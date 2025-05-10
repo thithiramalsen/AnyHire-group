@@ -17,48 +17,55 @@ const SignUpJobSeekerPage = () => {
 
   const { signup, loading } = useUserStore();
 
+  const validate = (fields) => {
+    const errs = {};
+    
+    // Name validation
+    if (!fields.name) {
+      errs.name = 'Name is required.';
+    } else if (fields.name.length < 3) {
+      errs.name = 'Name must be at least 3 characters.';
+    } else if (!/^[A-Za-z\s]+$/.test(fields.name)) {
+      errs.name = 'Name can only contain letters.';
+    }
+
+    // Email validation
+    if (!fields.email) {
+      errs.email = 'Email is required.';
+    } else if (!/\S+@\S+\.\S+/.test(fields.email)) {
+      errs.email = 'Please enter a valid email address.';
+    }
+
+    // Password validation
+    if (!fields.password) {
+      errs.password = 'Password is required.';
+    } else if (fields.password.length < 6) {
+      errs.password = 'Password must be at least 6 characters.';
+    }
+
+    // Confirm Password validation
+    if (!fields.confirmPassword) {
+      errs.confirmPassword = 'Please confirm your password.';
+    } else if (fields.confirmPassword !== fields.password) {
+      errs.confirmPassword = 'Passwords do not match.';
+    }
+
+    // Image validation (if required)
+    if (fields.image && !fields.image.type.startsWith('image/')) {
+      errs.image = 'Please select a valid image file.';
+    }
+
+    return errs;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Name validation
-    const nameRegex = /^[A-Za-z\s]+$/;
-    if (formData.name.length < 3) {
-        toast.error("Name must be at least 3 characters long.");
-        return;
+    const errors = validate(formData);
+    if (Object.keys(errors).length > 0) {
+      Object.values(errors).forEach((err) => toast.error(err));
+      return;
     }
-    if (!nameRegex.test(formData.name)) {
-        toast.error("Name can only contain letters.");
-        return;
-    }
-	
-		// Password validation
-		if (formData.password.length < 6) {
-			toast.error("Password must be at least 6 characters long.");
-			return;
-		}
-
-    /*/ Profile picture validation
-		if (!formData.image) {
-			alert("Please select a profile picture.");
-			return;
-		}*/
-
-    /*/ Image file type validation
-		if (!formData.image.type.startsWith("image/")) {
-			toast.error("Please select a valid image file.");
-			return;
-		}*/
-    
-    // Image file type validation (only if an image is selected)
-		if (formData.image && !formData.image.type.startsWith("image/")) {
-			toast.error("Please select a valid image file.");
-			return;
-		}	
-	
-		if (formData.password !== formData.confirmPassword) {
-			toast.error("Passwords do not match.");
-			return;
-		}
 
     // Adding role 'jobSeeker' to the formData
     const data = new FormData();
@@ -114,6 +121,9 @@ const SignUpJobSeekerPage = () => {
                   className="block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="John Doe"
                 />
+                {touched.name && errors.name && (
+                  <div className="text-red-500 text-xs mt-1">{errors.name}</div>
+                )}
               </div>
             </div>
 
@@ -135,6 +145,9 @@ const SignUpJobSeekerPage = () => {
                   className="block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="you@example.com"
                 />
+                {touched.email && errors.email && (
+                  <div className="text-red-500 text-xs mt-1">{errors.email}</div>
+                )}
               </div>
             </div>
 
@@ -156,6 +169,9 @@ const SignUpJobSeekerPage = () => {
                   className="block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="********"
                 />
+                {touched.password && errors.password && (
+                  <div className="text-red-500 text-xs mt-1">{errors.password}</div>
+                )}
               </div>
             </div>
 
@@ -177,6 +193,9 @@ const SignUpJobSeekerPage = () => {
                   className="block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="********"
                 />
+                {touched.confirmPassword && errors.confirmPassword && (
+                  <div className="text-red-500 text-xs mt-1">{errors.confirmPassword}</div>
+                )}
               </div>
             </div>
 
@@ -196,6 +215,9 @@ const SignUpJobSeekerPage = () => {
                   onChange={(e) => setFormData({ ...formData, image: e.target.files[0] })}
                   className="block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                 />
+                {touched.image && errors.image && (
+                  <div className="text-red-500 text-xs mt-1">{errors.image}</div>
+                )}
               </div>
             </div>
 

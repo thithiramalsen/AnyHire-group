@@ -3,7 +3,7 @@ import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Star } from 'lucide-react';
 import Chat from './Chat';
 
 const BookingsTab = () => {
@@ -11,14 +11,34 @@ const BookingsTab = () => {
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useUserStore();
     const navigate = useNavigate();
+    const [reviewsByBooking, setReviewsByBooking] = useState({});
+    const [categories, setCategories] = useState({});
 
     useEffect(() => {
-        const fetchBookings = async () => {
+        const fetchBookingsAndReviews = async () => {
             try {
-                const response = await axios.get("/booking/me");
-                // Fetch job details for each booking
+                // Fetch categories first
+                const categoriesRes = await axios.get("/category");
+                const categoriesMap = {};
+                categoriesRes.data.categories.forEach(cat => {
+                    categoriesMap[cat._id] = cat.name;
+                });
+                setCategories(categoriesMap);
+
+                const [bookingsRes, reviewsRes] = await Promise.all([
+                    axios.get("/booking/me"),
+                    axios.get(`/reviews/user/${user._id}?type=given`)
+                ]);
+                const reviews = reviewsRes.data || [];
+                // Map reviews by bookingId for quick lookup
+                const reviewsMap = {};
+                reviews.forEach(r => {
+                    reviewsMap[r.bookingId] = r;
+                });
+                setReviewsByBooking(reviewsMap);
+                // Fetch job and seeker details for each booking
                 const bookingsWithDetails = await Promise.all(
-                    response.data.map(async (booking) => {
+                    bookingsRes.data.map(async (booking) => {
                         try {
                             const jobResponse = await axios.get(`/job/${booking.jobId}`);
                             const seekerResponse = await axios.get(`/users/booking-info/${booking.seekerId}`);
@@ -35,34 +55,35 @@ const BookingsTab = () => {
                 );
                 setBookings(bookingsWithDetails);
             } catch (error) {
-                console.error("Error fetching bookings:", error);
+                console.error("Error fetching bookings or reviews:", error);
                 toast.error("Failed to load bookings");
             } finally {
                 setIsLoading(false);
             }
         };
-
-        fetchBookings();
-    }, []);
+        fetchBookingsAndReviews();
+    }, [user._id]);
 
     const handleAcceptApplication = async (bookingId) => {
         try {
-            await axios.patch(`/booking/${bookingId}/status`, { status: 'accepted' });
-            // Update the bookings state to reflect the change
-            setBookings(bookings.map(booking => {
-                if (booking._id === bookingId) {
-                    return { ...booking, status: 'accepted' };
-                }
-                // If this booking is for the same job as the accepted one, mark it as declined
-                if (booking.jobId === bookings.find(b => b._id === bookingId)?.jobId && booking._id !== bookingId) {
-                    return { ...booking, status: 'declined' };
-                }
-                return booking;
-            }));
-            toast.success("Application accepted successfully");
+            const response = await axios.patch(`/booking/${bookingId}/status`, { status: 'accepted' });
+            if (response.data) {
+                // Update the bookings state to reflect the change
+                setBookings(bookings.map(booking => {
+                    if (booking._id === bookingId) {
+                        return { ...booking, status: 'accepted' };
+                    }
+                    // If this booking is for the same job as the accepted one, mark it as declined
+                    if (booking.jobId === bookings.find(b => b._id === bookingId)?.jobId && booking._id !== bookingId) {
+                        return { ...booking, status: 'declined' };
+                    }
+                    return booking;
+                }));
+                toast.success("Application accepted successfully");
+            }
         } catch (error) {
             console.error("Error accepting application:", error);
-            toast.error("Failed to accept application");
+            toast.error(error.response?.data?.message || "Failed to accept application");
         }
     };
 
@@ -108,182 +129,163 @@ const BookingsTab = () => {
 
     // Separate bookings into different sections
     const activeApplications = postedJobs.filter(booking => booking.status === 'applied');
+    
     const ongoingBookings = postedJobs.filter(booking => 
-        ['in_progress', 'completed_by_seeker'].includes(booking.status)
+        ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending'].includes(booking.status) ||
+        ['pending', 'awaiting_confirmation'].includes(booking.payment?.status)
     );
-    const paymentPendingBookings = postedJobs.filter(booking => booking.status === 'payment_pending');
-    const completedBookings = postedJobs.filter(booking => booking.status === 'paid');
+    
+    const completedBookings = postedJobs.filter(booking => 
+        booking.status === 'paid' || booking.payment?.status === 'completed'
+    );
+    
     const declinedBookings = postedJobs.filter(booking => booking.status === 'declined');
     const cancelledBookings = postedJobs.filter(booking => booking.status === 'cancelled');
 
-    if (postedJobs.length === 0) {
-        return <div className="text-center text-gray-500 mt-8">No applications for your posted jobs yet.</div>;
-    }
+    const renderBookingCard = (booking) => {
+        const canShowReview = booking.payment?.status === 'confirmed' || 
+                            booking.payment?.status === 'completed';
 
-    const renderBookingCard = (booking) => (
-        <div key={booking._id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            <div className="p-6">
-                <div className="flex gap-4">
-                    {/* Job Image */}
-                    {booking.jobDetails?.images && (
-                        <div className="w-24 h-24 flex-shrink-0">
-                            <img
-                                src={`http://localhost:5000${booking.jobDetails.images}`}
-                                alt={booking.jobTitle}
-                                className="w-full h-full object-cover rounded-lg"
-                            />
+        return (
+            <div key={booking._id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                {booking.jobDetails?.images && (
+                    <img
+                        src={`http://localhost:5000${booking.jobDetails.images}`}
+                        alt={booking.jobTitle}
+                        className="w-full h-48 object-cover"
+                    />
+                )}
+                <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2">{booking.jobTitle}</h3>
+                    <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">📍 {booking.jobDetails?.district || 'Not specified'}</span>
+                            <span className="text-gray-400">📁 {categories[booking.jobDetails?.category] || 'Not specified'}</span>
                         </div>
-                    )}
-                    
-                    <div className="flex-grow">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="text-xl font-semibold mb-2">{booking.jobTitle}</h3>
-                                <div className="space-y-1 text-sm text-gray-400">
-                                    <p>Job ID: #{booking.jobId}</p>
-                                    <p>Location: {booking.jobDetails?.district || 'Not specified'}</p>
-                                    <p>Category: {booking.jobDetails?.category || 'Not specified'}</p>
-                                    <p>Seeker: {booking.seekerDetails?.name || booking.seekerName || 'Anonymous'}</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-green-400 font-semibold">Rs. {booking.payment.amount}</p>
-                                <p className="text-sm text-gray-400">
-                                    Applied: {new Date(booking.dates.applied).toLocaleDateString()}
-                                </p>
-                            </div>
+                        <p className="text-gray-400">Seeker: {booking.seekerDetails?.name || booking.seekerName || 'Anonymous'}</p>
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-700">
+                        <div>
+                            <p className="text-green-400 font-semibold">Rs. {booking.payment.amount}</p>
+                            <p className="text-sm text-gray-400">
+                                Status: <span className={`${
+                                    booking.status === 'applied' ? 'text-yellow-400' :
+                                    booking.status === 'accepted' ? 'text-green-400' :
+                                    booking.status === 'in_progress' ? 'text-blue-400' :
+                                    booking.status === 'completed_by_seeker' ? 'text-purple-400' :
+                                    booking.status === 'payment_pending' ? 'text-orange-400' :
+                                    booking.status === 'completed' ? 'text-emerald-400' :
+                                    booking.status === 'declined' ? 'text-red-400' :
+                                    'text-gray-400'
+                                }`}>
+                                    {booking.status.split('_').map(word => 
+                                        word.charAt(0).toUpperCase() + word.slice(1)
+                                    ).join(' ')}
+                                </span>
+                            </p>
                         </div>
-
-                        <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-700">
-                            <div>
-                                <p className="text-sm text-gray-400">
-                                    Status: <span className={`${
-                                        booking.status === 'applied' ? 'text-yellow-400' : 
-                                        booking.status === 'accepted' ? 'text-green-400' : 
-                                        booking.status === 'declined' ? 'text-red-400' :
-                                        booking.status === 'in_progress' ? 'text-blue-400' :
-                                        booking.status === 'completed_by_seeker' ? 'text-purple-400' :
-                                        booking.status === 'completed' ? 'text-emerald-400' :
-                                        booking.status === 'cancelled' ? 'text-gray-400' :
-                                        'text-gray-400'
-                                    }`}>
-                                        {booking.status.split('_').map(word => 
-                                            word.charAt(0).toUpperCase() + word.slice(1)
-                                        ).join(' ')}
-                                    </span>
-                                </p>
-                            </div>
-                            <div className="space-x-2">
-                                {booking.status === 'applied' && (
-                                    <>
-                                        <button
-                                            onClick={() => handleAcceptApplication(booking._id)}
-                                            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                                        >
-                                            Accept
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeclineApplication(booking._id)}
-                                            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                                        >
-                                            Decline
-                                        </button>
-                                    </>
-                                )}
-                                {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid'].includes(booking.status) && (
-                                    <>
-                                        <button
-                                            onClick={() => navigate(`/booking/${booking._id}`)}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                        >
-                                            View Job
-                                        </button>
-                                        <button
-                                            onClick={() => navigate(`/chat/${booking._id}`)}
-                                            className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
-                                        >
-                                            <MessageCircle size={20} />
-                                            Chat
-                                        </button>
-                                    </>
-                                )}
-                                {booking.status === 'accepted' && (
+                        <div className="flex gap-2">
+                            {booking.status === 'applied' && (
+                                <>
                                     <button
-                                        onClick={() => handleCancelBooking(booking._id)}
+                                        onClick={() => handleAcceptApplication(booking._id)}
+                                        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                    >
+                                        Accept
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeclineApplication(booking._id)}
                                         className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
                                     >
-                                        Cancel Booking
+                                        Decline
                                     </button>
-                                )}
-                            </div>
+                                </>
+                            )}
+                            {['accepted', 'in_progress', 'completed_by_seeker', 'completed', 'payment_pending', 'paid', 'confirmed'].includes(booking.status) && (
+                                <>
+                                    <button
+                                        onClick={() => navigate(`/booking/${booking._id}`)}
+                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                    >
+                                        View Job
+                                    </button>
+                                    <button
+                                        onClick={() => navigate(`/chat/${booking._id}`)}
+                                        className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                                    >
+                                        <MessageCircle size={20} />
+                                        Chat
+                                    </button>
+                                </>
+                            )}
+                            {canShowReview && !reviewsByBooking[booking._id] && (
+                                <button
+                                    onClick={() => navigate(`/review/${booking._id}`, { 
+                                        state: { fromBookingsTab: true } 
+                                    })}
+                                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
+                                >
+                                    <Star size={20} />
+                                    Review
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
+    // Update the return statement to use grid layout
     return (
         <div className="container mx-auto px-4 py-8">
             <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
             
             {/* Active Applications Section */}
             {activeApplications.length > 0 && (
-                <div className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Active Applications</h3>
-                    {activeApplications.map(renderBookingCard)}
-                </div>
+                <>
+                    <h3 className="text-xl font-semibold mb-6">Active Applications</h3>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+                        {activeApplications.map(renderBookingCard)}
+                    </div>
+                </>
             )}
 
             {/* Ongoing Bookings Section */}
             {ongoingBookings.length > 0 && (
-                <div className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Ongoing Bookings</h3>
-                    {ongoingBookings.map(renderBookingCard)}
-                </div>
-            )}
-
-            {/* Payment Pending Section */}
-            {paymentPendingBookings.length > 0 && (
-                <div className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Bookings Pending Payment</h3>
-                    {paymentPendingBookings.map(renderBookingCard)}
-                </div>
+                <>
+                    <h3 className="text-xl font-semibold mb-6">Ongoing Bookings</h3>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+                        {ongoingBookings.map(renderBookingCard)}
+                    </div>
+                </>
             )}
 
             {/* Completed Bookings Section */}
             {completedBookings.length > 0 && (
-                <div className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Completed Bookings</h3>
-                    {completedBookings.map(renderBookingCard)}
-                </div>
+                <>
+                    <h3 className="text-xl font-semibold mb-6">Completed Bookings</h3>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+                        {completedBookings.map(renderBookingCard)}
+                    </div>
+                </>
             )}
 
             {/* Declined Bookings Section */}
             {declinedBookings.length > 0 && (
-                <div className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Declined Applications</h3>
-                    {declinedBookings.map(renderBookingCard)}
-                </div>
+                <>
+                    <h3 className="text-xl font-semibold mb-6">Declined Applications</h3>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+                        {declinedBookings.map(renderBookingCard)}
+                    </div>
+                </>
             )}
 
-            {/* Cancelled Bookings Section */}
-            {cancelledBookings.length > 0 && (
-                <div className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Cancelled Bookings</h3>
-                    {cancelledBookings.map(renderBookingCard)}
+            {/* Show message if no bookings */}
+            {postedJobs.length === 0 && (
+                <div className="text-center text-gray-500 mt-8">
+                    No applications for your posted jobs yet.
                 </div>
-            )}
-
-            {/* Show message if no bookings in any section */}
-            {postedJobs.length > 0 && 
-             activeApplications.length === 0 && 
-             ongoingBookings.length === 0 && 
-             paymentPendingBookings.length === 0 && 
-             completedBookings.length === 0 && 
-             declinedBookings.length === 0 && 
-             cancelledBookings.length === 0 && (
-                <p className="text-gray-400 text-center py-4">No bookings to display.</p>
             )}
         </div>
     );

@@ -4,6 +4,8 @@ export const rolePermissions = {
             { id: "profile", label: "Profile", component: "ProfileTab" },
             { id: "analytics", label: "Analytics", component: "AnalyticsTab" },
             { id: "job-approval", label: "Job Approval", component: "JobApprovalTab" },
+            { id: "bookings", label: "Bookings", component: "BookingsManagement" },
+            { id: "payments", label: "Payments", component: "PaymentsManagement" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
             { id: "user-management", label: "User Management", component: "UserManagementTab" },
             { id: "categories", label: "Categories", component: "CategoriesTab" }

@@ -1,6 +1,7 @@
 import Job from "../models/job.model.js";
 import multer from "multer";
 import Booking from "../models/booking.model.js";
+import Payment from "../models/payment.model.js";
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -141,18 +142,41 @@ export const updateJob = async (req, res) => {
 
 // Delete a job
 export const deleteJob = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedJob = await Job.findByIdAndDelete(id);
+    try {
+        const { id } = req.params;
+        
+        const job = await Job.findOne({ _id: Number(id) });
+        if (!job) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Job not found" 
+            });
+        }
 
-    if (!deletedJob) {
-      return res.status(404).json({ message: "Job not found" });
+        // Delete associated bookings and payments
+        const bookings = await Booking.find({ jobId: job._id });
+        for (const booking of bookings) {
+            const payment = await Payment.findOne({ bookingId: booking._id });
+            if (payment) {
+                await Payment.deleteOne({ _id: payment._id });
+            }
+            await Booking.deleteOne({ _id: booking._id });
+        }
+
+        await Job.deleteOne({ _id: Number(id) });
+
+        res.json({
+            success: true,
+            message: "Job and associated records deleted successfully"
+        });
+    } catch (error) {
+        console.error('Error deleting job:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to delete job", 
+            error: error.message 
+        });
     }
-
-    res.status(200).json({ message: "Job deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 };
 
 // Get jobs by status (approved or pending)

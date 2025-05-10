@@ -7,13 +7,51 @@ import { useUserStore } from "../stores/useUserStore";
 const LoginPage = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [errors, setErrors] = useState({});
+	const [touched, setTouched] = useState({});
 
 	const { login, loading } = useUserStore();
 
+	const validate = (fields) => {
+		const errs = {};
+		if (!fields.email) {
+			errs.email = "Email is required.";
+		} else if (!/\S+@\S+\.\S+/.test(fields.email)) {
+			errs.email = "Please enter a valid email address.";
+		}
+		if (!fields.password) {
+			errs.password = "Password is required.";
+		} else if (fields.password.length < 6) {
+			errs.password = "Password must be at least 6 characters.";
+		}
+		return errs;
+	};
+
+	const handleFieldChange = (field, value) => {
+		if (field === "email") setEmail(value);
+		if (field === "password") setPassword(value);
+
+		const validationErrors = validate({ email, password, [field]: value });
+		setErrors(validationErrors);
+	};
+
+	const handleBlur = (field) => {
+		setTouched((prev) => ({ ...prev, [field]: true }));
+		const validationErrors = validate({ email, password });
+		setErrors(validationErrors);
+	};
+
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		console.log(email, password);
-		login(email, password);
+		// Mark all fields as touched
+		setTouched({ email: true, password: true });
+
+		const validationErrors = validate({ email, password });
+		setErrors(validationErrors);
+
+		if (Object.keys(validationErrors).length === 0) {
+			login(email, password);
+		}
 	};
 
 	return (
@@ -48,7 +86,8 @@ const LoginPage = () => {
 									type='email'
 									required
 									value={email}
-									onChange={(e) => setEmail(e.target.value)}
+									onChange={(e) => handleFieldChange("email", e.target.value)}
+									onBlur={() => handleBlur("email")}
 									className=' block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 
 									rounded-md shadow-sm
 									 placeholder-gray-400 focus:outline-none focus:ring-emerald-500 
@@ -56,6 +95,9 @@ const LoginPage = () => {
 									placeholder='you@example.com'
 								/>
 							</div>
+							{touched.email && errors.email && (
+								<div className='text-red-500 text-xs mt-1'>{errors.email}</div>
+							)}
 						</div>
 
 						<div>
@@ -71,12 +113,16 @@ const LoginPage = () => {
 									type='password'
 									required
 									value={password}
-									onChange={(e) => setPassword(e.target.value)}
+									onChange={(e) => handleFieldChange("password", e.target.value)}
+									onBlur={() => handleBlur("password")}
 									className=' block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 
 									rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm'
 									placeholder='••••••••'
 								/>
 							</div>
+							{touched.password && errors.password && (
+								<div className='text-red-500 text-xs mt-1'>{errors.password}</div>
+							)}
 						</div>
 
 						<button

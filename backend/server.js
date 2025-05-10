@@ -42,7 +42,7 @@ app.use(cors());
 app.use(updateLastActive);
 
 // Booking
-app.use("/bookings", bookingRoutes);
+//app.use("/bookings", bookingRoutes);
 
 // Static file serving for uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

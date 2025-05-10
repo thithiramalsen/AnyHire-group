@@ -13,6 +13,12 @@ import MyJobs from "./Components/MyJobs";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";
 import UsersAnalytics from "./Components/analytics/UsersAnalytics";
+import JobsAnalytics from "./Components/analytics/JobsAnalytics";
+import BookingsAnalytics from "./Components/analytics/BookingsAnalytics";
+import PaymentsAnalytics from "./Components/analytics/PaymentsAnalytics";
+import RatingsAnalytics from "./Components/analytics/RatingsAnalytics";
+import SupportAnalytics from "./Components/analytics/SupportAnalytics";
+import UserProfileView from "./Components/UserProfileView";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
@@ -35,7 +41,7 @@ function App() {
 
 	useEffect(() => {
 		if (!user) return;
-	}, [, user]);
+	}, [user]);
 
 	if (checkingAuth) return <LoadingSpinner />;
 
@@ -69,40 +75,101 @@ function App() {
 						}
 					/>
 
-                    {/* New Routes */}
-					<Route path="/apply/:jobId" element={<ApplyPage />} />
-                    <Route path="/upgrade-account" element={<UpgradeAccount />} />
+					{/* Analytics Routes */}
+					<Route
+						path="/analytics/users"
+						element={
+							user?.role === 'admin' ? (
+								<UsersAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/analytics/jobs"
+						element={
+							user?.role === 'admin' ? (
+								<JobsAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/analytics/bookings"
+						element={
+							user?.role === 'admin' ? (
+								<BookingsAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/analytics/payments"
+						element={
+							user?.role === 'admin' ? (
+								<PaymentsAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/analytics/ratings"
+						element={
+							user?.role === 'admin' ? (
+								<RatingsAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/analytics/support"
+						element={
+							user?.role === 'admin' ? (
+								<SupportAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
 
-                    <Route
-                        path="/my-jobs"
-                        element={
-                            user ? (
-                                <MyJobs />
-                            ) : (
-                                <Navigate to="/login" replace />
-                            )
-                        }
-                    />
-                    <Route
-                        path="/payment/:bookingId"
-                        element={
-                            user ? (
-                                <PaymentPage />
-                            ) : (
-                                <Navigate to="/login" replace />
-                            )
-                        }
-                    />
-                    <Route
-                        path="/confirm-payment/:bookingId"
-                        element={
-                            user ? (
-                                <PaymentConfirmation />
-                            ) : (
-                                <Navigate to="/login" replace />
-                            )
-                        }
-                    />
+					{/* Other Routes */}
+					<Route path="/apply/:jobId" element={<ApplyPage />} />
+					<Route path="/upgrade-account" element={<UpgradeAccount />} />
+					<Route
+						path="/my-jobs"
+						element={
+							user ? (
+								<MyJobs />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/payment/:bookingId"
+						element={
+							user ? (
+								<PaymentPage />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/confirm-payment/:bookingId"
+						element={
+							user ? (
+								<PaymentConfirmation />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
 					<Route path="/booking/:bookingId" element={<BookingPage />} />
 					<Route path="/bookings" element={<BookingPage />} />
 					<Route path="/chat/:bookingId" element={<ChatPage />} />
@@ -117,10 +184,7 @@ function App() {
 							)
 						}
 					/>
-					<Route path="/analytics/users" element={<UsersAnalytics />} />
-
-
-
+					<Route path="/user/:userId" element={<UserProfileView />} />
 				</Routes>
 			</div>
 			<Toaster />

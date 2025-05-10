@@ -2,17 +2,23 @@ export const rolePermissions = {
     admin: {
         tabs: [
             { id: "profile", label: "Profile", component: "ProfileTab" },
-            { id: "analytics", label: "Analytics", component: "AnalyticsTab", subTabs: [
-                { id: "analytics-users", label: "Users Analytics" },
-                { id: "analytics-jobs", label: "Jobs Analytics" },
-                { id: "analytics-bookings", label: "Bookings Analytics" },
-                { id: "analytics-payments", label: "Payments Analytics" },
-                { id: "analytics-ratings", label: "Ratings Analytics" },
-                { id: "analytics-support", label: "Support Analytics" }
-            ] },
+            { 
+                id: "analytics", 
+                label: "Analytics", 
+                component: "AnalyticsTab",
+                subTabs: [
+                    { id: "users", label: "Users", component: "UsersAnalytics" },
+                    { id: "jobs", label: "Jobs", component: "JobsAnalytics" },
+                    { id: "bookings", label: "Bookings", component: "BookingsAnalytics" },
+                    { id: "payments", label: "Payments", component: "PaymentsAnalytics" },
+                    { id: "ratings", label: "Ratings", component: "RatingsAnalytics" },
+                    { id: "support", label: "Support", component: "SupportAnalytics" }
+                ]
+            },
             { id: "job-approval", label: "Job Approval", component: "JobApprovalTab" },
             { id: "bookings", label: "Bookings", component: "BookingsManagement" },
             { id: "payments", label: "Payments", component: "PaymentsManagement" },
+            { id: "reviews", label: "Reviews", component: "ReviewManagementTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
             { id: "user-management", label: "User Management", component: "UserManagementTab" },
             { id: "categories", label: "Categories", component: "CategoriesTab" }
@@ -23,6 +29,7 @@ export const rolePermissions = {
             { id: "profile", label: "Profile", component: "ProfileTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
             { id: "post-job", label: "Post Job", component: "JobPostingTab" },
+            { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
         ]
@@ -30,10 +37,12 @@ export const rolePermissions = {
     jobSeeker: {
         tabs: [
             { id: "profile", label: "Profile", component: "ProfileTab" },
-            { id: "portfolio", label: "Portfolio", component: "PortfolioTab" },
-            { id: "jobs", label: "Jobs", component: "JobsTab" },
-            { id: "cart", label: "Cart", component: "CartTab" },
-            { id: "support", label: "Support", component: "SupportUserTab" }
+            { id: "worker-profile", label: "Worker Profile", component: "WorkerProfileTab" },
+            { id: "jobs", label: "My Jobs", component: "JobsTab" },
+            { id: "bookings", label: "Bookings", component: "BookingsTab" },
+            { id: "reviews", label: "Reviews", component: "ReviewsTab" },
+            { id: "support", label: "Support", component: "SupportUserTab" },
+            { id: "cart", label: "Cart", component: "CartTab" }
         ]
     }
 };

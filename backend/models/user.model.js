@@ -37,6 +37,14 @@ const userSchema = new mongoose.Schema({
         default: Date.now
     },
 
+        preferredCategories: [{
+        type: Number,
+        ref: 'Category'
+    }],
+    preferredDistrict: {
+        type: String
+    }
+
 }, {
      //createdAt, updatedAt
     timestamps: true 

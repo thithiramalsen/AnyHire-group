@@ -70,7 +70,8 @@ const PaymentConfirmation = () => {
                 notes
             });
             toast.success('Payment confirmed successfully');
-            navigate('/bookings');
+            // Redirect to review page instead of bookings
+            navigate(`/review/${bookingId}`);
         } catch (error) {
             console.error('Confirmation error:', error);
             toast.error(error.response?.data?.message || 'Failed to confirm payment');

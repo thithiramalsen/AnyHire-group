@@ -20,37 +20,41 @@ const ReviewPage = () => {
 
     useEffect(() => {
         // Check if navigated from BookingsTab via location state
-        if (location.state && location.state.fromBookingsTab) {
+        if (location.state?.fromBookingsTab) {
             setFromBookingsTab(true);
         }
-        const fetchBooking = async () => {
+
+        const fetchData = async () => {
             try {
-                const response = await axios.get(`/booking/${bookingId}`);
-                setBooking(response.data);
+                // Fetch booking details
+                const bookingResponse = await axios.get(`/booking/${bookingId}`);
+                setBooking(bookingResponse.data);
+
+                // If editing (coming from edit button click)
+                if (location.state?.isEditing) {
+                    console.log("Fetching existing review for editing");
+                    const reviewsResponse = await axios.get(`/reviews/user/${user._id}?type=given`);
+                    const existingReview = reviewsResponse.data.find(r => 
+                        r.bookingId._id === Number(bookingId) || r.bookingId === Number(bookingId)
+                    );
+
+                    console.log("Found existing review:", existingReview);
+
+                    if (existingReview) {
+                        setExistingReview(existingReview);
+                        setRating(existingReview.rating);
+                        setComment(existingReview.comment || '');
+                    }
+                }
             } catch (error) {
-                console.error('Error fetching booking:', error);
-                toast.error('Failed to load booking details');
+                console.error('Error fetching data:', error);
+                toast.error('Failed to load data');
                 navigate(-1);
             }
         };
-        fetchBooking();
-        // Fetch existing review if any
-        const fetchReview = async () => {
-            try {
-                const reviewType = user.role === 'customer' ? 'customer_to_seeker' : 'seeker_to_customer';
-                const res = await axios.get(`/reviews/user/${user._id}?type=given`);
-                const found = res.data.find(r => r.bookingId === Number(bookingId) && r.reviewType === reviewType);
-                if (found) {
-                    setExistingReview(found);
-                    setRating(found.rating);
-                    setComment(found.comment || '');
-                }
-            } catch (e) {
-                // ignore
-            }
-        };
-        fetchReview();
-    }, [bookingId, navigate, location.state, user]);
+
+        fetchData();
+    }, [bookingId, navigate, location.state, user._id]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -58,6 +62,7 @@ const ReviewPage = () => {
             toast.error('Please select a rating');
             return;
         }
+
         setSubmitting(true);
         try {
             const reviewType = user.role === 'customer' ? 'customer_to_seeker' : 'seeker_to_customer';
@@ -67,15 +72,24 @@ const ReviewPage = () => {
                 reviewType,
                 ...(comment.trim() && { comment })
             };
-            await axios.post('/reviews', payload);
-            toast.success('Review submitted successfully!');
+
+            if (existingReview) {
+                // Update existing review
+                await axios.put(`/reviews/${existingReview._id}`, payload);
+                toast.success('Review updated successfully!');
+            } else {
+                // Create new review
+                await axios.post('/reviews', payload);
+                toast.success('Review submitted successfully!');
+            }
+
             if (fromBookingsTab) {
                 navigate('/dashboard/bookings');
             } else {
-                navigate(user?.role === 'jobSeeker' ? `/confirm-payment/${bookingId}` : `/payment/${bookingId}`);
+                navigate(-1);
             }
         } catch (error) {
-            console.error('Error submitting review:', error);
+            console.error('Error with review:', error);
             toast.error(error.response?.data?.message || 'Failed to submit review');
         } finally {
             setSubmitting(false);
@@ -86,7 +100,7 @@ const ReviewPage = () => {
         if (!existingReview) return;
         setSubmitting(true);
         try {
-            await axios.delete(`/reviews/${existingReview._id}`);
+            await axios.delete(`/reviews/user/${existingReview._id}`);
             toast.success('Review deleted successfully!');
             setExistingReview(null);
             setRating(0);

@@ -3,7 +3,7 @@ import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Star } from 'lucide-react';
+import { MessageCircle, Star, Edit2, Trash2 } from 'lucide-react';
 import Chat from './Chat';
 
 const BookingsTab = () => {
@@ -30,12 +30,24 @@ const BookingsTab = () => {
                     axios.get(`/reviews/user/${user._id}?type=given`)
                 ]);
                 const reviews = reviewsRes.data || [];
+                console.log("Fetched reviews:", reviews);
+
                 // Map reviews by bookingId for quick lookup
                 const reviewsMap = {};
                 reviews.forEach(r => {
-                    reviewsMap[r.bookingId] = r;
+                    if (r.bookingId?._id) {
+                        reviewsMap[r.bookingId._id] = r;
+                    } else if (r.bookingId) {
+                        reviewsMap[r.bookingId] = r;
+                    }
+                    console.log("Mapping review:", {
+                        reviewId: r._id,
+                        bookingId: r.bookingId?._id || r.bookingId,
+                        mapped: reviewsMap
+                    });
                 });
                 setReviewsByBooking(reviewsMap);
+
                 // Fetch job and seeker details for each booking
                 const bookingsWithDetails = await Promise.all(
                     bookingsRes.data.map(async (booking) => {
@@ -118,6 +130,32 @@ const BookingsTab = () => {
         }
     };
 
+    const handleDeleteReview = async (reviewId) => {
+        if (!window.confirm('Are you sure you want to delete this review?')) {
+            return;
+        }
+
+        try {
+            // Update the endpoint to use the new user delete route
+            await axios.delete(`/reviews/user/${reviewId}`);
+            toast.success('Review deleted successfully');
+            
+            // Update reviewsByBooking state to remove the deleted review
+            setReviewsByBooking(prev => {
+                const updated = { ...prev };
+                Object.keys(updated).forEach(key => {
+                    if (updated[key]._id === reviewId) {
+                        delete updated[key];
+                    }
+                });
+                return updated;
+            });
+        } catch (error) {
+            console.error('Error deleting review:', error);
+            toast.error('Failed to delete review');
+        }
+    };
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -142,10 +180,89 @@ const BookingsTab = () => {
     const declinedBookings = postedJobs.filter(booking => booking.status === 'declined');
     const cancelledBookings = postedJobs.filter(booking => booking.status === 'cancelled');
 
-    const renderBookingCard = (booking) => {
-        const canShowReview = booking.payment?.status === 'confirmed' || 
-                            booking.payment?.status === 'completed';
+    const renderReviewSection = (booking) => {
+        console.log("Rendering review section for booking:", {
+            bookingId: booking._id,
+            hasReview: !!reviewsByBooking[booking._id],
+            review: reviewsByBooking[booking._id],
+            paymentStatus: booking.payment?.status
+        });
 
+        const review = reviewsByBooking[booking._id];
+        const canShowReview = booking.status === 'paid' || 
+                             booking.payment?.status === 'confirmed' || 
+                             booking.payment?.status === 'completed';
+
+        if (!canShowReview) {
+            console.log("Cannot show review:", { status: booking.status, payment: booking.payment });
+            return null;
+        }
+
+        return (
+            <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-lg font-semibold text-white">Review</h4>
+                    <div className="flex gap-2">
+                        {review ? (
+                            <>
+                                <button
+                                    onClick={() => navigate(`/review/${booking._id}`, { 
+                                        state: { fromBookingsTab: true, isEditing: true } 
+                                    })}
+                                    className="bg-emerald-500 text-white px-4 py-2 rounded-lg 
+                                        hover:bg-emerald-600 transition-colors flex items-center gap-2"
+                                >
+                                    <Edit2 size={20} />
+                                    Edit Review
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteReview(review._id)}
+                                    className="bg-red-500 text-white px-4 py-2 rounded-lg 
+                                        hover:bg-red-600 transition-colors flex items-center gap-2"
+                                >
+                                    <Trash2 size={20} />
+                                    Delete
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => navigate(`/review/${booking._id}`, { 
+                                    state: { fromBookingsTab: true } 
+                                })}
+                                className="bg-yellow-500 text-white px-4 py-2 rounded-lg 
+                                    hover:bg-yellow-600 transition-colors flex items-center gap-2"
+                            >
+                                <Star size={20} />
+                                Leave Review
+                            </button>
+                        )}
+                    </div>
+                </div>
+                {review && (
+                    <div className="bg-gray-700/50 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            {[...Array(5)].map((_, index) => (
+                                <Star
+                                    key={index}
+                                    className={`w-5 h-5 ${
+                                        index < review.rating 
+                                            ? "text-yellow-400 fill-current" 
+                                            : "text-gray-600"
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                        <p className="text-gray-300">{review.comment}</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                            {new Date(review.createdAt).toLocaleDateString()}
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderBookingCard = (booking) => {
         return (
             <div key={booking._id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
                 {booking.jobDetails?.images && (
@@ -218,7 +335,7 @@ const BookingsTab = () => {
                                     </button>
                                 </>
                             )}
-                            {canShowReview && !reviewsByBooking[booking._id] && (
+                            {booking.payment?.status === 'confirmed' || booking.payment?.status === 'completed' && !reviewsByBooking[booking._id] && (
                                 <button
                                     onClick={() => navigate(`/review/${booking._id}`, { 
                                         state: { fromBookingsTab: true } 
@@ -231,6 +348,7 @@ const BookingsTab = () => {
                             )}
                         </div>
                     </div>
+                    {renderReviewSection(booking)}
                 </div>
             </div>
         );

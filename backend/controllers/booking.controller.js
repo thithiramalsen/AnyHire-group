@@ -3,70 +3,62 @@ import Job from '../models/job.model.js';
 import User from '../models/user.model.js';
 import Payment from '../models/payment.model.js';
 import { updateJobStatus } from '../middleware/jobStatus.middleware.js';
+import { 
+    notifyJobApplication, 
+    notifyApplicationStatus 
+} from '../services/notification.service.js';
 
 // Apply for a job (creates a booking)
 export const applyForJob = async (req, res) => {
     try {
-        const jobId = Number(req.params.jobId);
-        const seekerId = Number(req.user._id);
+        const { jobId } = req.params;
+        const userId = req.user._id;
 
-        // Add debug logging
-        console.log('Application attempt:', {
-            jobId,
-            seekerId,
-            user: req.user
-        });
-
-        // Verify job exists and is approved
-        const job = await Job.findOne({ _id: jobId, status: "approved" });
-        console.log('Found job:', job);
-
+        // Check if job exists
+        const job = await Job.findById(jobId);
         if (!job) {
-            return res.status(404).json({ message: "Job not found or not approved" });
+            return res.status(404).json({
+                success: false,
+                message: "Job not found"
+            });
         }
 
-        // Check if user has an active booking for this job
-        const existingBooking = await Booking.findOne({ 
-            jobId: jobId, 
-            seekerId: seekerId,
-            status: { $in: ['applied', 'accepted', 'in_progress'] } // Only check active statuses
+        // Check if user has already applied
+        const existingApplication = await Booking.findOne({
+            jobId,
+            userId
         });
 
-        if (existingBooking) {
-            return res.status(400).json({ message: "You have already applied for this job" });
-        }
-
-        // Get seeker details
-        const seeker = await User.findById(seekerId);
-        if (!seeker) {
-            return res.status(404).json({ message: "Seeker not found" });
+        if (existingApplication) {
+            return res.status(400).json({
+                success: false,
+                message: "You have already applied for this job"
+            });
         }
 
         const newBooking = new Booking({
-            jobId: jobId,
-            jobTitle: job.title,
-            seekerId: seekerId,
-            posterId: job.createdBy,
-            payment: {
-                amount: job.payment
-            },
-            dates: {
-                applied: new Date()
-            }
+            jobId,
+            userId,
+            status: 'pending'
         });
 
-        console.log('Attempting to save booking:', newBooking);
-
         const savedBooking = await newBooking.save();
-        console.log('Saved booking:', savedBooking);
-        
-        res.status(201).json(savedBooking);
-    } catch (err) {
-        console.error('Booking creation error:', err);
-        if (err.code === 11000) {
-            return res.status(400).json({ message: "You have already applied for this job" });
-        }
-        res.status(500).json({ message: "Internal server error" });
+
+        // Create notification using the service
+        await notifyJobApplication(job, savedBooking);
+
+        res.status(201).json({
+            success: true,
+            message: "Application submitted successfully",
+            data: savedBooking
+        });
+    } catch (error) {
+        console.error("Error in applyForJob:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to submit application",
+            error: error.message
+        });
     }
 };
 
@@ -139,53 +131,43 @@ export const updateBookingStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        
+
+        if (!['accepted', 'rejected'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status"
+            });
+        }
+
         const booking = await Booking.findById(id);
         if (!booking) {
-            return res.status(404).json({ message: "Booking not found" });
-        }
-
-        // If cancelling, delete the booking instead of updating status
-        if (status === 'cancelled') {
-            // Check if any other booking for this job is in progress
-            const otherInProgressBooking = await Booking.findOne({
-                jobId: booking.jobId,
-                _id: { $ne: booking._id },
-                status: 'in_progress'
+            return res.status(404).json({
+                success: false,
+                message: "Application not found"
             });
-
-            if (otherInProgressBooking) {
-                // If another booking is in progress, just mark as cancelled
-                booking.status = 'cancelled';
-                await booking.save();
-            } else {
-                // If no other booking is in progress, delete this booking
-                await Booking.findByIdAndDelete(id);
-            }
-            
-            // Update job status after cancellation
-            await updateJobStatus(booking.jobId);
-            
-            return res.json({ message: "Booking cancelled successfully" });
         }
 
-        // Update the status and corresponding date
         booking.status = status;
-        if (status === 'accepted') booking.dates.accepted = new Date();
-        if (status === 'in_progress') booking.dates.started = new Date();
-        if (status === 'completed_by_seeker') booking.dates.completed_by_seeker = new Date();
-        if (status === 'payment_pending') booking.dates.completed = new Date();
-        if (status === 'paid') booking.dates.paid = new Date();
-        
         await booking.save();
 
-        // Update job status after booking status change
-        await updateJobStatus(booking.jobId);
+        // Get job details for notification
+        const job = await Job.findById(booking.jobId);
 
-        res.json({ message: "Booking status updated", booking });
+        // Create notification using the service
+        await notifyApplicationStatus(job, booking, status);
+
+        res.json({
+            success: true,
+            message: `Application ${status} successfully`,
+            data: booking
+        });
     } catch (error) {
-        console.error('Error updating booking status:', error);
-        res.status(500).json({ message: "Error updating booking status" });
+        console.error("Error in updateBookingStatus:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update application status",
+            error: error.message
+        });
     }
 };
 

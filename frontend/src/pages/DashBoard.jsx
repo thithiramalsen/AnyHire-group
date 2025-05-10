@@ -20,6 +20,7 @@ import CartTab from "../Components/CartTab";
 import BookingsManagement from "../Components/admin/BookingsManagement";
 import PaymentsManagement from "../Components/admin/PaymentsManagement";
 import ReviewManagementTab from "../Components/admin/ReviewManagementTab";
+import NotificationsTab from "../Components/NotificationsTab";
 
 // Component mapping
 const componentMap = {
@@ -38,7 +39,8 @@ const componentMap = {
     CartTab,
     BookingsManagement,
     PaymentsManagement,
-    ReviewManagementTab
+    ReviewManagementTab,
+    NotificationsTab
 };
 
 const DashBoard = () => {

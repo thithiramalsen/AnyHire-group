@@ -2,6 +2,13 @@ import Job from "../models/job.model.js";
 import multer from "multer";
 import Booking from "../models/booking.model.js";
 import Payment from "../models/payment.model.js";
+import Notification from "../models/notification.model.js";
+import User from '../models/user.model.js';
+import { 
+    notifyJobPosted, 
+    notifyJobApproved, 
+    notifyJobDeclined 
+} from '../services/notification.service.js';
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -40,60 +47,70 @@ export const getJobById = async (req, res) => {
 
 // Create a new job
 export const addJob = async (req, res) => {
-
-
-   
-
-    // Validate required fields
-    const { title, description, location, district, category, jobType, payment, deadline } = req.body;
-    if (!title || !description || !location || !district || !category || !jobType || !payment || !deadline) {
-      return res.status(400).json({ message: "All fields are required." });
-    }
-    console.log(req.body);
-
-    // Validate field lengths
-    if (title.length < 3 || title.length > 100) {
-      return res.status(400).json({ message: "Title must be between 3 and 100 characters." });
-    }
-    if (description.length < 10 || description.length > 1000) {
-      return res.status(400).json({ message: "Description must be between 10 and 1000 characters." });
-    }
-
-    // Validate payment
-    if (isNaN(payment) || payment <= 0) {
-      return res.status(400).json({ message: "Payment must be a positive number." });
-    }
-
-    // Validate deadline
-    const deadlineDate = new Date(deadline);
-    if (isNaN(deadlineDate.getTime()) || deadlineDate < new Date()) {
-      return res.status(400).json({ message: "Deadline must be a valid future date." });
-    }
-
-
-
-
-
-    const job = new Job({
-      title,
-      description,
-      images: req.file ? `/uploads/${req.file.filename}` : "",
-      location,
-      district,
-      category: Number(category), // Convert to number when saving
-      jobType,
-      payment,
-      deadline,
-      createdBy: req.user._id, // Associate the job with the logged-in user
-    });
-
     try {
-      const newJob = await job.save();
-      res.status(201).json(newJob);
-    } catch (err) {
-      res.status(400).json({ message: err.message });
+        // Validate required fields
+        const { title, description, location, district, category, jobType, payment, deadline } = req.body;
+        if (!title || !description || !location || !district || !category || !jobType || !payment || !deadline) {
+          return res.status(400).json({ message: "All fields are required." });
+        }
+        console.log(req.body);
+
+        // Validate field lengths
+        if (title.length < 3 || title.length > 100) {
+          return res.status(400).json({ message: "Title must be between 3 and 100 characters." });
+        }
+        if (description.length < 10 || description.length > 1000) {
+          return res.status(400).json({ message: "Description must be between 10 and 1000 characters." });
+        }
+
+        // Validate payment
+        if (isNaN(payment) || payment <= 0) {
+          return res.status(400).json({ message: "Payment must be a positive number." });
+        }
+
+        // Validate deadline
+        const deadlineDate = new Date(deadline);
+        if (isNaN(deadlineDate.getTime()) || deadlineDate < new Date()) {
+          return res.status(400).json({ message: "Deadline must be a valid future date." });
+        }
+
+        const id = req.user._id;
+
+
+
+
+        const job = new Job({
+          title,
+          description,
+          images: req.file ? `/uploads/${req.file.filename}` : "",
+          location,
+          district,
+          category: Number(category), // Convert to number when saving
+          jobType,
+          payment,
+          deadline,
+          createdBy:req.user._id, // Associate the job with the logged-in user
+        });
+
+
+        const savedJob = await job.save();
+
+        // Create notifications using the service
+        await notifyJobPosted(job, id);
+        console.log("Test :", job, id);
+        res.status(201).json({
+            success: true,
+            message: "Job posted successfully and pending approval",
+            data: savedJob
+        });
+    } catch (error) {
+        console.error("Error in addJob:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to post job",
+            error: error.message
+        });
     }
-  
 };
 
 // Update a job
@@ -231,40 +248,70 @@ export const getJobsApproved = async (req, res) => {
 
 // Approve a job
 export const approveJob = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const job = await Job.findByIdAndUpdate(id, { status: "approved" }, { new: true });
+    try {
+        const { id } = req.params;
+        const job = await Job.findById(id);
 
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: "Job not found"
+            });
+        }
+
+        job.status = 'approved';
+        await job.save();
+
+        // Create notifications using the service
+        await notifyJobApproved(job);
+
+        res.json({
+            success: true,
+            message: "Job approved successfully",
+            data: job
+        });
+    } catch (error) {
+        console.error("Error in approveJob:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to approve job",
+            error: error.message
+        });
     }
-
-    res.status(200).json(job);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 };
 
+// Decline a job
 export const declineJob = async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log("Decline job request received for ID:", id);
+    try {
+        const { id } = req.params;
+        const job = await Job.findById(id);
 
-    const job = await Job.findById(id);
-    if (!job) {
-      console.log("Job not found for ID:", id);
-      return res.status(404).json({ message: "Job not found" });
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: "Job not found"
+            });
+        }
+
+        job.status = 'declined';
+        await job.save();
+
+        // Create notification using the service
+        await notifyJobDeclined(job);
+
+        res.json({
+            success: true,
+            message: "Job declined successfully",
+            data: job
+        });
+    } catch (error) {
+        console.error("Error in declineJob:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to decline job",
+            error: error.message
+        });
     }
-
-    job.status = "declined";
-    await job.save();
-    console.log("Job declined successfully:", job);
-
-    res.status(200).json({ message: "Job declined successfully", job });
-  } catch (error) {
-    console.error("Error declining job:", error);
-    res.status(500).json({ message: "Failed to decline job" });
-  }
 };
 
 // Set job to pending

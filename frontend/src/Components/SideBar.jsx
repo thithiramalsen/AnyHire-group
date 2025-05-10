@@ -1,7 +1,7 @@
 import { 
     User, Edit, Settings, List, BarChart2, Folder, Calendar, 
     Briefcase, Clock, PlusCircle, MessageSquare, ShoppingCart,
-    Home, LogOut, ChevronRight, CreditCard, Star, Users, FileText
+    Home, LogOut, ChevronRight, CreditCard, Star, Users, FileText, Bell
 } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { rolePermissions } from "../lib/rolePermissions";
@@ -36,7 +36,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "job-approval": Edit,
         "user-management": User,
         "cart": ShoppingCart,
-        "payments": CreditCard
+        "payments": CreditCard,
+        "notifications": Bell
     };
 
     return (

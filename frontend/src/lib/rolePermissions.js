@@ -21,7 +21,8 @@ export const rolePermissions = {
             { id: "reviews", label: "Reviews", component: "ReviewManagementTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
             { id: "user-management", label: "User Management", component: "UserManagementTab" },
-            { id: "categories", label: "Categories", component: "CategoriesTab" }
+            { id: "categories", label: "Categories", component: "CategoriesTab" },
+            { id: "notifications", label: "Notifications", component: "NotificationsTab" }
         ]
     },
     customer: {
@@ -31,6 +32,7 @@ export const rolePermissions = {
             { id: "post-job", label: "Post Job", component: "JobPostingTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
+            { id: "notifications", label: "Notifications", component: "NotificationsTab" }
         ]
     },
     jobSeeker: {
@@ -39,7 +41,8 @@ export const rolePermissions = {
             { id: "portfolio", label: "Portfolio", component: "PortfolioTab" },
             { id: "jobs", label: "Jobs", component: "JobsTab" },
             { id: "cart", label: "Cart", component: "CartTab" },
-            { id: "support", label: "Support", component: "SupportUserTab" }
+            { id: "support", label: "Support", component: "SupportUserTab" },
+            { id: "notifications", label: "Notifications", component: "NotificationsTab" }
         ]
     }
 };

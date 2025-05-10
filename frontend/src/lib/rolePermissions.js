@@ -2,14 +2,19 @@ export const rolePermissions = {
     admin: {
         tabs: [
             { id: "profile", label: "Profile", component: "ProfileTab" },
-            { id: "analytics", label: "Analytics", component: "AnalyticsTab", subTabs: [
-                { id: "analytics-users", label: "Users Analytics" },
-                { id: "analytics-jobs", label: "Jobs Analytics" },
-                { id: "analytics-bookings", label: "Bookings Analytics" },
-                { id: "analytics-payments", label: "Payments Analytics" },
-                { id: "analytics-ratings", label: "Ratings Analytics" },
-                { id: "analytics-support", label: "Support Analytics" }
-            ] },
+            { 
+                id: "analytics", 
+                label: "Analytics", 
+                component: "AnalyticsTab",
+                subTabs: [
+                    { id: "users", label: "Users", component: "UsersAnalytics" },
+                    { id: "jobs", label: "Jobs", component: "JobsAnalytics" },
+                    { id: "bookings", label: "Bookings", component: "BookingsAnalytics" },
+                    { id: "payments", label: "Payments", component: "PaymentsAnalytics" },
+                    { id: "ratings", label: "Ratings", component: "RatingsAnalytics" },
+                    { id: "support", label: "Support", component: "SupportAnalytics" }
+                ]
+            },
             { id: "job-approval", label: "Job Approval", component: "JobApprovalTab" },
             { id: "bookings", label: "Bookings", component: "BookingsManagement" },
             { id: "payments", label: "Payments", component: "PaymentsManagement" },

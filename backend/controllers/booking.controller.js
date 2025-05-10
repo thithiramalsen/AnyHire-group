@@ -2,6 +2,7 @@ import Booking from '../models/booking.model.js';
 import Job from '../models/job.model.js';
 import User from '../models/user.model.js';
 import Payment from '../models/payment.model.js';
+import { updateJobStatus } from '../middleware/jobStatus.middleware.js';
 
 // Apply for a job (creates a booking)
 export const applyForJob = async (req, res) => {
@@ -161,6 +162,10 @@ export const updateBookingStatus = async (req, res) => {
                 // If no other booking is in progress, delete this booking
                 await Booking.findByIdAndDelete(id);
             }
+            
+            // Update job status after cancellation
+            await updateJobStatus(booking.jobId);
+            
             return res.json({ message: "Booking cancelled successfully" });
         }
 
@@ -173,6 +178,9 @@ export const updateBookingStatus = async (req, res) => {
         if (status === 'paid') booking.dates.paid = new Date();
         
         await booking.save();
+
+        // Update job status after booking status change
+        await updateJobStatus(booking.jobId);
 
         res.json({ message: "Booking status updated", booking });
     } catch (error) {

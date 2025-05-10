@@ -12,6 +12,7 @@ import PaymentConfirmation from "./pages/PaymentConfirmation";
 import MyJobs from "./Components/MyJobs";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";
+import UsersAnalytics from "./Components/analytics/UsersAnalytics";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
@@ -116,6 +117,10 @@ function App() {
 							)
 						}
 					/>
+					<Route path="/analytics/users" element={<UsersAnalytics />} />
+
+
+
 				</Routes>
 			</div>
 			<Toaster />

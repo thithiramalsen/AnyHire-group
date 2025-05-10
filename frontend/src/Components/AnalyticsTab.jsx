@@ -1,103 +1,61 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import axios from "../lib/axios";
-import { Users, Package, ShoppingCart, DollarSign } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useState, useEffect } from "react";
+import UsersAnalytics from "./analytics/UsersAnalytics";
+import JobsAnalytics from "./analytics/JobsAnalytics";
 
 const AnalyticsTab = () => {
-	const [analyticsData, setAnalyticsData] = useState({
-		users: 0,
-		products: 0,
-		totalSales: 0,
-		totalRevenue: 0,
-	});
-	const [isLoading, setIsLoading] = useState(true);
-	const [dailySalesData, setDailySalesData] = useState([]);
+	console.log("[AnalyticsTab] Component mounted");
+	const [currentAnalyticsTab, setCurrentAnalyticsTab] = useState("analytics-users");
 
-	useEffect(() => {
-		const fetchAnalyticsData = async () => {
-			try {
-				const response = await axios.get("/analytics");
-				setAnalyticsData(response.data.analyticsData);
-				setDailySalesData(response.data.dailySalesData);
-			} catch (error) {
-				console.error("Error fetching analytics data:", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+	const analyticsTabs = [
+		{ id: "analytics-users", label: "Users", component: <UsersAnalytics /> },
+		{ id: "analytics-jobs", label: "Jobs", component: <JobsAnalytics /> },
+		{ id: "analytics-bookings", label: "Bookings", component: <div>Bookings Analytics (Coming Soon)</div> },
+		{ id: "analytics-payments", label: "Payments", component: <div>Payments Analytics (Coming Soon)</div> },
+		{ id: "analytics-ratings", label: "Ratings", component: <div>Ratings Analytics (Coming Soon)</div> },
+		{ id: "analytics-support", label: "Support", component: <div>Support Analytics (Coming Soon)</div> }
+	];
 
-		fetchAnalyticsData();
-	}, []);
-
-	if (isLoading) {
-		return <div>Loading...</div>;
-	}
+	console.log("[AnalyticsTab] Current tab:", currentAnalyticsTab);
+	console.log("[AnalyticsTab] Available tabs:", analyticsTabs.map(tab => tab.id));
 
 	return (
-		<div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-			<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
-				<AnalyticsCard
-					title='Total Users'
-					value={analyticsData.users.toLocaleString()}
-					icon={Users}
-					color='from-emerald-500 to-teal-700'
-				/>
-				<AnalyticsCard
-					title='Total Products'
-					value={analyticsData.products.toLocaleString()}
-					icon={Package}
-					color='from-emerald-500 to-green-700'
-				/>
-				<AnalyticsCard
-					title='Total Sales'
-					value={analyticsData.totalSales.toLocaleString()}
-					icon={ShoppingCart}
-					color='from-emerald-500 to-cyan-700'
-				/>
-				<AnalyticsCard
-					title='Total Revenue'
-					value={`$${analyticsData.totalRevenue.toLocaleString()}`}
-					icon={DollarSign}
-					color='from-emerald-500 to-lime-700'
-				/>
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			exit={{ opacity: 0 }}
+			className="flex-1 overflow-y-auto"
+		>
+			{/* Analytics Sub-navigation */}
+			<div className="mb-8">
+				<div className="flex space-x-4 border-b border-gray-700">
+					{analyticsTabs.map((tab) => (
+						<button
+							key={tab.id}
+							onClick={() => {
+								console.log("[AnalyticsTab] Switching to tab:", tab.id);
+								setCurrentAnalyticsTab(tab.id);
+							}}
+							className={`px-4 py-2 text-sm font-medium ${
+								currentAnalyticsTab === tab.id
+									? "text-emerald-400 border-b-2 border-emerald-400"
+									: "text-gray-400 hover:text-gray-300"
+							}`}
+						>
+							{tab.label}
+						</button>
+					))}
+				</div>
 			</div>
-			<motion.div
-				className='bg-gray-800/60 rounded-lg p-6 shadow-lg'
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5, delay: 0.25 }}
-			>
-				<ResponsiveContainer width='100%' height={400}>
-					<LineChart data={dailySalesData}>
-						<CartesianGrid strokeDasharray='3 3' />
-						<XAxis dataKey='name' stroke='#D1D5DB' />
-						<YAxis yAxisId='left' stroke='#D1D5DB' />
-						<YAxis yAxisId='right' orientation='right' stroke='#D1D5DB' />
-						<Tooltip />
-						<Legend />
-						<Line
-							yAxisId='left'
-							type='monotone'
-							dataKey='sales'
-							stroke='#10B981'
-							activeDot={{ r: 8 }}
-							name='Sales'
-						/>
-						<Line
-							yAxisId='right'
-							type='monotone'
-							dataKey='revenue'
-							stroke='#3B82F6'
-							activeDot={{ r: 8 }}
-							name='Revenue'
-						/>
-					</LineChart>
-				</ResponsiveContainer>
-			</motion.div>
-		</div>
+
+			{/* Analytics Content */}
+			<div className="mt-6">
+				{analyticsTabs.find(tab => tab.id === currentAnalyticsTab)?.component}
+			</div>
+		</motion.div>
 	);
 };
+
 export default AnalyticsTab;
 
 const AnalyticsCard = ({ title, value, icon: Icon, color }) => (

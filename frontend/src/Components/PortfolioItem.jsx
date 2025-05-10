@@ -13,16 +13,33 @@ import {
 } from 'lucide-react';
 
 const PortfolioItem = ({ item, onEdit, onDelete, categories, showActions = true }) => {
+    // Add debug logs at the start of component
+    console.log("PortfolioItem props:", {
+        item,
+        categories,
+        itemCategories: item.categories
+    });
+
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showImageModal, setShowImageModal] = useState(false);
 
-    const categoryNames = item.categories
-        .map(categoryId => {
-            const category = categories.find(cat => Number(cat._id) === Number(categoryId));
-            return category ? category.name : "";
-        })
-        .filter(name => name !== "")
-        .join(", ");
+    const getCategoryNames = () => {
+        if (!item.categories || !categories) {
+            return [];
+        }
+
+        return item.categories.map(categoryObj => {
+            // Since we already have the name in the category object, just return it
+            if (categoryObj.name) {
+                return categoryObj.name;
+            }
+
+            // Fallback to finding category by ID if name isn't available
+            const categoryId = Number(categoryObj._id || categoryObj);
+            const category = categories.find(cat => Number(cat._id) === categoryId);
+            return category ? category.name : null;
+        }).filter(Boolean);
+    };
 
     const handlePrevImage = () => {
         setCurrentImageIndex((prev) => 
@@ -98,9 +115,13 @@ const PortfolioItem = ({ item, onEdit, onDelete, categories, showActions = true 
                 <div className="flex items-center space-x-2 mb-4">
                     <Tag size={16} className="text-emerald-500" />
                     <div className="flex flex-wrap gap-2">
-                        {categoryNames.split(", ").map((category, index) => (
-                            <span key={index} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm">
-                                {category}
+                        {getCategoryNames().map((categoryName, index) => (
+                            <span 
+                                key={index} 
+                                className="px-2 py-1 bg-emerald-500/20 text-emerald-400 
+                                    rounded-full text-sm"
+                            >
+                                {categoryName}
                             </span>
                         ))}
                     </div>

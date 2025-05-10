@@ -10,6 +10,7 @@ import JobApprovalTab from "../Components/JobApprovalTab";
 import BookingsTab from "../Components/BookingsTab";
 import JobPostingTab from "../Components/JobPostingTab";
 import PortfolioTab from "../Components/PortfolioTab";
+import WorkerProfileTab from "../Components/WorkerProfileTab";
 import JobsTab from "../Components/MyJobs";
 import CategoriesTab from "../Components/CategoriesTab";
 import SupportUserTab from "../Components/SupportUserTab";
@@ -20,6 +21,7 @@ import CartTab from "../Components/CartTab";
 import BookingsManagement from "../Components/admin/BookingsManagement";
 import PaymentsManagement from "../Components/admin/PaymentsManagement";
 import ReviewManagementTab from "../Components/admin/ReviewManagementTab";
+import ReviewsTab from "../Components/ReviewsTab";
 import NotificationsTab from "../Components/NotificationsTab";
 
 // Component mapping
@@ -30,6 +32,7 @@ const componentMap = {
     BookingsTab,
     JobPostingTab,
     PortfolioTab,
+    WorkerProfileTab,
     JobsTab,
     CategoriesTab,
     SupportUserTab,
@@ -40,7 +43,8 @@ const componentMap = {
     BookingsManagement,
     PaymentsManagement,
     ReviewManagementTab,
-    NotificationsTab
+    NotificationsTab,
+    ReviewsTab
 };
 
 const DashBoard = () => {

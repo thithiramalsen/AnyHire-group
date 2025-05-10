@@ -27,6 +27,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "categories": List,
         "analytics": BarChart2,
         "portfolio": Folder,
+        "worker-profile": User,
         "bookings": Calendar,
         "jobs": Briefcase,
         "admin-job-approval": Clock,
@@ -36,6 +37,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "job-approval": Edit,
         "user-management": User,
         "cart": ShoppingCart,
+        "reviews": Star,
         "payments": CreditCard,
         "notifications": Bell
     };

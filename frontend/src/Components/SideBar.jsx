@@ -1,13 +1,17 @@
 import { 
     User, Edit, Settings, List, BarChart2, Folder, Calendar, 
     Briefcase, Clock, PlusCircle, MessageSquare, ShoppingCart,
-    Home, LogOut, ChevronRight, CreditCard, Star, Users, FileText
+    Home, LogOut, ChevronRight, CreditCard, Star, Users, FileText,
+    Bell
 } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { rolePermissions } from "../lib/rolePermissions";
+import { useState, useEffect } from "react";
+import axios from "../lib/axios";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
     const { user, logout } = useUserStore();
+    const [unreadCount, setUnreadCount] = useState(0);
 
     // Get first and last name from the name field
     const displayName = user?.name || 'User';
@@ -15,10 +19,23 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     // Get the accessible tabs based on user role
     const accessibleTabs = user?.role ? rolePermissions[user.role]?.tabs || [] : [];
 
-    // Fallback to default tab if no accessible tabs are found
-    if (accessibleTabs.length === 0) {
-        accessibleTabs.push({ id: "profile", label: "Profile", component: "ProfileTab" });
-    }
+    useEffect(() => {
+        if (user) {
+            fetchUnreadCount();
+            // Fetch unread count every minute
+            const interval = setInterval(fetchUnreadCount, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [user]);
+
+    const fetchUnreadCount = async () => {
+        try {
+            const response = await axios.get('/notifications/unread-count');
+            setUnreadCount(response.data.count);
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+        }
+    };
 
     // Map of tab IDs to icons
     const tabIcons = {
@@ -38,7 +55,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "user-management": User,
         "cart": ShoppingCart,
         "payments": CreditCard,
-        "reviews": Star
+        "reviews": Star,
+        "notifications": Bell
     };
 
     return (
@@ -61,6 +79,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 <nav className="p-4 space-y-2">
                     {accessibleTabs.map((tab) => {
                         const Icon = tabIcons[tab.id] || Home;
+                        const isNotificationTab = tab.id === 'notifications';
                         
                         return (
                             <button
@@ -79,9 +98,16 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                                     <Icon size={20} />
                                     <span>{tab.label}</span>
                                 </div>
-                                <ChevronRight size={16} className={`transition-transform ${
-                                    activeTab === tab.id ? 'rotate-90' : ''
-                                }`} />
+                                <div className="flex items-center">
+                                    {isNotificationTab && unreadCount > 0 && (
+                                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full mr-2">
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                    <ChevronRight size={16} className={`transition-transform ${
+                                        activeTab === tab.id ? 'rotate-90' : ''
+                                    }`} />
+                                </div>
                             </button>
                         );
                     })}

@@ -144,3 +144,18 @@ export const deletePortfolioItem = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+// Get portfolio items for a specific user
+export const getUserPortfolioItems = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const portfolioItems = await Portfolio.find({ user: userId })
+            .populate('categories', 'name')
+            .sort({ createdAt: -1 });
+            
+        res.json(portfolioItems);
+    } catch (error) {
+        console.error("Error fetching user portfolio items:", error.message);
+        res.status(500).json({ message: "Server error" });
+    }
+};

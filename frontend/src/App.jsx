@@ -18,6 +18,7 @@ import BookingsAnalytics from "./Components/analytics/BookingsAnalytics";
 import PaymentsAnalytics from "./Components/analytics/PaymentsAnalytics";
 import RatingsAnalytics from "./Components/analytics/RatingsAnalytics";
 import SupportAnalytics from "./Components/analytics/SupportAnalytics";
+import UserProfileView from "./Components/UserProfileView";
 
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
@@ -183,6 +184,7 @@ function App() {
 							)
 						}
 					/>
+					<Route path="/user/:userId" element={<UserProfileView />} />
 				</Routes>
 			</div>
 			<Toaster />

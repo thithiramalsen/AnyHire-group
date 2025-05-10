@@ -4,7 +4,6 @@ import Booking from '../models/booking.model.js';
 import Payment from '../models/payment.model.js';
 import Rating from '../models/review.model.js';
 import Support from '../models/ticket.model.js';
-import OverallStatus from '../models/overallStatus.model.js';
 import mongoose from 'mongoose';
 
 // Helper function to get date range based on timeRange parameter
@@ -184,30 +183,82 @@ export const getBookingsAnalytics = async (req, res) => {
         const totalBookings = await Booking.countDocuments({
             createdAt: { $gte: startDate, $lte: endDate }
         });
-        
-        // Get active bookings using overall status
-        const activeBookings = await OverallStatus.countDocuments({
-            overallBookingStatus: 'active',
-            lastUpdated: { $gte: startDate, $lte: endDate }
+
+        // Get active bookings (including those with pending payments)
+        const activeBookings = await Booking.countDocuments({
+            $or: [
+                // Active booking statuses
+                { status: { $in: ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending'] } },
+                // Bookings with pending payments
+                {
+                    status: 'paid',
+                    'payment.status': { $in: ['pending', 'awaiting_confirmation'] }
+                }
+            ],
+            createdAt: { $gte: startDate, $lte: endDate }
         });
-        
-        // Get completed bookings using overall status
-        const completedBookings = await OverallStatus.countDocuments({
-            overallBookingStatus: 'completed',
-            lastUpdated: { $gte: startDate, $lte: endDate }
+
+        // Get completed bookings (including those with confirmed payments)
+        const completedBookings = await Booking.countDocuments({
+            $or: [
+                // Bookings marked as paid
+                { status: 'paid' },
+                // Bookings with confirmed payments
+                {
+                    status: 'payment_pending',
+                    'payment.status': { $in: ['confirmed', 'completed'] }
+                }
+            ],
+            createdAt: { $gte: startDate, $lte: endDate }
         });
-        
-        // Get bookings by status using overall status
-        const bookingsByStatus = await OverallStatus.aggregate([
+
+        // Get bookings by status
+        const bookingsByStatus = await Booking.aggregate([
             {
                 $match: {
-                    lastUpdated: { $gte: startDate, $lte: endDate },
-                    overallBookingStatus: { $ne: null }
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'payments',
+                    localField: '_id',
+                    foreignField: 'bookingId',
+                    as: 'payment'
+                }
+            },
+            {
+                $addFields: {
+                    effectiveStatus: {
+                        $switch: {
+                            branches: [
+                                {
+                                    case: { $in: ['$status', ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending']] },
+                                    then: 'active'
+                                },
+                                {
+                                    case: {
+                                        $or: [
+                                            { $eq: ['$status', 'paid'] },
+                                            {
+                                                $and: [
+                                                    { $eq: ['$status', 'payment_pending'] },
+                                                    { $in: ['$payment.status', ['confirmed', 'completed']] }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    then: 'completed'
+                                }
+                            ],
+                            default: '$status'
+                        }
+                    }
                 }
             },
             {
                 $group: {
-                    _id: '$overallBookingStatus',
+                    _id: '$effectiveStatus',
                     count: { $sum: 1 }
                 }
             },
@@ -221,10 +272,10 @@ export const getBookingsAnalytics = async (req, res) => {
         ]);
 
         // Get bookings by category
-        const bookingsByCategory = await OverallStatus.aggregate([
+        const bookingsByCategory = await Booking.aggregate([
             {
                 $match: {
-                    lastUpdated: { $gte: startDate, $lte: endDate }
+                    createdAt: { $gte: startDate, $lte: endDate }
                 }
             },
             {
@@ -254,16 +305,16 @@ export const getBookingsAnalytics = async (req, res) => {
         ]);
 
         // Get bookings growth trend
-        const bookingsGrowth = await OverallStatus.aggregate([
+        const bookingsGrowth = await Booking.aggregate([
             {
                 $match: {
-                    lastUpdated: { $gte: startDate, $lte: endDate }
+                    createdAt: { $gte: startDate, $lte: endDate }
                 }
             },
             {
                 $group: {
                     _id: {
-                        $dateToString: { format: '%Y-%m-%d', date: '$lastUpdated' }
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
                     },
                     count: { $sum: 1 }
                 }
@@ -567,13 +618,13 @@ export const getSupportAnalytics = async (req, res) => {
         const totalTickets = await Support.countDocuments({
             createdAt: { $gte: startDate, $lte: endDate }
         });
-        
+
         // Get open tickets
         const openTickets = await Support.countDocuments({
             status: 'open',
             createdAt: { $gte: startDate, $lte: endDate }
         });
-        
+
         // Get resolved tickets
         const resolvedTickets = await Support.countDocuments({
             status: 'resolved',
@@ -617,7 +668,7 @@ export const getSupportAnalytics = async (req, res) => {
                 }
             }
         ]);
-        
+
         // Get tickets by category
         const ticketsByCategory = await Support.aggregate([
             {

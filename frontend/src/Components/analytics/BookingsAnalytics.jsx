@@ -1,13 +1,11 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import axios from "../../lib/axios";
-import { Calendar, CheckCircle, Clock, TrendingUp, RefreshCw } from "lucide-react";
+import { Calendar, CheckCircle, Clock, TrendingUp } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { toast } from "react-hot-toast";
-import { useUserStore } from "../../stores/useUserStore";
 
 const BookingsAnalytics = () => {
-    const user = useUserStore((state) => state.user);
     const [analyticsData, setAnalyticsData] = useState({
         totalBookings: 0,
         activeBookings: 0,
@@ -19,7 +17,6 @@ const BookingsAnalytics = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [timeRange, setTimeRange] = useState('30d');
-    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
         fetchAnalyticsData();
@@ -51,38 +48,6 @@ const BookingsAnalytics = () => {
             toast.error(errorMessage);
         } finally {
             setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    };
-
-    const handleRefresh = () => {
-        setIsRefreshing(true);
-        fetchAnalyticsData();
-    };
-
-    const updateAllOverallStatuses = async () => {
-        try {
-            if (!user || user.role !== 'admin') {
-                toast.error('Access denied - Admin only');
-                return;
-            }
-
-            setIsRefreshing(true);
-            const response = await axios.post('/overall-status/update-all');
-            if (response.data.success) {
-                toast.success(response.data.message);
-                // Refresh the analytics data
-                await fetchAnalyticsData();
-            }
-        } catch (error) {
-            console.error("Error updating overall statuses:", error);
-            if (error.response?.status === 403) {
-                toast.error('Access denied - Admin only');
-            } else {
-                toast.error(error.response?.data?.message || 'Failed to update overall statuses');
-            }
-        } finally {
-            setIsRefreshing(false);
         }
     };
 
@@ -112,42 +77,19 @@ const BookingsAnalytics = () => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Time Range Selector and Refresh Button */}
+            {/* Time Range Selector */}
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-2xl font-bold text-white">Bookings Analytics</h1>
-                <div className="flex items-center gap-4">
-                    {user?.role === 'admin' && (
-                        <button
-                            onClick={updateAllOverallStatuses}
-                            disabled={isRefreshing}
-                            className={`px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors ${
-                                isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                        >
-                            Update Overall Statuses
-                        </button>
-                    )}
-                    <select 
-                        value={timeRange}
-                        onChange={(e) => setTimeRange(e.target.value)}
-                        className="bg-gray-700 text-white px-4 py-2 rounded-lg"
-                    >
-                        <option value="7d">Last 7 days</option>
-                        <option value="30d">Last 30 days</option>
-                        <option value="90d">Last 90 days</option>
-                        <option value="1y">Last year</option>
-                    </select>
-                    <button
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
-                        className={`p-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-colors ${
-                            isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                        title="Refresh data"
-                    >
-                        <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    </button>
-                </div>
+                <select 
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="bg-gray-700 text-white px-4 py-2 rounded-lg"
+                >
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="90d">Last 90 days</option>
+                    <option value="1y">Last year</option>
+                </select>
             </div>
 
             {/* Key Metrics Cards */}

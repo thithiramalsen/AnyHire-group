@@ -55,7 +55,7 @@ const BookingsManagement = () => {
 
     const deleteBooking = async (bookingId) => {
         try {
-            await axios.delete(`/api/booking/${bookingId}`);
+            await axios.delete(`/booking/admin/${bookingId}`);
             toast.success('Booking deleted successfully');
             fetchBookings(); // Refresh the list
         } catch (error) {

@@ -45,7 +45,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "job-approval": Edit,
         "user-management": User,
         "cart": ShoppingCart,
-        "payments": CreditCard
+        "payments": CreditCard,
+        // "notifications": FileText
     };
 
     const analyticsTabs = [

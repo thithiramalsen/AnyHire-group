@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
-import { Star, Filter, User, Briefcase, MessageSquare } from "lucide-react";
+import { Star, Filter, User, Briefcase, MessageSquare, Tag, MapPin } from "lucide-react";
 import PortfolioItem from "./PortfolioItem";
 
 const UserProfileView = () => {
@@ -45,9 +45,22 @@ const UserProfileView = () => {
     }, [userId]);
 
     const filteredPortfolios = selectedCategory
-        ? portfolios.filter(portfolio => 
-            portfolio.categories.includes(selectedCategory)
-        )
+        ? portfolios.filter((item) => {
+            // Convert all category IDs to numbers for consistent comparison
+            const itemCategoryIds = item.categories.map(cat => 
+                typeof cat === 'object' ? Number(cat._id) : Number(cat)
+            );
+            const selectedCategoryId = Number(selectedCategory);
+
+            console.log("Filtering check:", {
+                itemId: item._id,
+                itemCategoryIds,
+                selectedCategoryId,
+                matches: itemCategoryIds.includes(selectedCategoryId)
+            });
+
+            return itemCategoryIds.includes(selectedCategoryId);
+        })
         : portfolios;
 
     const averageRating = reviews.length > 0
@@ -78,7 +91,7 @@ const UserProfileView = () => {
                     <div className="w-24 h-24 rounded-full bg-emerald-600 flex items-center justify-center">
                         {user.image ? (
                             <img
-                                src={`http://localhost:5000${user.image}`}
+                                src={`http://localhost:5000/uploads/${user.image}`}
                                 alt={user.name}
                                 className="w-24 h-24 rounded-full object-cover"
                             />
@@ -98,6 +111,53 @@ const UserProfileView = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Add this new section */}
+                {user.role === "jobSeeker" && (
+                    <div className="mt-6 pt-6 border-t border-gray-700 w-full">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Preferred Categories */}
+                            <div>
+                                <div className="flex items-center space-x-2 mb-4">
+                                    <Tag className="w-5 h-5 text-emerald-500" />
+                                    <h3 className="text-lg font-semibold text-white">
+                                        Preferred Job Categories
+                                    </h3>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {user.preferredCategories?.length > 0 ? (
+                                        user.preferredCategories.map(categoryId => {
+                                            const category = categories.find(cat => cat._id === categoryId);
+                                            return category ? (
+                                                <span 
+                                                    key={categoryId} 
+                                                    className="px-3 py-1 bg-emerald-600/20 text-emerald-400 rounded-full text-sm"
+                                                >
+                                                    {category.name}
+                                                </span>
+                                            ) : null;
+                                        })
+                                    ) : (
+                                        <span className="text-gray-400">No categories selected</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Preferred District */}
+                            <div>
+                                <div className="flex items-center space-x-2 mb-4">
+                                    <MapPin className="w-5 h-5 text-emerald-500" />
+                                    <h3 className="text-lg font-semibold text-white">
+                                        Preferred District
+                                    </h3>
+                                </div>
+                                <span className="text-gray-300">
+                                    {user.preferredDistrict || "Not specified"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Portfolio Section */}
@@ -190,4 +250,4 @@ const UserProfileView = () => {
     );
 };
 
-export default UserProfileView; 
+export default UserProfileView;

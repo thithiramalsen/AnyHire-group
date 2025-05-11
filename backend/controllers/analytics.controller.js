@@ -6,6 +6,31 @@ import Rating from '../models/review.model.js';
 import Support from '../models/ticket.model.js';
 import mongoose from 'mongoose';
 
+// Helper function to get date range based on timeRange parameter
+const getDateRange = (timeRange) => {
+    const now = new Date();
+    const startDate = new Date();
+
+    switch (timeRange) {
+        case '7d':
+            startDate.setDate(now.getDate() - 7);
+            break;
+        case '30d':
+            startDate.setDate(now.getDate() - 30);
+            break;
+        case '90d':
+            startDate.setDate(now.getDate() - 90);
+            break;
+        case '1y':
+            startDate.setFullYear(now.getFullYear() - 1);
+            break;
+        default:
+            startDate.setDate(now.getDate() - 30); // Default to 30 days
+    }
+
+    return { startDate, endDate: now };
+};
+
 // Get users analytics
 export const getUsersAnalytics = async (req, res) => {
     try {
@@ -151,46 +176,158 @@ export const getJobsAnalytics = async (req, res) => {
 // Get bookings analytics
 export const getBookingsAnalytics = async (req, res) => {
     try {
+        const { timeRange = '30d' } = req.query;
+        const { startDate, endDate } = getDateRange(timeRange);
+
         // Get total bookings
-        const totalBookings = await Booking.countDocuments();
-        
-        // Get active bookings
-        const activeBookings = await Booking.countDocuments({ status: 'active' });
-        
-        // Get completed bookings
-        const completedBookings = await Booking.countDocuments({ status: 'completed' });
-        
+        const totalBookings = await Booking.countDocuments({
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Get active bookings (including those with pending payments)
+        const activeBookings = await Booking.countDocuments({
+            $or: [
+                // Active booking statuses
+                { status: { $in: ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending'] } },
+                // Bookings with pending payments
+                {
+                    status: 'paid',
+                    'payment.status': { $in: ['pending', 'awaiting_confirmation'] }
+                }
+            ],
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Get completed bookings (including those with confirmed payments)
+        const completedBookings = await Booking.countDocuments({
+            $or: [
+                // Bookings marked as paid
+                { status: 'paid' },
+                // Bookings with confirmed payments
+                {
+                    status: 'payment_pending',
+                    'payment.status': { $in: ['confirmed', 'completed'] }
+                }
+            ],
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
         // Get bookings by status
         const bookingsByStatus = await Booking.aggregate([
             {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'payments',
+                    localField: '_id',
+                    foreignField: 'bookingId',
+                    as: 'payment'
+                }
+            },
+            {
+                $addFields: {
+                    effectiveStatus: {
+                        $switch: {
+                            branches: [
+                                {
+                                    case: { $in: ['$status', ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending']] },
+                                    then: 'active'
+                                },
+                                {
+                                    case: {
+                                        $or: [
+                                            { $eq: ['$status', 'paid'] },
+                                            {
+                                                $and: [
+                                                    { $eq: ['$status', 'payment_pending'] },
+                                                    { $in: ['$payment.status', ['confirmed', 'completed']] }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    then: 'completed'
+                                }
+                            ],
+                            default: '$status'
+                        }
+                    }
+                }
+            },
+            {
                 $group: {
-                    _id: "$status",
+                    _id: '$effectiveStatus',
                     count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id',
+                    count: 1,
+                    _id: 0
                 }
             }
         ]);
 
-        // Get bookings growth over time
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-        
+        // Get bookings by category
+        const bookingsByCategory = await Booking.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'jobs',
+                    localField: 'jobId',
+                    foreignField: '_id',
+                    as: 'job'
+                }
+            },
+            {
+                $unwind: '$job'
+            },
+            {
+                $group: {
+                    _id: '$job.category',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    category: '$_id',
+                    count: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        // Get bookings growth trend
         const bookingsGrowth = await Booking.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: sixMonthsAgo }
+                    createdAt: { $gte: startDate, $lte: endDate }
                 }
             },
             {
                 $group: {
                     _id: {
-                        year: { $year: "$createdAt" },
-                        month: { $month: "$createdAt" }
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
                     },
                     count: { $sum: 1 }
                 }
             },
             {
-                $sort: { "_id.year": 1, "_id.month": 1 }
+                $project: {
+                    date: '$_id',
+                    count: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { date: 1 }
             }
         ]);
 
@@ -199,6 +336,7 @@ export const getBookingsAnalytics = async (req, res) => {
             activeBookings,
             completedBookings,
             bookingsByStatus,
+            bookingsByCategory,
             bookingsGrowth
         });
     } catch (error) {
@@ -210,71 +348,193 @@ export const getBookingsAnalytics = async (req, res) => {
 // Get payments analytics
 export const getPaymentsAnalytics = async (req, res) => {
     try {
-        // Get total revenue
-        const totalRevenue = await Payment.aggregate([
+        const { timeRange = '30d' } = req.query;
+        const { startDate, endDate } = getDateRange(timeRange);
+
+        // Get total payments and amount
+        const paymentStats = await Payment.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
             {
                 $group: {
                     _id: null,
-                    total: { $sum: "$amount" }
+                    totalPayments: { $sum: 1 },
+                    totalAmount: { $sum: '$amount' }
                 }
             }
         ]);
 
-        // Get revenue by month
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-        
-        const revenueByMonth = await Payment.aggregate([
+        // Get pending payments
+        const pendingPayments = await Payment.countDocuments({
+            status: { $in: ['pending', 'awaiting_confirmation'] },
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Get completed payments (combine 'completed' and 'confirmed' statuses)
+        const completedPayments = await Payment.countDocuments({
+            status: { $in: ['completed', 'confirmed'] },
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Update paymentsByStatus to normalize statuses
+        const paymentsByStatus = await Payment.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: sixMonthsAgo }
+                    createdAt: { $gte: startDate, $lte: endDate }
                 }
             },
             {
                 $group: {
                     _id: {
-                        year: { $year: "$createdAt" },
-                        month: { $month: "$createdAt" }
+                        // First normalize the status
+                        status: {
+                            $switch: {
+                                branches: [
+                                    {
+                                        case: { $in: ["$status", ["completed", "confirmed"]] },
+                                        then: "completed"
+                                    },
+                                    {
+                                        case: { $in: ["$status", ["pending", "awaiting_confirmation"]] },
+                                        then: "pending"
+                                    }
+                                ],
+                                default: "$status"
+                            }
+                        }
                     },
-                    total: { $sum: "$amount" }
+                    count: { $sum: 1 }
                 }
             },
             {
-                $sort: { "_id.year": 1, "_id.month": 1 }
+                $project: {
+                    name: "$_id.status",
+                    count: 1,
+                    _id: 0
+                }
             }
         ]);
 
-        // Get payment methods distribution
-        const paymentMethods = await Payment.aggregate([
+        const paymentsByMethod = await Payment.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
             {
                 $group: {
-                    _id: "$paymentMethod",
+                    _id: '$paymentMethod',
                     count: { $sum: 1 },
-                    total: { $sum: "$amount" }
+                    amount: { $sum: '$amount' }
                 }
+            },
+            {
+                $project: {
+                    method: '$_id',
+                    count: 1,
+                    amount: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        const paymentsGrowth = await Payment.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                    },
+                    count: { $sum: 1 },
+                    amount: { $sum: '$amount' }
+                }
+            },
+            {
+                $project: {
+                    date: '$_id',
+                    count: 1,
+                    amount: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { date: 1 }
             }
         ]);
 
         res.json({
-            totalRevenue: totalRevenue[0]?.total || 0,
-            revenueByMonth,
-            paymentMethods
+            totalPayments: paymentStats[0]?.totalPayments || 0,
+            totalAmount: paymentStats[0]?.totalAmount || 0,
+            pendingPayments,
+            completedPayments,
+            paymentsByStatus,
+            paymentsByMethod,
+            paymentsGrowth
         });
+
     } catch (error) {
         console.error('Error in getPaymentsAnalytics:', error);
-        res.status(500).json({ message: 'Error fetching payments analytics' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching payments analytics',
+            error: error.message 
+        });
     }
 };
 
 // Get ratings analytics
 export const getRatingsAnalytics = async (req, res) => {
     try {
-        // Get average rating
-        const averageRating = await Rating.aggregate([
+        const { timeRange = '30d' } = req.query;
+        const { startDate, endDate } = getDateRange(timeRange);
+
+        // Get total ratings and average rating
+        const ratingStats = await Rating.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
             {
                 $group: {
                     _id: null,
-                    average: { $avg: "$rating" }
+                    totalRatings: { $sum: 1 },
+                    averageRating: { $avg: '$rating' },
+                    positiveRatings: {
+                        $sum: { $cond: [{ $gte: ['$rating', 4] }, 1, 0] }
+                    },
+                    ratingsWithComments: {
+                        $sum: { $cond: [{ $ifNull: ['$comment', false] }, 1, 0] }
+                    }
+                }
+            }
+        ]);
+
+        // Get ratings by category
+        const ratingsByCategory = await Rating.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id',
+                    count: 1,
+                    _id: 0
                 }
             }
         ]);
@@ -282,42 +542,65 @@ export const getRatingsAnalytics = async (req, res) => {
         // Get ratings distribution
         const ratingsDistribution = await Rating.aggregate([
             {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
                 $group: {
-                    _id: "$rating",
+                    _id: '$rating',
                     count: { $sum: 1 }
                 }
             },
             {
-                $sort: { _id: 1 }
+                $project: {
+                    rating: '$_id',
+                    count: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { rating: 1 }
             }
         ]);
 
-        // Get ratings by category
-        const ratingsByCategory = await Rating.aggregate([
+        // Get ratings growth trend
+        const ratingsGrowth = await Rating.aggregate([
             {
-                $lookup: {
-                    from: "jobs",
-                    localField: "jobId",
-                    foreignField: "_id",
-                    as: "job"
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
                 }
-            },
-            {
-                $unwind: "$job"
             },
             {
                 $group: {
-                    _id: "$job.category",
-                    average: { $avg: "$rating" },
-                    count: { $sum: 1 }
+                    _id: {
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                    },
+                    count: { $sum: 1 },
+                    averageRating: { $avg: '$rating' }
                 }
+            },
+            {
+                $project: {
+                    date: '$_id',
+                    count: 1,
+                    averageRating: { $round: ['$averageRating', 1] },
+                    _id: 0
+                }
+            },
+            {
+                $sort: { date: 1 }
             }
         ]);
 
         res.json({
-            averageRating: averageRating[0]?.average || 0,
+            totalRatings: ratingStats[0]?.totalRatings || 0,
+            averageRating: ratingStats[0]?.averageRating || 0,
+            positiveRatings: ratingStats[0]?.positiveRatings || 0,
+            ratingsWithComments: ratingStats[0]?.ratingsWithComments || 0,
+            ratingsByCategory,
             ratingsDistribution,
-            ratingsByCategory
+            ratingsGrowth
         });
     } catch (error) {
         console.error('Error in getRatingsAnalytics:', error);
@@ -328,38 +611,114 @@ export const getRatingsAnalytics = async (req, res) => {
 // Get support analytics
 export const getSupportAnalytics = async (req, res) => {
     try {
-        // Get total support tickets
-        const totalTickets = await Support.countDocuments();
-        
-        // Get open tickets
-        const openTickets = await Support.countDocuments({ status: 'open' });
-        
-        // Get resolved tickets
-        const resolvedTickets = await Support.countDocuments({ status: 'resolved' });
-        
-        // Get tickets by category
-        const ticketsByCategory = await Support.aggregate([
-            {
-                $group: {
-                    _id: "$category",
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
+        const { timeRange = '30d' } = req.query;
+        const { startDate, endDate } = getDateRange(timeRange);
 
-        // Get average response time
-        const responseTimeData = await Support.aggregate([
+        // Get total tickets
+        const totalTickets = await Support.countDocuments({
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Get open tickets
+        const openTickets = await Support.countDocuments({
+            status: 'open',
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Get resolved tickets
+        const resolvedTickets = await Support.countDocuments({
+            status: 'resolved',
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Calculate average response time
+        const responseTimeStats = await Support.aggregate([
             {
                 $match: {
-                    status: 'resolved',
-                    responseTime: { $exists: true }
+                    createdAt: { $gte: startDate, $lte: endDate },
+                    firstResponseTime: { $exists: true }
                 }
             },
             {
                 $group: {
                     _id: null,
-                    average: { $avg: "$responseTime" }
+                    averageResponseTime: { $avg: '$firstResponseTime' }
                 }
+            }
+        ]);
+
+        // Get tickets by status
+        const ticketsByStatus = await Support.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id',
+                    count: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        // Get tickets by category
+        const ticketsByCategory = await Support.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    category: '$_id',
+                    count: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        // Get tickets growth trend
+        const ticketsGrowth = await Support.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                    },
+                    newTickets: { $sum: 1 },
+                    resolvedTickets: {
+                        $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    date: '$_id',
+                    newTickets: 1,
+                    resolvedTickets: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { date: 1 }
             }
         ]);
 
@@ -367,8 +726,10 @@ export const getSupportAnalytics = async (req, res) => {
             totalTickets,
             openTickets,
             resolvedTickets,
+            averageResponseTime: responseTimeStats[0]?.averageResponseTime || 0,
+            ticketsByStatus,
             ticketsByCategory,
-            averageResponseTime: responseTimeData[0]?.average || 0
+            ticketsGrowth
         });
     } catch (error) {
         console.error('Error in getSupportAnalytics:', error);

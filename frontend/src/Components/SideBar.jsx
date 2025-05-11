@@ -5,12 +5,9 @@ import {
 } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { rolePermissions } from "../lib/rolePermissions";
-import { useState } from "react";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
     const { user, logout } = useUserStore();
-    const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-    const [currentAnalyticsTab, setCurrentAnalyticsTab] = useState("analytics-users");
 
     // Get first and last name from the name field
     const displayName = user?.name || 'User';
@@ -29,13 +26,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "settings": Settings,
         "categories": List,
         "analytics": BarChart2,
-        "analytics-users": Users,
-        "analytics-jobs": Briefcase,
-        "analytics-bookings": Calendar,
-        "analytics-payments": CreditCard,
-        "analytics-ratings": Star,
-        "analytics-support": MessageSquare,
         "portfolio": Folder,
+        "worker-profile": User,
         "bookings": Calendar,
         "jobs": Briefcase,
         "admin-job-approval": Clock,
@@ -46,17 +38,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "user-management": User,
         "cart": ShoppingCart,
         "payments": CreditCard,
-        // "notifications": FileText
+        "reviews": Star
     };
-
-    const analyticsTabs = [
-        { id: "analytics-users", label: "Users Analytics" },
-        { id: "analytics-jobs", label: "Jobs Analytics" },
-        { id: "analytics-bookings", label: "Bookings Analytics" },
-        { id: "analytics-payments", label: "Payments Analytics" },
-        { id: "analytics-ratings", label: "Ratings Analytics" },
-        { id: "analytics-support", label: "Support Analytics" }
-    ];
 
     return (
         <div className="w-64 bg-gray-800 text-white h-screen fixed flex flex-col">
@@ -79,70 +62,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     {accessibleTabs.map((tab) => {
                         const Icon = tabIcons[tab.id] || Home;
                         
-                        if (tab.id === "analytics") {
-                            return (
-                                <div key={tab.id} className="space-y-1">
-                                    <button
-                                        onClick={() => {
-                                            console.log("[SideBar] Clicking tab:", tab.id);
-                                            setIsAnalyticsOpen(!isAnalyticsOpen);
-                                            setActiveTab("analytics");
-                                            setCurrentAnalyticsTab("analytics-users");
-                                        }}
-                                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
-                                            isAnalyticsOpen
-                                                ? 'bg-emerald-500 text-white'
-                                                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Icon size={20} />
-                                            <span>{tab.label}</span>
-                                        </div>
-                                        <ChevronRight size={16} className={`transition-transform ${
-                                            isAnalyticsOpen ? 'rotate-90' : ''
-                                        }`} />
-                                    </button>
-                                    
-                                    {isAnalyticsOpen && (
-                                        <div className="pl-4 space-y-1">
-                                            {tab.subTabs?.map((subTab) => (
-                                                <button
-                                                    key={subTab.id}
-                                                    onClick={() => {
-                                                        console.log("[SideBar] Clicking analytics sub-tab:", subTab.id);
-                                                        setCurrentAnalyticsTab(subTab.id);
-                                                    }}
-                                                    className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition-colors ${
-                                                        currentAnalyticsTab === subTab.id
-                                                            ? 'bg-emerald-500 text-white'
-                                                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <Icon size={18} />
-                                                        <span>{subTab.label}</span>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        }
-
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => {
                                     console.log("[SideBar] Clicking tab:", tab.id);
-                                    if (tab.id === "analytics") {
-                                        setIsAnalyticsOpen(!isAnalyticsOpen);
-                                        setActiveTab("analytics");
-                                        setCurrentAnalyticsTab("analytics-users");
-                                    } else {
-                                        setActiveTab(tab.id);
-                                    }
+                                    setActiveTab(tab.id);
                                 }}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
                                     activeTab === tab.id

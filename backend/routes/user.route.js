@@ -1,11 +1,15 @@
 import express from "express";
 import { adminRoute, protectRoute } from "../middleware/auth.middleware.js";
-import { getAllUsers, updateUser, deleteUser, getUserBookingInfo } from "../controllers/user.controller.js";
+import { getAllUsers, updateUser, deleteUser, getUserBookingInfo, getUserProfile } from "../controllers/user.controller.js";
+import { updateUserPreferences } from "../controllers/preferences.controller.js";
 
 const router = express.Router();
 
 // Get all users (admin only)
 router.get("/", protectRoute, adminRoute, getAllUsers);
+
+// Get single user profile
+router.get("/:id", protectRoute, getUserProfile);
 
 // Update user (admin only)
 router.put("/:id", protectRoute, adminRoute, updateUser);
@@ -15,5 +19,8 @@ router.delete("/:id", protectRoute, adminRoute, deleteUser);
 
 // New route for fetching limited user information for bookings
 router.get("/booking-info/:id", protectRoute, getUserBookingInfo);
+
+// Update user preferences
+router.put("/:id/preferences", protectRoute, updateUserPreferences);
 
 export default router; 

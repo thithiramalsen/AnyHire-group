@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Pencil, Trash2, Search, Filter, UserPlus, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, Search, Filter, UserPlus, RefreshCw, User } from 'lucide-react';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 const UserManagementTab = () => {
   const [users, setUsers] = useState([]);
@@ -187,15 +188,24 @@ const UserManagementTab = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-3">
+                      <Link
+                        to={`/user/${user._id}`}
+                        className="text-emerald-400 hover:text-emerald-300"
+                        title="View Profile"
+                      >
+                        <User className="w-5 h-5" />
+                      </Link>
                       <button
                         onClick={() => handleEdit(user)}
                         className="text-blue-400 hover:text-blue-300"
+                        title="Edit User"
                       >
                         <Pencil className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDelete(user._id)}
                         className="text-red-400 hover:text-red-300"
+                        title="Delete User"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>

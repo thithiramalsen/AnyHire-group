@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
+import { Search, Filter, Eye, Trash2, Check, X, Clock } from "lucide-react";
 
 const JobApprovalTab = () => {
   const [pendingJobs, setPendingJobs] = useState([]);
@@ -9,6 +10,8 @@ const JobApprovalTab = () => {
   const [categories, setCategories] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     const fetchJobsAndCategories = async () => {
@@ -65,6 +68,51 @@ const JobApprovalTab = () => {
     }
   };
 
+  const handleDelete = async (jobId) => {
+    toast((t) => (
+      <div className="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700">
+        <p className="text-gray-300 mb-4">
+          Are you sure you want to delete this job? This will also delete all associated bookings and payments.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={async () => {
+              try {
+                await axios.delete(`/job/del/${jobId}`);
+                setPendingJobs((prev) => prev.filter((job) => job._id !== jobId));
+                setApprovedJobs((prev) => prev.filter((job) => job._id !== jobId));
+                setDeclinedJobs((prev) => prev.filter((job) => job._id !== jobId));
+                toast.success("Job deleted successfully!");
+                toast.dismiss(t.id);
+              } catch (error) {
+                console.error("Error deleting job:", error);
+                toast.error("Failed to delete job.");
+              }
+            }}
+            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-red-500 
+              rounded-md hover:bg-red-600 transition-colors duration-200"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-3 py-2 text-sm font-medium text-gray-300 
+              bg-gray-700 rounded-md hover:bg-gray-600 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 5000,
+      position: 'top-center',
+      style: {
+        background: 'transparent',
+        boxShadow: 'none',
+      },
+    });
+  };
+
   const handleStatusChange = async (jobId, newStatus) => {
     try {
       if (newStatus === 'approved') {
@@ -97,7 +145,6 @@ const JobApprovalTab = () => {
   };
 
   const getCategoryName = (categoryId) => {
-    // Convert both IDs to numbers for comparison
     const category = categories.find((cat) => Number(cat._id) === Number(categoryId));
     return category ? category.name : "Unknown Category";
   };
@@ -115,102 +162,164 @@ const JobApprovalTab = () => {
     }
   };
 
-  const renderJobList = (jobs, showActions = false) => (
-    <div className="space-y-3">
-      {jobs.length === 0 ? (
-        <p className="text-gray-400 text-center py-2">No jobs found.</p>
-      ) : (
-        jobs.map((job) => (
-          <div key={job._id} className="p-4 bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-semibold text-white">{job.title}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs text-white ${getStatusColor(job.status)}`}>
-                    {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                  <p className="text-gray-400">Location: <span className="text-white">{job.location}, {job.district}</span></p>
-                  <p className="text-gray-400">Category: <span className="text-white">{getCategoryName(job.category)}</span></p>
-                  <p className="text-gray-400">Type: <span className="text-white">{job.jobType}</span></p>
-                  <p className="text-gray-400">Payment: <span className="text-green-400">Rs. {job.payment}</span></p>
-                </div>
-                <p className="text-sm text-gray-400 mt-1">
-                <p className="text-sm text-gray-400 mt-1">
-                    Posted: {new Date(job.postedDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </p>
-              </div>
-              
-              <div className="flex flex-col items-end gap-2 ml-4">
-                {showActions ? (
-                  <>
-                    <button
-                      onClick={() => handleApprove(job._id)}
-                      className="px-3 py-1 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleDecline(job._id)}
-                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                    >
-                      Decline
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setSelectedJob(job);
-                      setIsStatusModalOpen(true);
-                    }}
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Change Status
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {job.images && (
-              <div className="mt-2">
-                <img
-                  src={`http://localhost:5000${job.images}`}
-                  alt={job.title}
-                  className="rounded-lg max-h-32 object-cover"
-                />
-              </div>
-            )}
-          </div>
-        ))
-      )}
-    </div>
-  );
+  const allJobs = [...pendingJobs, ...approvedJobs, ...declinedJobs];
+  const filteredJobs = allJobs.filter(job => {
+    const matchesSearch = 
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getCategoryName(job.category).toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h2 className="text-2xl font-bold mb-4 text-white">Job Management</h2>
-      
-      <div className="space-y-6">
-        <section>
-          <h3 className="text-lg font-semibold mb-3 text-white">Pending Jobs</h3>
-          {renderJobList(pendingJobs, true)}
-        </section>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search jobs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter size={20} className="text-gray-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
+      </div>
 
-        <section>
-          <h3 className="text-lg font-semibold mb-3 text-white">Approved Jobs</h3>
-          {renderJobList(approvedJobs)}
-        </section>
+      <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-700">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Image</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Payment</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700">
+              {filteredJobs.map((job) => (
+                <tr key={job._id} className="hover:bg-gray-700/50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="relative group isolate">
+                      {/* Thumbnail container */}
+                      <div className="w-16 h-16 overflow-hidden rounded-lg bg-gray-700 relative z-10">
+                        {job.images ? (
+                          <img
+                            src={`http://localhost:5000${job.images}`}
+                            alt={job.title}
+                            className="w-full h-16 object-cover transition-all duration-300 
+                              group-hover:scale-110 group-hover:rotate-2"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-500">
+                            No Image
+                          </div>
+                        )}
+                      </div>
 
-        <section>
-          <h3 className="text-lg font-semibold mb-3 text-white">Declined Jobs</h3>
-          {renderJobList(declinedJobs)}
-        </section>
+                      {/* Enlarged preview - fixed positioning */}
+                      <div className="hidden group-hover:block fixed z-[9999] 
+                        shadow-[0_0_30px_rgba(16,185,129,0.5)]
+                        transform transition-all duration-300 ml-4">
+                        <div className="bg-gray-800/90 p-2 rounded-lg backdrop-blur-sm">
+                          {job.images ? (
+                            <img
+                              src={`http://localhost:5000${job.images}`}
+                              alt={job.title}
+                              className="w-48 h-48 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-48 h-48 rounded-lg bg-gray-700 flex items-center justify-center text-gray-500">
+                              No Image Available
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-white">{job.title}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-400">{getCategoryName(job.category)}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-400">{job.location}, {job.district}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-emerald-500">Rs. {job.payment}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(job.status)}`}>
+                      {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedJob(job);
+                          setIsStatusModalOpen(true);
+                        }}
+                        className="text-emerald-500 hover:text-emerald-400"
+                        title="Change Status"
+                      >
+                        <Eye size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(job._id)}
+                        className="text-red-500 hover:text-red-400"
+                        title="Delete Job"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                      {job.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(job._id)}
+                            className="text-green-500 hover:text-green-400"
+                            title="Approve Job"
+                          >
+                            <Check size={20} />
+                          </button>
+                          <button
+                            onClick={() => handleDecline(job._id)}
+                            className="text-red-500 hover:text-red-400"
+                            title="Decline Job"
+                          >
+                            <X size={20} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Status Change Modal */}

@@ -25,6 +25,8 @@ import BookingPage from "./pages/BookingPage";
 import Chatbot from "./Components/Chatbot/Chatbot";
 import ChatPage from './pages/ChatPage';
 import ReviewPage from './pages/ReviewPage';
+import HowAnyHireWorks from "./pages/HowAnyHireWorks";
+import AboutUs from "./pages/AboutUs";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -118,6 +120,8 @@ function App() {
 						}
 					/>
 					<Route path="/analytics/users" element={<UsersAnalytics />} />
+					<Route path="/how-anyhire-works" element={<HowAnyHireWorks />} />
+					<Route path="/about" element={<AboutUs />} />
 
 
 

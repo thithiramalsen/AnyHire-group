@@ -29,6 +29,19 @@ const Navbar = () => {
                             Jobs
                         </Link>
 
+                        <Link
+                            to="/about"
+                            className='bg-gray-800 hover:bg-emerald-600 text-white px-3 py-1 rounded-md font-medium transition duration-300 ease-in-out flex items-center'
+                        >
+                            ABOUT US
+                        </Link>
+                        <Link
+                            to="/how-anyhire-works"
+                            className='bg-gray-800 hover:bg-emerald-600 text-white px-3 py-1 rounded-md font-medium transition duration-300 ease-in-out flex items-center'
+                        >
+                            How AnyHire works
+                        </Link>
+
                         {/* Show Dashboard link for any logged-in user */}
                         {user && (
                             <Link

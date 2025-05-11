@@ -69,8 +69,8 @@ const IndexPage = () => {
             </div>
 
             {/* Contact Form Section */}
-            <div className="mt-16">
-                <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Get in Touch</h2>
+            <div id="contact" className="mt-16 scroll-mt-24">
+                <h2 className="text-3xl font-bold text-center mb-8 text-gray-300">Get in Touch</h2>
                 <div className="max-w-2xl mx-auto">
                     <ContactForm />
                 </div>

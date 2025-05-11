@@ -35,6 +35,7 @@ import ReviewPage from './pages/ReviewPage';
 import HowAnyHireWorks from "./pages/HowAnyHireWorks";
 import AboutUs from "./pages/AboutUs";
 import TermsAndPolicies from "./pages/TermsAndPolicies";
+import MainLayout from './layouts/MainLayout';
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -61,8 +62,14 @@ function App() {
 			<div className='relative z-50 pt-20'>
 				<Navbar />
 				<Routes>
-					<Route path='/' element={<IndexPage />} />
-					<Route path='/jobs' element={<JobsPage />} />
+					{/* Routes with footer */}
+					<Route path='/' element={<MainLayout><IndexPage /></MainLayout>} />
+					<Route path='/jobs' element={<MainLayout><JobsPage /></MainLayout>} />
+					<Route path='/about' element={<MainLayout><AboutUs /></MainLayout>} />
+					<Route path="/how-anyhire-works" element={<MainLayout><HowAnyHireWorks /></MainLayout>} /> 
+					<Route path="/terms-and-policies" element={<MainLayout><TermsAndPolicies /></MainLayout>} />
+					
+					{/* Routes without footer */}
 					<Route path='/signup' element={!user ? <SignUpPage /> : <Navigate to='/' />} />
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
@@ -212,12 +219,7 @@ function App() {
 						}
 					/>
 					<Route path="/analytics/users" element={<UsersAnalytics />} />
-					<Route path="/how-anyhire-works" element={<HowAnyHireWorks />} />
-					<Route path="/about" element={<AboutUs />} />
-					<Route path="/terms-and-policies" element={<TermsAndPolicies />} />
 					<Route path="/user/:userId" element={<UserProfileView />} />
-
-
 
 				</Routes>
 			</div>

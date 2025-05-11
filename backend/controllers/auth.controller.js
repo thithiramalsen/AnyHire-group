@@ -290,3 +290,40 @@ export const deleteAccount = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+export const upgradeToJobSeeker = async (req, res) => {
+    try {
+        const user = req.user;
+
+        // Check if user is already a job seeker
+        if (user.role === 'jobSeeker') {
+            return res.status(400).json({ message: 'You are already a job seeker' });
+        }
+
+        // Check if user is a customer
+        if (user.role !== 'customer') {
+            return res.status(400).json({ message: 'Only customers can upgrade to job seekers' });
+        }
+
+        // Update user role
+        user.role = 'jobSeeker';
+        await user.save();
+
+        // Create notification
+        await NotificationService.createNotification(
+            user._id,
+            'ROLE_UPGRADE',
+            'Welcome Job Seeker!',
+            'Your account has been upgraded to Job Seeker. You can now start offering your services!',
+            '/jobs/create'
+        );
+
+        res.json({ 
+            message: 'Successfully upgraded to job seeker',
+            role: user.role 
+        });
+    } catch (error) {
+        console.error('Error upgrading role:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

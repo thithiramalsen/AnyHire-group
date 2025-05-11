@@ -40,25 +40,25 @@ const impactStats = [
 
 const team = [
   {
-    img: '/src/assets/user1.jpeg',
+    img: '/src/assets/user4.jpeg',
     name: 'Thithira Malsen',
     role: 'CEO',
     desc: 'Visionary leader passionate about empowering communities and redefining work.'
   },
   {
-    img: '/src/assets/user2.jpeg',
+    img: '/src/assets/user5.jpeg',
     name: 'Thiranja Bandara',
     role: 'Founder',
     desc: 'Driven to create innovative solutions and connect people to opportunities.'
   },
   {
-    img: '/src/assets/user3.jpeg',
+    img: '/src/assets/user6.jpeg',
     name: 'Mashi Waidyarathne',
     role: 'Community Lead',
     desc: 'Focused on building a strong, supportive user community.'
   },
   {
-    img: '/src/assets/user4.jpeg',
+    img: '/src/assets/user7.jpeg',
     name: 'Tharusha Bandara',
     role: 'Head of Product',
     desc: 'Dedicated to delivering the best experience for both job seekers and customers.'

@@ -19,7 +19,7 @@ const JobsPage = () => {
             try {
                 const [jobsResponse, categoriesResponse] = await Promise.all([
                     axios.get("/job/public/approved"),
-                    axios.get("/category")
+                    axios.get("/category/public")
                 ]);
                 
                 setJobs(jobsResponse.data);

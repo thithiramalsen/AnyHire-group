@@ -1,4 +1,4 @@
-import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Briefcase, Info, HelpCircle, MailQuestion } from "lucide-react";
+import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Briefcase, Info, HelpCircle, MailQuestion, FileText } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "../stores/useUserStore";
 
@@ -49,6 +49,15 @@ const Navbar = () => {
                             <Info className="mr-1" size={18} />
                             About Us
                         </Link>
+
+                        <Link
+                            to="/terms-and-policies"
+                            className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                        >
+                            <FileText className="mr-1" size={18} />
+                            Terms & Policies
+                        </Link>
+
                         <Link
                             to="/how-anyhire-works"
                             className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'

@@ -33,6 +33,7 @@ import ChatPage from './pages/ChatPage';
 import ReviewPage from './pages/ReviewPage';
 import HowAnyHireWorks from "./pages/HowAnyHireWorks";
 import AboutUs from "./pages/AboutUs";
+import TermsAndPolicies from "./pages/TermsAndPolicies";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -189,6 +190,7 @@ function App() {
 					<Route path="/analytics/users" element={<UsersAnalytics />} />
 					<Route path="/how-anyhire-works" element={<HowAnyHireWorks />} />
 					<Route path="/about" element={<AboutUs />} />
+					<Route path="/terms-and-policies" element={<TermsAndPolicies />} />
 					<Route path="/user/:userId" element={<UserProfileView />} />
 
 

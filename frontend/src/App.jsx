@@ -19,7 +19,8 @@ import PaymentsAnalytics from "./Components/analytics/PaymentsAnalytics";
 import RatingsAnalytics from "./Components/analytics/RatingsAnalytics";
 import SupportAnalytics from "./Components/analytics/SupportAnalytics";
 import UserProfileView from "./Components/UserProfileView";
-
+import GamificationManagementTab from "./Components/admin/GamificationManagementTab";
+import MyAwards from "./Components/MyAwards";
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
 import { useUserStore } from "./stores/useUserStore";
@@ -134,6 +135,29 @@ function App() {
 						element={
 							user?.role === 'admin' ? (
 								<SupportAnalytics />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+
+					{/* Gamification Management Route */}
+					<Route
+						path="/gamification"
+						element={
+							user?.role === 'admin' ? (
+								<GamificationManagementTab />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+
+					<Route
+						path="/my-awards"
+						element={
+							user ? (
+								<MyAwards />
 							) : (
 								<Navigate to="/login" replace />
 							)

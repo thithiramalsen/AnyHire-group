@@ -21,9 +21,10 @@ export const rolePermissions = {
             { id: "payments", label: "Payments", component: "PaymentsManagement" },
             { id: "reviews", label: "Reviews", component: "ReviewManagementTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
-            {id:"contact", label: "Contact", component: "ContactAdminTab"},
+            { id: "contact", label: "Contact", component: "ContactAdminTab" },
             { id: "user-management", label: "User Management", component: "UserManagementTab" },
-            { id: "categories", label: "Categories", component: "CategoriesTab" }
+            { id: "categories", label: "Categories", component: "CategoriesTab" },
+            { id: "gamification", label: "Gamification", component: "GamificationManagementTab" }
         ]
     },
     customer: {
@@ -35,6 +36,7 @@ export const rolePermissions = {
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
+            { id: "my-awards", label: "My Awards", component: "MyAwards" }
         ]
     },
     jobSeeker: {
@@ -46,7 +48,8 @@ export const rolePermissions = {
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
-            { id: "cart", label: "Cart", component: "CartTab" }
+            { id: "cart", label: "Cart", component: "CartTab" },
+            { id: "my-awards", label: "My Awards", component: "MyAwards" }
         ]
     }
 };

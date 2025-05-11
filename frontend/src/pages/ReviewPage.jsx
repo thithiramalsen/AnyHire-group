@@ -67,19 +67,21 @@ const ReviewPage = () => {
         try {
             const reviewType = user.role === 'customer' ? 'customer_to_seeker' : 'seeker_to_customer';
             const payload = {
-                bookingId,
                 rating,
-                reviewType,
-                ...(comment.trim() && { comment })
+                comment: comment.trim(),
+                reviewType
             };
 
             if (existingReview) {
-                // Update existing review
-                await axios.put(`/reviews/${existingReview._id}`, payload);
+                // Use the new update endpoint
+                await axios.put(`/reviews/user/${existingReview._id}`, payload);
                 toast.success('Review updated successfully!');
             } else {
                 // Create new review
-                await axios.post('/reviews', payload);
+                await axios.post('/reviews', {
+                    ...payload,
+                    bookingId
+                });
                 toast.success('Review submitted successfully!');
             }
 

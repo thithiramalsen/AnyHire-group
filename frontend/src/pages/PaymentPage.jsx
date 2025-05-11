@@ -95,9 +95,8 @@ const PaymentPage = () => {
             }
 
             toast.success('Payment initiated!');
-            // Refetch payment info
-            const res = await axios.get(`/payment/booking/${bookingId}`);
-            setPayment(res.data.payment);
+            // Navigate to review page
+            navigate(`/review/${bookingId}`);
         } catch (err) {
             console.error('Payment error:', err);
             toast.error(err.response?.data?.message || 'Error creating payment');
@@ -180,7 +179,8 @@ const PaymentPage = () => {
                 status: 'completed'
             });
             toast.success('Booking completed successfully!');
-            navigate(`/booking/${payment.bookingId}`);
+            // Navigate to review page instead of booking page
+            navigate(`/review/${payment.bookingId}`);
         } catch (error) {
             console.error('Error completing booking:', error);
             toast.error(error.response?.data?.message || 'Failed to complete booking');

@@ -96,21 +96,33 @@ const IndexPage = () => {
 
             {/* Services Section */}
             <div className="container mx-auto px-4 py-12">
-                <h2 className="text-3xl font-bold text-center mb-10">
-                  AnyHire <span className="text-blue-400">| Find Professionals</span>
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-y-12 gap-x-4 justify-items-center">
-                  {services.map((service, idx) => (
-                    <div key={idx} className="flex flex-col items-center group transition-transform">
-                      <div className="w-40 h-40 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-gray-800 shadow-lg mb-4 bg-gray-700 transform transition-transform duration-300 group-hover:scale-110 group-hover:shadow-2xl">
-                        <img src={service.img} alt={service.name} className="object-cover w-full h-full" />
+              <h2 className="text-3xl font-bold text-center mb-10">
+                AnyHire <span className="text-blue-400">| Find Professionals</span>
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-y-12 gap-x-4 justify-items-center">
+                {services.map((service, idx) => (
+                  <div key={idx} className="flex flex-col items-center group transition-transform">
+                    <div className="relative w-40 h-40 md:w-44 md:h-44 rounded-xl mb-4 transform transition-all duration-300 group-hover:scale-110">
+                      {/* Glowing border container */}
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-500 animate-neon-glow p-[2px]">
+                        {/* Inner content container */}
+                        <div className="relative h-full w-full rounded-xl overflow-hidden bg-gray-700">
+                          <img 
+                            src={service.img} 
+                            alt={service.name} 
+                            className="object-cover w-full h-full relative z-10" 
+                          />
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
                       </div>
-                      <span className="text-base md:text-lg text-gray-200 text-center mt-2">
-                        {service.name}
-                      </span>
                     </div>
-                  ))}
-                </div>
+                    <span className="text-base md:text-lg text-gray-200 text-center mt-2 group-hover:text-emerald-400 transition-colors duration-300">
+                      {service.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Carousel Section */}

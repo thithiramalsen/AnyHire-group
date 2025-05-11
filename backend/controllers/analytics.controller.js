@@ -4,6 +4,7 @@ import Booking from '../models/booking.model.js';
 import Payment from '../models/payment.model.js';
 import Rating from '../models/review.model.js';
 import Support from '../models/ticket.model.js';
+import Contact from '../models/contact.model.js';
 import mongoose from 'mongoose';
 
 // Helper function to get date range based on timeRange parameter
@@ -517,7 +518,7 @@ export const getRatingsAnalytics = async (req, res) => {
             }
         ]);
 
-        // Get ratings by category
+        // Get ratings by category (grouped by review type instead since Review model has reviewType)
         const ratingsByCategory = await Rating.aggregate([
             {
                 $match: {
@@ -526,14 +527,24 @@ export const getRatingsAnalytics = async (req, res) => {
             },
             {
                 $group: {
-                    _id: '$category',
-                    count: { $sum: 1 }
+                    _id: '$reviewType',  // Changed from '$category' to '$reviewType'
+                    count: { $sum: 1 },
+                    averageRating: { $avg: '$rating' }
                 }
             },
             {
                 $project: {
-                    name: '$_id',
+                    name: {
+                        $switch: {
+                            branches: [
+                                { case: { $eq: ['$_id', 'customer_to_seeker'] }, then: 'Customer Reviews' },
+                                { case: { $eq: ['$_id', 'seeker_to_customer'] }, then: 'Job Seeker Reviews' }
+                            ],
+                            default: 'Other'
+                        }
+                    },
                     count: 1,
+                    averageRating: { $round: ['$averageRating', 1] },
                     _id: 0
                 }
             }
@@ -614,40 +625,24 @@ export const getSupportAnalytics = async (req, res) => {
         const { timeRange = '30d' } = req.query;
         const { startDate, endDate } = getDateRange(timeRange);
 
-        // Get total tickets
+        // Get total tickets with proper status check
         const totalTickets = await Support.countDocuments({
             createdAt: { $gte: startDate, $lte: endDate }
         });
 
-        // Get open tickets
+        // Fix: Match exact status values from ticket.model.js
         const openTickets = await Support.countDocuments({
-            status: 'open',
+            status: { $in: ['Open', 'In Progress'] }, // Changed to match enum values in model
             createdAt: { $gte: startDate, $lte: endDate }
         });
 
-        // Get resolved tickets
+        // Fix: Match exact status values from ticket.model.js
         const resolvedTickets = await Support.countDocuments({
-            status: 'resolved',
+            status: { $in: ['Resolved', 'Closed'] }, // Changed to match enum values in model
             createdAt: { $gte: startDate, $lte: endDate }
         });
 
-        // Calculate average response time
-        const responseTimeStats = await Support.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: startDate, $lte: endDate },
-                    firstResponseTime: { $exists: true }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    averageResponseTime: { $avg: '$firstResponseTime' }
-                }
-            }
-        ]);
-
-        // Get tickets by status
+        // Fix: Update ticketsByStatus to match exact status values
         const ticketsByStatus = await Support.aggregate([
             {
                 $match: {
@@ -656,7 +651,7 @@ export const getSupportAnalytics = async (req, res) => {
             },
             {
                 $group: {
-                    _id: '$status',
+                    _id: '$status', // Will now match exact enum values
                     count: { $sum: 1 }
                 }
             },
@@ -722,14 +717,90 @@ export const getSupportAnalytics = async (req, res) => {
             }
         ]);
 
+        // Get contact form analytics
+        const totalContacts = await Contact.countDocuments({
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        const newContacts = await Contact.countDocuments({
+            status: 'New',
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        const resolvedContacts = await Contact.countDocuments({
+            status: 'Resolved',
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+
+        // Get contacts by status
+        const contactsByStatus = await Contact.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id',
+                    count: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        // Get contacts growth trend
+        const contactsGrowth = await Contact.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                    },
+                    newContacts: { $sum: 1 },
+                    resolvedContacts: {
+                        $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] }
+                    }
+                }
+            },
+            {
+                $project: {
+                    date: '$_id',
+                    newContacts: 1,
+                    resolvedContacts: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { date: 1 }
+            }
+        ]);
+
         res.json({
-            totalTickets,
-            openTickets,
-            resolvedTickets,
-            averageResponseTime: responseTimeStats[0]?.averageResponseTime || 0,
-            ticketsByStatus,
-            ticketsByCategory,
-            ticketsGrowth
+            tickets: {
+                total: totalTickets,
+                open: openTickets,
+                resolved: resolvedTickets,
+                byStatus: ticketsByStatus,
+                byCategory: ticketsByCategory,
+                growth: ticketsGrowth
+            },
+            contacts: {
+                total: totalContacts,
+                new: newContacts,
+                resolved: resolvedContacts,
+                byStatus: contactsByStatus,
+                growth: contactsGrowth
+            }
         });
     } catch (error) {
         console.error('Error in getSupportAnalytics:', error);

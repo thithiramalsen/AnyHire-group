@@ -2,6 +2,7 @@ import Review from '../models/review.model.js';
 import Booking from '../models/booking.model.js';
 import User from '../models/user.model.js';
 import Payment from '../models/payment.model.js';
+import NotificationService from '../services/notification.service.js';
 
 // Create a new review
 export const createReview = async (req, res) => {
@@ -58,6 +59,18 @@ export const createReview = async (req, res) => {
         });
 
         await review.save();
+
+        // Send notification to reviewee
+        await NotificationService.createNotification(
+            revieweeId,
+            'REVIEW',
+            'New Review Received',
+            `You received a ${rating}-star review for job "${booking.jobTitle}"`,
+            {
+                booking: `/booking/${bookingId}`,
+                profile: `/user/${reviewerId}`
+            }
+        );
 
         // If customer submitted the review, set booking and payment status to 'completed'
         if (reviewType === 'customer_to_seeker') {

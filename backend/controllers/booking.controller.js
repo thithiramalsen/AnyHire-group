@@ -184,15 +184,67 @@ export const updateBookingStatus = async (req, res) => {
 
         // Update the status and corresponding date
         booking.status = status;
-        if (status === 'accepted') booking.dates.accepted = new Date();
-        if (status === 'in_progress') booking.dates.started = new Date();
-        if (status === 'completed_by_seeker') booking.dates.completed_by_seeker = new Date();
-        if (status === 'payment_pending') booking.dates.completed = new Date();
-        if (status === 'paid') booking.dates.paid = new Date();
+        if (status === 'accepted') {
+            booking.dates.accepted = new Date();
+            // Create notification for job seeker when application is accepted
+            await NotificationService.createNotification(
+                booking.seekerId,
+                'BOOKING',
+                'Application Accepted',
+                `Your application for "${booking.jobTitle}" has been accepted!`,
+                {
+                    booking: `/booking/${booking._id}`,
+                    profile: `/user/${booking.posterId}`
+                }
+            );
+        }
+        if (status === 'in_progress') {
+            booking.dates.started = new Date();
+            // Add notification for customer when job starts
+            await NotificationService.createNotification(
+                booking.posterId,
+                'BOOKING',
+                'Job Started',
+                `Job seeker has started working on "${booking.jobTitle}"`,
+                {
+                    booking: `/booking/${booking._id}`,
+                    profile: `/user/${booking.seekerId}`
+                }
+            );
+        }
+        if (status === 'completed_by_seeker') {
+            booking.dates.completed_by_seeker = new Date();
+            // Add notification for customer when job seeker completes the job
+            await NotificationService.createNotification(
+                booking.posterId,
+                'BOOKING',
+                'Job Completed',
+                `Job seeker has marked "${booking.jobTitle}" as completed. Please review and confirm.`,
+                {
+                    booking: `/booking/${booking._id}`,
+                    profile: `/user/${booking.seekerId}`
+                }
+            );
+        }
+        if (status === 'payment_pending') {
+            booking.dates.completed = new Date();
+            // Add notification for job seeker when customer confirms completion
+            await NotificationService.createNotification(
+                booking.seekerId,
+                'BOOKING',
+                'Job Completion Confirmed',
+                `Customer has confirmed completion of "${booking.jobTitle}". Payment is pending.`,
+                {
+                    booking: `/booking/${booking._id}`,
+                    profile: `/user/${booking.posterId}`
+                }
+            );
+        }
+        if (status === 'paid') {
+            booking.dates.paid = new Date();
+        }
         
         await booking.save();
-
-        // Update job status after booking status change
         await updateJobStatus(booking.jobId);
 
         res.json({ message: "Booking status updated", booking });

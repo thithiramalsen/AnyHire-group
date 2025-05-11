@@ -14,7 +14,8 @@ const notificationSchema = new Schema({
         type: String,
         required: true,
         enum: ['WELCOME', 'BOOKING', 'PAYMENT', 'REVIEW', 'SYSTEM', 'ROLE_UPGRADE',
-            'JOB_POSTED', 'JOB_APPROVED', 'JOB_DECLINED', 'JOB_APPLICATION'
+            'JOB_POSTED', 'JOB_APPROVED', 'JOB_DECLINED', 'JOB_APPLICATION',
+            'APPLICATION_ACCEPTED', 'APPLICATION_DECLINED'  // Add these new types
         ]
     },
     title: {

@@ -8,7 +8,7 @@ import Contact from '../models/contact.model.js';
 import mongoose from 'mongoose';
 
 // Helper function to get date range based on timeRange parameter
-const getDateRange = (timeRange) => {
+export const getDateRange = (timeRange) => {
     const now = new Date();
     const startDate = new Date();
 

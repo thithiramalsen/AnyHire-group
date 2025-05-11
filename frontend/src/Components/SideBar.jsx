@@ -58,7 +58,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "reviews": Star,
         "notifications": Bell,
         "gamification": Trophy,
-        "my-awards": Trophy
+        "my-awards": Trophy,
+        "reports": FileText
     };
 
     return (

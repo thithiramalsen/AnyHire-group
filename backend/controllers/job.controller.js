@@ -29,7 +29,9 @@ export const getJobs = async (req, res) => {
 // Get a job by ID
 export const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findById(req.params.id)
+      .populate('createdBy', 'name email profileImage role'); // Add fields you want to display
+
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }

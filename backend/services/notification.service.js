@@ -1,14 +1,14 @@
 import Notification from '../models/notification.model.js';
 
 class NotificationService {
-    static async createNotification(userId, type, title, message, link = null) {
+    static async createNotification(userId, type, title, message, links = {}) {
         try {
             const notification = new Notification({
                 userId,
                 type,
                 title,
                 message,
-                link
+                links: new Map(Object.entries(links))
             });
             await notification.save();
             return notification;

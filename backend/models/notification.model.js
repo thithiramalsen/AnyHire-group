@@ -14,7 +14,7 @@ const notificationSchema = new Schema({
         type: String,
         required: true,
         enum: ['WELCOME', 'BOOKING', 'PAYMENT', 'REVIEW', 'SYSTEM', 'ROLE_UPGRADE',
-            'JOB_POSTED', 'JOB_APPROVED', 'JOB_DECLINED'
+            'JOB_POSTED', 'JOB_APPROVED', 'JOB_DECLINED', 'JOB_APPLICATION'
         ]
     },
     title: {
@@ -32,6 +32,11 @@ const notificationSchema = new Schema({
     link: {
         type: String,
         default: null
+    },
+    links: {
+        type: Map,
+        of: String,
+        default: new Map()
     }
 }, {
     timestamps: true

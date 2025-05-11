@@ -49,12 +49,15 @@ const ApplyPage = () => {
 
         try {
             setApplying(true);
+            // Apply for the job
             await axios.post(`/booking/apply/${jobId}`);
+            
             toast.success('Application submitted successfully!');
             navigate('/my-jobs');
         } catch (error) {
             console.error('Error applying for job:', error);
             toast.error(error.response?.data?.message || 'Error submitting application');
+        } finally {
             setApplying(false);
         }
     };
@@ -75,7 +78,7 @@ const ApplyPage = () => {
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-3xl mx-auto">
                 <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                {job.images && (
+                    {job.images && (
                         <img
                             src={`http://localhost:5000${job.images}`}
                             alt={job.title}
@@ -86,9 +89,26 @@ const ApplyPage = () => {
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
-                                <p className="text-gray-400">
-                                    Posted by: {job.posterDetails?.name}
-                                </p>
+                                <div className="flex items-center space-x-4">
+                                    {job.createdBy?.profileImage && (
+                                        <img 
+                                            src={`http://localhost:5000${job.createdBy.profileImage}`}
+                                            alt={job.createdBy.name}
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                    )}
+                                    <div>
+                                        <p className="text-gray-300 font-medium">
+                                            Posted by: {job.createdBy?.name}
+                                        </p>
+                                        <p className="text-gray-400 text-sm">
+                                            {job.createdBy?.email}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                                Posted: {new Date(job.postedDate).toLocaleDateString()}
                             </div>
                         </div>
                         

@@ -58,6 +58,23 @@ class NotificationController {
             res.status(500).json({ message: 'Error getting unread count' });
         }
     }
+
+    static async createNotification(req, res) {
+        try {
+            const { userId, type, title, message, links } = req.body;
+            const notification = await NotificationService.createNotification(
+                userId,
+                type,
+                title,
+                message,
+                links
+            );
+            res.status(201).json(notification);
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            res.status(500).json({ message: 'Failed to create notification' });
+        }
+    }
 }
 
 export default NotificationController;

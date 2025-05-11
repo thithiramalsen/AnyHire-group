@@ -112,4 +112,173 @@ export const getMyAwards = async (req, res) => {
             message: error.message
         });
     }
+};
+
+export const calculateCustomerOfDay = async (req, res) => {
+    try {
+        const now = new Date();
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        const award = await CustomerRewardsService.calculateCustomerOfDay(day, month, year);
+        
+        if (!award) {
+            return res.status(404).json({
+                success: false,
+                message: 'No eligible customers found for today'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: award
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getCustomerOfDay = async (req, res) => {
+    try {
+        const { day, month, year } = req.params;
+        
+        const award = await CustomerRewardsService.getCustomerOfDay(
+            parseInt(day),
+            parseInt(month),
+            parseInt(year)
+        );
+
+        if (!award) {
+            return res.status(404).json({
+                success: false,
+                message: 'No award found for the specified date'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: award
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const calculateTopSeekerOfMonth = async (req, res) => {
+    try {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        const award = await CustomerRewardsService.calculateTopSeekerOfMonth(month, year);
+        
+        if (!award) {
+            return res.status(404).json({
+                success: false,
+                message: 'No eligible seekers found for the period'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: award
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const calculateTopSeekerOfDay = async (req, res) => {
+    try {
+        const now = new Date();
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        const award = await CustomerRewardsService.calculateTopSeekerOfDay(day, month, year);
+        
+        if (!award) {
+            return res.status(404).json({
+                success: false,
+                message: 'No eligible seekers found for today'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: award
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getTopSeekerOfMonth = async (req, res) => {
+    try {
+        const { month, year } = req.params;
+        
+        const award = await CustomerRewardsService.getTopSeekerOfMonth(
+            parseInt(month),
+            parseInt(year)
+        );
+
+        if (!award) {
+            return res.status(404).json({
+                success: false,
+                message: 'No award found for the specified period'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: award
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getTopSeekerOfDay = async (req, res) => {
+    try {
+        const { day, month, year } = req.params;
+        
+        const award = await CustomerRewardsService.getTopSeekerOfDay(
+            parseInt(day),
+            parseInt(month),
+            parseInt(year)
+        );
+
+        if (!award) {
+            return res.status(404).json({
+                success: false,
+                message: 'No award found for the specified date'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: award
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 }; 

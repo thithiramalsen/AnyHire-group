@@ -3,6 +3,7 @@ import Job from '../models/job.model.js';
 import User from '../models/user.model.js';
 import Payment from '../models/payment.model.js';
 import { updateJobStatus } from '../middleware/jobStatus.middleware.js';
+import NotificationService from '../services/notification.service.js';
 
 // Apply for a job (creates a booking)
 export const applyForJob = async (req, res) => {
@@ -59,6 +60,18 @@ export const applyForJob = async (req, res) => {
 
         const savedBooking = await newBooking.save();
         console.log('Saved booking:', savedBooking);
+
+        // Create notification for the job poster
+        await NotificationService.createNotification(
+            job.createdBy, // userId of job poster
+            'JOB_APPLICATION',
+            'New Job Application',
+            `${seeker.name} has applied for your job: ${job.title}`,
+            {
+                booking: `/secret-dashboard?tab=bookings&booking=${savedBooking._id}`,
+                profile: `/user/${seekerId}`
+            }
+        );
         
         res.status(201).json(savedBooking);
     } catch (err) {

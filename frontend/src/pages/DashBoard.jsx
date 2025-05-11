@@ -24,6 +24,8 @@ import PaymentsManagement from "../Components/admin/PaymentsManagement";
 import ReviewManagementTab from "../Components/admin/ReviewManagementTab";
 import ReviewsTab from "../Components/ReviewsTab";
 import NotificationTab from "../Components/NotificationTab";
+import GamificationManagementTab from "../Components/admin/GamificationManagementTab";
+import MyAwards from "../Components/MyAwards";
 
 // Component mapping
 const componentMap = {
@@ -46,7 +48,9 @@ const componentMap = {
     PaymentsManagement,
     ReviewManagementTab,
     ReviewsTab,
-    NotificationTab
+    NotificationTab,
+    GamificationManagementTab,
+    MyAwards
 };
 
 const DashBoard = () => {

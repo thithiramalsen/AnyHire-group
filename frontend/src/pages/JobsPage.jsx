@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
+import Footer from '../Components/Footer';
 import { motion } from 'framer-motion';
 import { Search, Briefcase, MapPin, Calendar, DollarSign } from 'lucide-react';
 
@@ -232,6 +233,7 @@ const JobsPage = () => {
                     )}
                 </div>
             </div>
+            <Footer />
         </div>
     );
 };

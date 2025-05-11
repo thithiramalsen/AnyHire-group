@@ -189,6 +189,7 @@ function App() {
 					<Route path="/analytics/users" element={<UsersAnalytics />} />
 					<Route path="/how-anyhire-works" element={<HowAnyHireWorks />} />
 					<Route path="/about" element={<AboutUs />} />
+					<Route path="/user/:userId" element={<UserProfileView />} />
 
 
 

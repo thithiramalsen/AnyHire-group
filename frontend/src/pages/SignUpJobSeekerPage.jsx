@@ -1,17 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { UserPlus, Mail, Lock, User, ArrowRight, Loader, Image } from "lucide-react";
+import { UserPlus, Mail, Lock, User, ArrowRight, Loader, Image, ChevronDown, ChevronUp, Tags, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUserStore } from "../stores/useUserStore";
 import toast from "react-hot-toast";
+import axios from "../lib/axios";
 
 const SignUpJobSeekerPage = () => {
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
     image: null,
+    preferredCategories: [],
+    preferredDistrict: "",
   });
 
   const [touched, setTouched] = useState({
@@ -24,6 +28,19 @@ const SignUpJobSeekerPage = () => {
 
   const [errors, setErrors] = useState({});
   const { signup, loading } = useUserStore();
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("/category/public");
+        setCategories(response.data.categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleChange = (field, value) => {
     const newFormData = { ...formData, [field]: value };
@@ -103,9 +120,23 @@ const SignUpJobSeekerPage = () => {
     if (formData.image) {
       data.append("image", formData.image);
     }
+    if (formData.preferredCategories.length > 0) {
+      data.append("preferredCategories", JSON.stringify(formData.preferredCategories));
+    }
+    if (formData.preferredDistrict) {
+      data.append("preferredDistrict", formData.preferredDistrict);
+    }
 
     signup(data);
   };
+
+  const districts = [
+    "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle",
+    "Gampaha", "Hambantota", "Jaffna", "Kalutara", "Kandy", "Kegalle",
+    "Kilinochchi", "Kurunegala", "Mannar", "Matale", "Matara", "Monaragala",
+    "Mullaitivu", "Nuwara Eliya", "Polonnaruwa", "Puttalam", "Ratnapura",
+    "Trincomalee", "Vavuniya"
+  ];
 
   return (
     <div className="flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -244,6 +275,103 @@ const SignUpJobSeekerPage = () => {
                   <div className="text-red-500 text-xs mt-1">{errors.image}</div>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => setIsPreferencesOpen(!isPreferencesOpen)}
+                className="w-full flex items-center justify-between px-4 py-2 bg-gray-700 rounded-lg text-gray-300 hover:bg-gray-600 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Tags size={18} />
+                  <span>Additional Preferences (Optional)</span>
+                </div>
+                {isPreferencesOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
+
+              {isPreferencesOpen && (
+                <div className="space-y-4 p-4 bg-gray-700/50 rounded-lg">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <Tags className="inline-block mr-2 h-4 w-4" />
+                      Preferred Categories
+                    </label>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const value = Number(e.target.value); // Convert to number
+                        if (value && !formData.preferredCategories.includes(value)) {
+                          setFormData(prev => ({
+                            ...prev,
+                            preferredCategories: [...prev.preferredCategories, value]
+                          }));
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      <option value="">Select categories...</option>
+                      {categories.map((category) => (
+                        <option 
+                          key={category._id} 
+                          value={category._id}
+                          disabled={formData.preferredCategories.includes(category._id)}
+                        >
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Selected categories as tags */}
+                    {formData.preferredCategories.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {formData.preferredCategories.map((catId) => {
+                          const category = categories.find(c => c._id === catId);
+                          return category ? (
+                            <span
+                              key={catId}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400"
+                            >
+                              {category.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    preferredCategories: prev.preferredCategories.filter(id => id !== catId)
+                                  }));
+                                }}
+                                className="ml-1 hover:text-emerald-300"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <MapPin className="inline-block mr-2 h-4 w-4" />
+                      Preferred District
+                    </label>
+                    <select
+                      value={formData.preferredDistrict}
+                      onChange={(e) => handleChange("preferredDistrict", e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      <option value="">Select a district</option>
+                      {districts.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <button

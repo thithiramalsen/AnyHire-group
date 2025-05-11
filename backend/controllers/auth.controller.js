@@ -76,8 +76,27 @@ export const signup = async (req, res) => {
         // Handle image upload
         const image = req.file ? req.file.filename : null;
 
-        // Create the user with the provided role (default is 'customer' if not provided)
-        const user = await User.create({ name, email, password, role, image });
+        // Parse preferredCategories if provided
+        let preferredCategories = [];
+        if (req.body.preferredCategories) {
+            try {
+                preferredCategories = JSON.parse(req.body.preferredCategories);
+            } catch (err) {
+                console.log("Error parsing preferredCategories:", err);
+                // Don't return error, just continue with empty array
+            }
+        }
+
+        // Create the user with the provided role and optional preferences
+        const user = await User.create({ 
+            name, 
+            email, 
+            password, 
+            role, 
+            image,
+            preferredCategories: preferredCategories.length > 0 ? preferredCategories : undefined,
+            preferredDistrict: req.body.preferredDistrict || undefined
+        });
 
         // Authenticate
         const { accessToken, refreshToken } = generateTokens(user._id);

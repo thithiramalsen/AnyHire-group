@@ -97,8 +97,13 @@ export const addJob = async (req, res) => {
             req.user._id,
             'JOB_POSTED',
             'Job Posted Successfully',
-            `Your job "${title}" has been posted and is waiting for admin approval. We'll notify you once it's approved.`,
-            `/jobs/${newJob._id}`
+            `Your job "${title}" has been posted and is waiting for admin approval.`,
+            {
+                references: {
+                    jobId: newJob._id,
+                    targetUserId: req.user._id
+                }
+            }
         );
 
         // Find all admin users and notify them
@@ -112,7 +117,12 @@ export const addJob = async (req, res) => {
                 'JOB_POSTED',
                 'New Job Requires Approval',
                 `A new job "${title}" by ${req.user.name} requires your approval.`,
-                `/admin/jobs`
+                {
+                    references: {
+                        jobId: newJob._id,
+                        targetUserId: req.user._id
+                    }
+                }
             )
         ));
 
@@ -273,7 +283,12 @@ export const approveJob = async (req, res) => {
       'JOB_APPROVED',
       'Job Approved!',
       `Your job "${job.title}" has been approved and is now visible to job seekers.`,
-      `/jobs/${job._id}`
+      {
+          references: {
+              jobId: job._id,
+              targetUserId: req.user._id
+          }
+      }
     );
 
     res.status(200).json(job);

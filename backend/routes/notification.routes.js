@@ -16,4 +16,7 @@ router.patch('/read-all', protectRoute, NotificationController.markAllAsRead);
 // Get unread notifications count
 router.get('/unread-count', protectRoute, NotificationController.getUnreadCount);
 
+// Clear all notifications
+router.delete('/clear-all', protectRoute, NotificationController.clearAllNotifications);
+
 export default router;

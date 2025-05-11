@@ -41,8 +41,10 @@ export const createTicket = async (req, res) => {
                 'New Support Ticket',
                 `New ticket created: ${ticket.subject}`,
                 {
-                    ticket: `/secret-dashboard?tab=tickets&ticket=${ticket._id}`,
-                    profile: `/user/${req.user._id}`
+                    references: {
+                        ticketId: ticket._id,
+                        targetUserId: req.user._id
+                    }
                 }
             )
         ));
@@ -153,8 +155,10 @@ export const replyToTicket = async (req, res) => {
             'Support Ticket Update',
             `Admin has replied to your ticket: ${ticket.subject}`,
             {
-                ticket: `/tickets/${ticket._id}`,
-                profile: `/user/${req.user._id}`
+                references: {
+                    ticketId: ticket._id,
+                    targetUserId: req.user._id
+                }
             }
         );
 

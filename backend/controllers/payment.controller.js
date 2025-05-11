@@ -83,8 +83,10 @@ export const initializePayment = async (req, res) => {
             'Payment Initiated',
             `Customer has initiated payment for "${booking.jobTitle}". Please confirm once received.`,
             {
-                booking: `/booking/${bookingId}`,
-                profile: `/user/${booking.posterId}`
+                references: {
+                    bookingId: booking._id,
+                    targetUserId: booking.posterId
+                }
             }
         );
 
@@ -296,8 +298,10 @@ export const confirmPayment = async (req, res) => {
                 'Payment Confirmed',
                 `Job seeker has confirmed receiving payment for "${booking.jobTitle}". Transaction completed.`,
                 {
-                    booking: `/booking/${booking._id}`,
-                    profile: `/user/${booking.seekerId}`
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.seekerId
+                    }
                 }
             );
 
@@ -313,8 +317,10 @@ export const confirmPayment = async (req, res) => {
                 'Payment Reported',
                 `Job seeker has reported an issue with the payment for "${booking.jobTitle}". Reason: ${notes || 'No reason provided'}`,
                 {
-                    booking: `/booking/${booking._id}`,
-                    profile: `/user/${booking.seekerId}`
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.seekerId
+                    }
                 }
             );
         }

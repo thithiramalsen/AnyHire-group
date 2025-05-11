@@ -67,8 +67,11 @@ export const createReview = async (req, res) => {
             'New Review Received',
             `You received a ${rating}-star review for job "${booking.jobTitle}"`,
             {
-                booking: `/booking/${bookingId}`,
-                profile: `/user/${reviewerId}`
+                references: {
+                    reviewId: review._id,
+                    bookingId: booking._id,
+                    targetUserId: reviewerId
+                }
             }
         );
 

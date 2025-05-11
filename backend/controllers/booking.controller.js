@@ -63,13 +63,15 @@ export const applyForJob = async (req, res) => {
 
         // Create notification for the job poster
         await NotificationService.createNotification(
-            job.createdBy, // userId of job poster
-            'JOB_APPLICATION',
+            job.createdBy,
+            'BOOKING',
             'New Job Application',
             `${seeker.name} has applied for your job: ${job.title}`,
             {
-                booking: `/secret-dashboard?tab=bookings&booking=${savedBooking._id}`,
-                profile: `/user/${seekerId}`
+                references: {
+                    bookingId: savedBooking._id,
+                    targetUserId: seekerId
+                }
             }
         );
         
@@ -193,8 +195,10 @@ export const updateBookingStatus = async (req, res) => {
                 'Application Accepted',
                 `Your application for "${booking.jobTitle}" has been accepted!`,
                 {
-                    booking: `/booking/${booking._id}`,
-                    profile: `/user/${booking.posterId}`
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.posterId
+                    }
                 }
             );
         }
@@ -207,8 +211,10 @@ export const updateBookingStatus = async (req, res) => {
                 'Job Started',
                 `Job seeker has started working on "${booking.jobTitle}"`,
                 {
-                    booking: `/booking/${booking._id}`,
-                    profile: `/user/${booking.seekerId}`
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.seekerId
+                    }
                 }
             );
         }
@@ -221,8 +227,10 @@ export const updateBookingStatus = async (req, res) => {
                 'Job Completed',
                 `Job seeker has marked "${booking.jobTitle}" as completed. Please review and confirm.`,
                 {
-                    booking: `/booking/${booking._id}`,
-                    profile: `/user/${booking.seekerId}`
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.seekerId
+                    }
                 }
             );
         }

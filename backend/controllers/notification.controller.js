@@ -75,6 +75,17 @@ class NotificationController {
             res.status(500).json({ message: 'Failed to create notification' });
         }
     }
+
+    static async clearAllNotifications(req, res) {
+        try {
+            const userId = req.user._id;
+            await NotificationService.clearAllNotifications(userId);
+            res.json({ message: 'All notifications cleared' });
+        } catch (error) {
+            console.error('Controller - clearAllNotifications error:', error);
+            res.status(500).json({ message: 'Error clearing notifications' });
+        }
+    }
 }
 
 export default NotificationController;

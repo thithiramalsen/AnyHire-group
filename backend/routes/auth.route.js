@@ -4,6 +4,7 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 import { updateProfile } from "../controllers/auth.controller.js";
 import upload from "../lib/multer.js";
 import {uploadPfp, deletePfp} from "../controllers/auth.controller.js";
+import { upgradeToJobSeeker } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
@@ -30,5 +31,7 @@ router.delete("/profile", protectRoute, deleteAccount);
 
 router.post("/profile/pfp", protectRoute, upload.single("image"), uploadPfp); // Upload or update PFP
 router.delete("/profile/pfp", protectRoute, deletePfp); // Delete PFP
+
+router.post("/upgrade-role", protectRoute, upgradeToJobSeeker);
 
 export default router;

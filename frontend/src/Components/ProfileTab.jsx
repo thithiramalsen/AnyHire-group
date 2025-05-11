@@ -169,7 +169,7 @@ const ProfileTab = () => {
                             onCancel={() => setIsEditing(false)}
                         />
                     ) : (
-                        <ViewProfile profile={profile} onEdit={() => setIsEditing(true)} />
+                        <ViewProfile profile={profile} onEdit={() => setIsEditing(true)} setProfile={setProfile} />
                     )}
                 </div>
 
@@ -188,7 +188,7 @@ const ProfileTab = () => {
     );
 };
 
-const ViewProfile = ({ profile, onEdit }) => (
+const ViewProfile = ({ profile, onEdit, setProfile }) => (
     <div className="space-y-6">
         <div className="flex items-center space-x-4 p-4 bg-gray-800 rounded-lg">
             <User className="text-emerald-500" size={24} />
@@ -202,6 +202,36 @@ const ViewProfile = ({ profile, onEdit }) => (
             <div className="flex-1">
                 <p className="text-sm text-gray-400">Email</p>
                 <p className="text-lg">{profile.email}</p>
+            </div>
+        </div>
+        <div className="flex items-center space-x-4 p-4 bg-gray-800 rounded-lg">
+            <User className="text-emerald-500" size={24} />
+            <div className="flex-1">
+                <p className="text-sm text-gray-400">Role</p>
+                <div className="flex items-center gap-4">
+                    <p className="text-lg capitalize">{profile.role}</p>
+                    {profile.role === 'customer' && (
+                        <div className="flex flex-col space-y-2">
+                            <p className="text-sm text-gray-400">Want to start offering your services?</p>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await axios.post('/auth/upgrade-role');
+                                        setProfile(prev => ({ ...prev, role: 'jobSeeker' }));
+                                        toast.success('Successfully upgraded to Job Seeker!');
+                                    } catch (error) {
+                                        console.error('Error upgrading role:', error);
+                                        toast.error('Failed to upgrade role.');
+                                    }
+                                }}
+                                className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                            >
+                                <Upload size={16} />
+                                <span>Upgrade to Job Seeker</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
         <button

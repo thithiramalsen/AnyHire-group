@@ -2,6 +2,7 @@ import Job from "../models/job.model.js";
 import multer from "multer";
 import Booking from "../models/booking.model.js";
 import Payment from "../models/payment.model.js";
+import NotificationService from "../services/notification.service.js";
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -89,6 +90,31 @@ export const addJob = async (req, res) => {
 
     try {
       const newJob = await job.save();
+              // Create notification for job posting
+        await NotificationService.createNotification(
+            req.user._id,
+            'JOB_POSTED',
+            'Job Posted Successfully',
+            `Your job "${title}" has been posted and is waiting for admin approval. We'll notify you once it's approved.`,
+            `/jobs/${newJob._id}`
+        );
+
+        // Find all admin users and notify them
+        const User = (await import('../models/user.model.js')).default;
+        const admins = await User.find({ role: 'admin' });
+        
+        // Create notifications for all admins
+        await Promise.all(admins.map(admin => 
+            NotificationService.createNotification(
+                admin._id,
+                'JOB_POSTED',
+                'New Job Requires Approval',
+                `A new job "${title}" by ${req.user.name} requires your approval.`,
+                `/admin/jobs`
+            )
+        ));
+
+
       res.status(201).json(newJob);
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -239,6 +265,15 @@ export const approveJob = async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
+    // Send notification to job poster
+    await NotificationService.createNotification(
+      job.createdBy, // userId of job poster
+      'JOB_APPROVED',
+      'Job Approved!',
+      `Your job "${job.title}" has been approved and is now visible to job seekers.`,
+      `/jobs/${job._id}`
+    );
+
     res.status(200).json(job);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -255,6 +290,15 @@ export const declineJob = async (req, res) => {
       console.log("Job not found for ID:", id);
       return res.status(404).json({ message: "Job not found" });
     }
+
+    // Send notification to job poster
+    await NotificationService.createNotification(
+      job.createdBy, // userId of job poster
+      'JOB_DECLINED',
+      'Job Approved!',
+      `Your job "${job.title}" has been declined as it didn't meet our guidelines. Please make necessary changes and resubmit.`,
+      `/jobs/${job._id}`
+    );
 
     job.status = "declined";
     await job.save();

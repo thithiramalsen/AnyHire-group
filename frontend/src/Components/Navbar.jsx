@@ -1,9 +1,22 @@
-import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Briefcase } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Briefcase, Info, HelpCircle, MailQuestion } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "../stores/useUserStore";
 
 const Navbar = () => {
     const { user, logout } = useUserStore();
+    const location = useLocation();
+
+    const scrollToContact = () => {
+        if (location.pathname !== '/') {
+            window.location.href = '/#contact';
+            return;
+        }
+
+        const contactSection = document.getElementById('contact');
+        if (contactSection) {
+            contactSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
 
     return (
         <header className='fixed top-0 left-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-md shadow-lg z-40 transition-all duration-300 border-b border-emerald-800'>
@@ -28,6 +41,29 @@ const Navbar = () => {
                             <Briefcase className="mr-1" size={18} />
                             Jobs
                         </Link>
+
+                        <Link
+                            to="/about"
+                            className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                        >
+                            <Info className="mr-1" size={18} />
+                            About Us
+                        </Link>
+                        <Link
+                            to="/how-anyhire-works"
+                            className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                        >
+                            <HelpCircle className="mr-1" size={18} />
+                            How It Works
+                        </Link>
+
+                        <button
+                            onClick={scrollToContact}
+                            className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                        >
+                            <MailQuestion className="mr-1" size={18} />
+                            Help
+                        </button>
 
                         {/* Show Dashboard link for any logged-in user */}
                         {user && (

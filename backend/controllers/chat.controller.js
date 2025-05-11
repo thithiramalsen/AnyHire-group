@@ -1,5 +1,6 @@
 import Chat from "../models/chat.model.js";
 import Booking from "../models/booking.model.js";
+import NotificationService from "../services/notification.service.js";
 
 export const getChatMessages = async (req, res) => {
     console.log('getChatMessages called with params:', {
@@ -110,7 +111,22 @@ export const sendMessage = async (req, res) => {
         await newMessage.save();
         await newMessage.populate('senderId', 'name');
 
-        console.log('Message saved successfully:', newMessage);
+        // Determine recipient ID (if sender is seeker, recipient is poster and vice versa)
+        const recipientId = req.user._id === booking.seekerId ? booking.posterId : booking.seekerId;
+
+        // Send notification to recipient
+        await NotificationService.createNotification(
+            recipientId,
+            'CHAT',
+            'New Message',
+            `${newMessage.senderId.name} sent you a message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+            {
+                booking: `/booking/${bookingId}?tab=chat`,
+                profile: `/user/${req.user._id}`
+            }
+        );
+
+        console.log('Message saved and notification sent successfully:', newMessage);
         res.status(201).json(newMessage);
     } catch (error) {
         console.error("Detailed error in sendMessage:", {

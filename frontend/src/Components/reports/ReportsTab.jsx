@@ -3,6 +3,9 @@ import { Download, FileSpreadsheet, FileText } from 'lucide-react';
 import axios from '../../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useState } from 'react';
+// Import jsPDF and autotable correctly
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const ReportCard = ({ title, description, onDownloadPDF, onDownloadCSV, loading }) => (
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
@@ -41,80 +44,105 @@ const ReportsTab = () => {
             setLoading(true);
             console.log('Download request initiated:', { endpoint, format });
 
-            const requestConfig = {
-                url: `/reports/${endpoint}?format=${format}`,
-                method: 'GET',
-                responseType: 'arraybuffer',
-                headers: {
-                    'Accept': format === 'pdf' ? 'application/pdf' : 'text/csv',
-                    'Content-Type': format === 'pdf' ? 'application/pdf' : 'text/csv'
-                }
-            };
-
-            console.log('Axios request config:', requestConfig);
-
-            const response = await axios(requestConfig);
-
-            console.log('Response received:', {
-                status: response.status,
-                headers: response.headers,
-                dataType: typeof response.data,
-                dataLength: response.data?.byteLength
-            });
-
-            // Check if we got actual data
-            if (!response.data || response.data.byteLength === 0) {
-                console.error('Empty response data detected');
-                throw new Error('No data received from server');
-            }
-
-            const contentType = format === 'pdf' ? 'application/pdf' : 'text/csv';
-            console.log('Creating blob with content type:', contentType);
-            
-            const blob = new Blob([new Uint8Array(response.data)], { type: contentType });
-            console.log('Blob created:', {
-                size: blob.size,
-                type: blob.type
-            });
-
-            if (blob.size === 0) {
-                console.error('Empty blob created');
-                throw new Error('Empty file received');
-            }
-
-            const url = window.URL.createObjectURL(blob);
-            console.log('Blob URL created:', url);
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${endpoint.replace('/', '-')}-${new Date().toISOString().split('T')[0]}.${format}`;
-            
-            console.log('Download link created:', {
-                href: link.href,
-                download: link.download
-            });
+            const response = await axios.get(`/reports/${endpoint}`);
+            console.log('Data received:', response.data);
 
             if (format === 'pdf') {
-                console.log('Opening PDF in new window');
-                window.open(url, '_blank');
+                const doc = new jsPDF('l', 'mm', 'a4');
+                
+                // Add title
+                doc.setFontSize(20);
+                doc.text(endpoint.includes('user/') ? 'User Activity Report' : endpoint.split('/')[1].toUpperCase() + ' Report', 15, 15);
+                
+                // Add date
+                doc.setFontSize(10);
+                doc.text(`Generated: ${new Date().toLocaleDateString()}`, 15, 25);
+
+                if (endpoint.includes('user/')) {
+                    // Handle single user report (nested structure)
+                    let yPosition = 35;
+                    
+                    // Loop through each section
+                    Object.entries(response.data).forEach(([section, data]) => {
+                        // Add section header
+                        doc.setFontSize(14);
+                        doc.text(section, 15, yPosition);
+                        yPosition += 10;
+
+                        // Create table for section data
+                        autoTable(doc, {
+                            head: [['Field', 'Value']],
+                            body: Object.entries(data),
+                            startY: yPosition,
+                            theme: 'grid',
+                            styles: {
+                                fontSize: 8,
+                                cellPadding: 2
+                            },
+                            headStyles: {
+                                fillColor: [41, 128, 185],
+                                textColor: 255
+                            },
+                            alternateRowStyles: {
+                                fillColor: [245, 245, 245]
+                            }
+                        });
+
+                        yPosition = doc.lastAutoTable.finalY + 15;
+                    });
+                } else {
+                    // Handle admin reports (flat structure)
+                    autoTable(doc, {
+                        head: [Object.keys(response.data[0])],
+                        body: response.data.map(item => Object.values(item)),
+                        startY: 30,
+                        theme: 'grid',
+                        styles: {
+                            fontSize: 8,
+                            cellPadding: 2
+                        },
+                        headStyles: {
+                            fillColor: [41, 128, 185],
+                            textColor: 255
+                        },
+                        alternateRowStyles: {
+                            fillColor: [245, 245, 245]
+                        }
+                    });
+                }
+
+                // Save the PDF
+                doc.save(`${endpoint.replace('/', '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
+                toast.success('PDF generated successfully');
             } else {
-                console.log('Triggering direct download');
+                // Handle CSV download - flatten nested structure for user report
+                let csvData;
+                if (endpoint.includes('user/')) {
+                    csvData = Object.entries(response.data).flatMap(([section, data]) =>
+                        Object.entries(data).map(([field, value]) => ({
+                            Section: section,
+                            Field: field,
+                            Value: value
+                        }))
+                    );
+                } else {
+                    csvData = response.data;
+                }
+
+                const blob = new Blob([JSON.stringify(csvData)], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${endpoint.replace('/', '-')}-${new Date().toISOString().split('T')[0]}.csv`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                toast.success('CSV downloaded successfully');
             }
-            
-            window.URL.revokeObjectURL(url);
-            console.log('Blob URL revoked');
-
-            toast.success('Report downloaded successfully');
         } catch (error) {
-            console.error('Download error full details:', error);
-            console.error('Error stack:', error.stack);
-            console.error('Response if available:', error.response);
-            console.error('Request if available:', error.request);
-            console.error('Config if available:', error.config);
-            toast.error(error.message || 'Failed to download report');
+            console.error('Download error:', error);
+            toast.error('Failed to generate report');
         } finally {
             setLoading(false);
         }
@@ -140,6 +168,21 @@ const ReportsTab = () => {
             title: 'Payments Report',
             description: 'Summary of all financial transactions',
             endpoint: 'admin/payments'
+        },
+        {
+            title: 'Support Tickets Report',
+            description: 'Overview of all support tickets and response times',
+            endpoint: 'admin/tickets'
+        },
+        {
+            title: 'Reviews Report',
+            description: 'Summary of all user reviews and ratings',
+            endpoint: 'admin/reviews'
+        },
+        {
+            title: 'Contact Inquiries Report',
+            description: 'Log of all contact form submissions and responses',
+            endpoint: 'admin/contacts'
         }
     ] : [
         {

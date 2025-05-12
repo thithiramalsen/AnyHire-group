@@ -1,4 +1,3 @@
-import Job from '../models/job.model.js';
 import Booking from '../models/booking.model.js';
 import Payment from '../models/payment.model.js';
 

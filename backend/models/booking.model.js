@@ -3,38 +3,44 @@ import Counter from './counter.model.js';
 
 const bookingSchema = new mongoose.Schema({
     _id: { type: Number },
-    jobId: { type: Number, ref: "Job", required: true },
-    jobTitle: { type: String, required: true },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
     seekerId: { type: Number, ref: "User", required: true },
     posterId: { type: Number, ref: "User", required: true },
     status: { 
         type: String, 
         enum: [
-            "applied",           // Initial status when seeker applies
-            "accepted",          // When poster accepts the application
-            "declined",          // When poster declines the application
+            "pending",           // Initial status when booking is created
+            "accepted",          // When job seeker accepts the booking
+            "declined",          // When job seeker declines the booking
             "in_progress",       // When work has started
             "completed_by_seeker", // When seeker marks as complete
             "payment_pending",   // When both parties confirm completion
             "paid",             // When payment is completed
-            "cancelled"         // When another booking goes to in_progress
+            "cancelled"         // When booking is cancelled
         ],
-        default: "applied" 
+        default: "pending" 
     },
     payment: {
         amount: { type: Number, required: true },
         status: { type: String, enum: ["pending", 'confirmed', "completed"] }
     },
     dates: {
-        applied: { type: Date, default: Date.now },
+        created: { type: Date, default: Date.now },
         accepted: { type: Date },
         started: { type: Date },
         completed_by_seeker: { type: Date },
         completed: { type: Date },
         paid: { type: Date }
+    },
+    category: { type: String, required: true },
+    location: {
+        type: { type: String, default: 'Point' },
+        coordinates: [Number], // [longitude, latitude]
+        address: { type: String, required: true }
     }
 }, {
-    timestamps: true // Adds createdAt and updatedAt timestamps
+    timestamps: true
 });
 
 // Add pre-save middleware to handle auto-incrementing and payment status
@@ -56,8 +62,8 @@ bookingSchema.pre('save', async function(next) {
     next();
 });
 
-// Add compound index to prevent duplicate applications
-bookingSchema.index({ jobId: 1, seekerId: 1 }, { unique: true });
+// Add location index for geospatial queries
+bookingSchema.index({ location: '2dsphere' });
 
 const Booking = mongoose.model("Booking", bookingSchema);
 export default Booking;

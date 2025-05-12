@@ -1,199 +1,243 @@
 import Booking from '../models/booking.model.js';
-import Job from '../models/job.model.js';
 import User from '../models/user.model.js';
 import Payment from '../models/payment.model.js';
-import { updateJobStatus } from '../middleware/jobStatus.middleware.js';
 import NotificationService from '../services/notification.service.js';
 
-// Apply for a job (creates a booking)
-export const applyForJob = async (req, res) => {
+// Create a new booking
+export const createBooking = async (req, res) => {
     try {
-        const jobId = Number(req.params.jobId);
-        const seekerId = Number(req.user._id);
+        const posterId = Number(req.user._id);
+        const { title, description, payment, category, location, seekerId } = req.body;
 
-        // Add debug logging
-        console.log('Application attempt:', {
-            jobId,
-            seekerId,
-            user: req.user
-        });
-
-        // Verify job exists and is approved
-        const job = await Job.findOne({ _id: jobId, status: "approved" });
-        console.log('Found job:', job);
-
-        if (!job) {
-            return res.status(404).json({ message: "Job not found or not approved" });
+        // Validate required fields
+        if (!title || !description || !payment?.amount || !category || !location?.address) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing required fields" 
+            });
         }
 
-        // Check if user has an active booking for this job
-        const existingBooking = await Booking.findOne({ 
-            jobId: jobId, 
-            seekerId: seekerId,
-            status: { $in: ['applied', 'accepted', 'in_progress'] } // Only check active statuses
-        });
-
-        if (existingBooking) {
-            return res.status(400).json({ message: "You have already applied for this job" });
-        }
-
-        // Get seeker details
-        const seeker = await User.findById(seekerId);
-        if (!seeker) {
-            return res.status(404).json({ message: "Seeker not found" });
-        }
+        // Create coordinates array if not provided
+        const coordinates = location.coordinates || [0, 0];
 
         const newBooking = new Booking({
-            jobId: jobId,
-            jobTitle: job.title,
-            seekerId: seekerId,
-            posterId: job.createdBy,
+            title,
+            description,
+            seekerId: Number(seekerId || 0), // Default to 0 if not provided, will be updated later
+            posterId,
             payment: {
-                amount: job.payment
+                amount: Number(payment.amount)
             },
+            category,
+            location: {
+                address: location.address,
+                coordinates: coordinates
+            },
+            status: 'pending',
             dates: {
-                applied: new Date()
+                created: new Date()
             }
         });
 
-        console.log('Attempting to save booking:', newBooking);
+        await newBooking.save();
 
-        const savedBooking = await newBooking.save();
-        console.log('Saved booking:', savedBooking);
-
-        // Create notification for the job poster
-        await NotificationService.createNotification(
-            job.createdBy,
-            'BOOKING',
-            'New Job Application',
-            `${seeker.name} has applied for your job: ${job.title}`,
-            {
-                references: {
-                    bookingId: savedBooking._id,
-                    targetUserId: seekerId
-                }
-            }
-        );
-        
-        res.status(201).json(savedBooking);
-    } catch (err) {
-        console.error('Booking creation error:', err);
-        if (err.code === 11000) {
-            return res.status(400).json({ message: "You have already applied for this job" });
-        }
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-// Get user's applications (as a job seeker)
-export const getMyApplications = async (req, res) => {
-    try {
-        const seekerId = Number(req.user._id);
-        
-        // Find all bookings where the user is the seeker
-        const applications = await Booking.find({ seekerId })
-            .sort({ 'dates.applied': -1 }); // Most recent first
-
-        // Get the full job details for each application
-        const applicationsWithJobDetails = await Promise.all(
-            applications.map(async (application) => {
-                const job = await Job.findById(application.jobId);
-                const seeker = await User.findById(application.seekerId);
-
-                // Check if this job has any active bookings by other users
-                const otherActiveBookings = await Booking.findOne({
-                    jobId: application.jobId,
-                    _id: { $ne: application._id },
-                    seekerId: { $ne: seekerId }, // Exclude user's own bookings
-                    status: {
-                        $in: [
-                            'accepted',
-                            'in_progress',
-                            'completed_by_seeker',
-                            'completed',
-                            'payment_pending',
-                            'paid'
-                        ]
+        // Only send notification if seekerId is provided
+        if (seekerId) {
+            await NotificationService.createNotification(
+                seekerId,
+                'BOOKING',
+                'New Booking Request',
+                `You have received a new booking request: "${title}"`,
+                {
+                    references: {
+                        bookingId: newBooking._id,
+                        targetUserId: posterId
                     }
-                });
+                }
+            );
+        }
 
-                // Determine if this is an active application for the user
-                const isActiveApplication = [
-                    'accepted',
-                    'in_progress',
-                    'completed_by_seeker',
-                    'completed',
-                    'payment_pending',
-                    'paid'
-                ].includes(application.status);
-
-                return {
-                    ...application.toObject(),
-                    title: job?.title || application.jobTitle,
-                    description: job?.description,
-                    images: job?.images,
-                    district: job?.district,
-                    category: job?.category,
-                    payment: job?.payment || application.payment.amount,
-                    seekerName: seeker?.name || 'Anonymous',
-                    isJobTaken: !!otherActiveBookings,
-                    isActiveApplication
-                };
-            })
-        );
-
-        res.status(200).json(applicationsWithJobDetails);
-    } catch (err) {
-        console.error('Error fetching applications:', err);
-        res.status(500).json({ message: "Error fetching applications" });
+        res.status(201).json({
+            success: true,
+            message: "Booking created successfully",
+            booking: newBooking
+        });
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to create booking", 
+            error: error.message 
+        });
     }
 };
 
-// Accept/Decline application
+// Get all bookings for a user
+export const getUserBookings = async (req, res) => {
+    try {
+        const userId = Number(req.user._id);
+        const { role } = req.query;
+
+        let query = {};
+        if (role === 'poster') {
+            query.posterId = userId;
+        } else if (role === 'seeker') {
+            query.seekerId = userId;
+        } else {
+            query = {
+                $or: [
+                    { posterId: userId },
+                    { seekerId: userId }
+                ]
+            };
+        }
+
+        const bookings = await Booking.find(query)
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            bookings
+        });
+    } catch (error) {
+        console.error('Error fetching user bookings:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch bookings", 
+            error: error.message 
+        });
+    }
+};
+
+// Get a single booking by ID
+export const getBooking = async (req, res) => {
+    try {
+        const booking = await Booking.findOne({ _id: Number(req.params.id) });
+        if (!booking) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Booking not found" 
+            });
+        }
+
+        res.json({
+            success: true,
+            booking
+        });
+    } catch (error) {
+        console.error('Error fetching booking:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch booking", 
+            error: error.message 
+        });
+    }
+};
+
+// Update booking status
 export const updateBookingStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
-        
-        const booking = await Booking.findById(id);
+        const { status, seekerId } = req.body;
+        const userId = Number(req.user._id);
+
+        const booking = await Booking.findOne({ _id: Number(id) });
         if (!booking) {
-            return res.status(404).json({ message: "Booking not found" });
-        }
-
-        // If cancelling, delete the booking instead of updating status
-        if (status === 'cancelled') {
-            // Check if any other booking for this job is in progress
-            const otherInProgressBooking = await Booking.findOne({
-                jobId: booking.jobId,
-                _id: { $ne: booking._id },
-                status: 'in_progress'
+            return res.status(404).json({ 
+                success: false, 
+                message: "Booking not found" 
             });
-
-            if (otherInProgressBooking) {
-                // If another booking is in progress, just mark as cancelled
-                booking.status = 'cancelled';
-                await booking.save();
-            } else {
-                // If no other booking is in progress, delete this booking
-                await Booking.findByIdAndDelete(id);
-            }
-            
-            // Update job status after cancellation
-            await updateJobStatus(booking.jobId);
-            
-            return res.json({ message: "Booking cancelled successfully" });
         }
 
-        // Update the status and corresponding date
+        // For new applications, update seekerId and ensure status is accepted
+        if (seekerId && booking.status === 'pending') {
+            booking.seekerId = Number(seekerId);
+            booking.status = 'accepted';
+            booking.dates.accepted = new Date();
+
+            // Send notification to job poster
+            await NotificationService.createNotification(
+                booking.posterId,
+                'BOOKING',
+                'New Job Application',
+                `Someone has applied for your job: "${booking.title}"`,
+                {
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: seekerId
+                    }
+                }
+            );
+
+            await booking.save();
+
+            return res.json({
+                success: true,
+                message: "Application submitted successfully",
+                booking
+            });
+        }
+
+        // Verify user has permission to update status
+        const isSeeker = userId === booking.seekerId;
+        const isPoster = userId === booking.posterId;
+
+        if (!isSeeker && !isPoster) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Unauthorized to update this booking" 
+            });
+        }
+
+        // Validate status transitions
+        const validTransitions = {
+            pending: ['accepted', 'declined', 'cancelled'],
+            accepted: ['in_progress', 'cancelled'],
+            in_progress: ['completed_by_seeker', 'cancelled'],
+            completed_by_seeker: ['payment_pending', 'in_progress'],
+            payment_pending: ['paid'],
+            paid: []
+        };
+
+        if (!validTransitions[booking.status]?.includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid status transition" 
+            });
+        }
+
+        // Verify user has permission for this specific transition
+        const seekerOnlyTransitions = ['accepted', 'declined', 'in_progress', 'completed_by_seeker'];
+        const posterOnlyTransitions = ['payment_pending', 'paid'];
+
+        if ((seekerOnlyTransitions.includes(status) && !isSeeker) ||
+            (posterOnlyTransitions.includes(status) && !isPoster)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Unauthorized to perform this status transition" 
+            });
+        }
+
+        // Update status and relevant dates
         booking.status = status;
+        
         if (status === 'accepted') {
             booking.dates.accepted = new Date();
-            // Create notification for job seeker when application is accepted
+        }
+        if (status === 'in_progress') {
+            booking.dates.started = new Date();
+        }
+        if (status === 'completed_by_seeker') {
+            booking.dates.completed_by_seeker = new Date();
+        }
+        if (status === 'payment_pending') {
+            booking.dates.completed = new Date();
+            // Add notification for job seeker
             await NotificationService.createNotification(
                 booking.seekerId,
                 'BOOKING',
-                'Application Accepted',
-                `Your application for "${booking.jobTitle}" has been accepted!`,
+                'Job Completion Confirmed',
+                `Customer has confirmed completion of "${booking.title}". Payment is pending.`,
                 {
                     references: {
                         bookingId: booking._id,
@@ -202,178 +246,60 @@ export const updateBookingStatus = async (req, res) => {
                 }
             );
         }
-        if (status === 'in_progress') {
-            booking.dates.started = new Date();
-            // Add notification for customer when job starts
-            await NotificationService.createNotification(
-                booking.posterId,
-                'BOOKING',
-                'Job Started',
-                `Job seeker has started working on "${booking.jobTitle}"`,
-                {
-                    references: {
-                        bookingId: booking._id,
-                        targetUserId: booking.seekerId
-                    }
-                }
-            );
-        }
-        if (status === 'completed_by_seeker') {
-            booking.dates.completed_by_seeker = new Date();
-            // Add notification for customer when job seeker completes the job
-            await NotificationService.createNotification(
-                booking.posterId,
-                'BOOKING',
-                'Job Completed',
-                `Job seeker has marked "${booking.jobTitle}" as completed. Please review and confirm.`,
-                {
-                    references: {
-                        bookingId: booking._id,
-                        targetUserId: booking.seekerId
-                    }
-                }
-            );
-        }
-        if (status === 'payment_pending') {
-            booking.dates.completed = new Date();
-            // Add notification for job seeker when customer confirms completion
-            await NotificationService.createNotification(
-                booking.seekerId,
-                'BOOKING',
-                'Job Completion Confirmed',
-                `Customer has confirmed completion of "${booking.jobTitle}". Payment is pending.`,
-                {
-                    booking: `/booking/${booking._id}`,
-                    profile: `/user/${booking.posterId}`
-                }
-            );
-        }
         if (status === 'paid') {
             booking.dates.paid = new Date();
         }
-        
+
         await booking.save();
-        await updateJobStatus(booking.jobId);
 
-        res.json({ message: "Booking status updated", booking });
+        // Send appropriate notifications based on status change
+        let notificationData;
+        if (status === 'accepted') {
+            notificationData = {
+                userId: booking.posterId,
+                type: 'BOOKING',
+                title: 'Booking Accepted',
+                message: `Job seeker has accepted your booking: "${booking.title}"`,
+                references: {
+                    bookingId: booking._id,
+                    targetUserId: booking.seekerId
+                }
+            };
+        } else if (status === 'completed_by_seeker') {
+            notificationData = {
+                userId: booking.posterId,
+                type: 'BOOKING',
+                title: 'Booking Completed by Job Seeker',
+                message: `Job seeker has marked booking "${booking.title}" as complete. Please confirm completion.`,
+                references: {
+                    bookingId: booking._id,
+                    targetUserId: booking.seekerId
+                }
+            };
+        }
+
+        if (notificationData) {
+            await NotificationService.createNotification(
+                notificationData.userId,
+                notificationData.type,
+                notificationData.title,
+                notificationData.message,
+                {
+                    references: notificationData.references
+                }
+            );
+        }
+
+        res.json({
+            success: true,
+            message: "Booking status updated successfully",
+            booking
+        });
     } catch (error) {
-        console.error('Error updating booking status:', error);
-        res.status(500).json({ message: "Error updating booking status" });
-    }
-};
-
-// Get all bookings for logged-in user (both as seeker and poster)
-export const getUserBookings = async (req, res, next) => {
-    try {
-        const userId = req.user.id;
-
-        const bookings = await Booking.find({
-            $or: [
-                { seekerId: userId },
-                { posterId: userId }
-            ]
-        }).sort({ 'dates.applied': -1 }); // Most recent first
-
-        // Get additional details for each booking
-        const bookingsWithDetails = await Promise.all(
-            bookings.map(async (booking) => {
-                const job = await Job.findById(booking.jobId);
-                const seeker = await User.findById(booking.seekerId);
-                const poster = await User.findById(booking.posterId);
-                return {
-                    ...booking.toObject(),
-                    jobDetails: job,
-                    seekerDetails: seeker,
-                    posterDetails: poster
-                };
-            })
-        );
-
-        res.status(200).json(bookingsWithDetails);
-    } catch (err) {
-        next(err);
-    }
-};
-
-// Get single booking by ID
-export const getBookingById = async (req, res) => {
-    try {
-        const booking = await Booking.findById(req.params.id);
-        
-        if (!booking) {
-            return res.status(404).json({ message: "Booking not found" });
-        }
-
-        // Verify user is either seeker or poster
-        if (booking.seekerId !== req.user._id && booking.posterId !== req.user._id) {
-            return res.status(403).json({ message: "Not authorized to view this booking" });
-        }
-
-        // Get additional details
-        const job = await Job.findById(booking.jobId);
-        const seeker = await User.findById(booking.seekerId);
-        const poster = await User.findById(booking.posterId);
-
-        const bookingWithDetails = {
-            ...booking.toObject(),
-            jobDetails: job,
-            seekerDetails: seeker,
-            posterDetails: poster
-        };
-
-        res.status(200).json(bookingWithDetails);
-    } catch (err) {
-        console.error('Error fetching booking:', err);
-        res.status(500).json({ message: "Error fetching booking details" });
-    }
-};
-
-// Get all bookings for a specific job (poster only)
-export const getJobBookings = async (req, res, next) => {
-    try {
-        const jobId = req.params.jobId;
-        const userId = req.user.id;
-
-        // Verify user is the job poster
-        const job = await Job.findById(jobId);
-        if (!job || job.createdBy !== userId) {
-            return next(createError(403, "Not authorized to view these bookings"));
-        }
-
-        const bookings = await Booking.find({ jobId }).sort({ 'dates.applied': -1 });
-        
-        // Get additional details for each booking
-        const bookingsWithDetails = await Promise.all(
-            bookings.map(async (booking) => {
-                const seeker = await User.findById(booking.seekerId);
-                return {
-                    ...booking.toObject(),
-                    seekerDetails: seeker
-                };
-            })
-        );
-
-        res.status(200).json(bookingsWithDetails);
-    } catch (err) {
-        next(err);
-    }
-};
-
-// Get all bookings (admin only)
-export const getAllBookings = async (req, res) => {
-    try {
-        const bookings = await Booking.find()
-            .populate('jobId', 'title category')
-            .populate('seekerId', 'name email')
-            .populate('posterId', 'name email')
-            .sort({ createdAt: -1 });
-
-        res.json(bookings);
-    } catch (error) {
-        console.error('Error fetching all bookings:', error);
+        console.error('Error updating booking:', error);
         res.status(500).json({ 
             success: false, 
-            message: "Failed to fetch bookings", 
+            message: "Failed to update booking", 
             error: error.message 
         });
     }
@@ -414,54 +340,57 @@ export const deleteBooking = async (req, res) => {
     }
 };
 
-// Add this new controller method
-export const updateBookingStatusAdmin = async (req, res) => {
+// Get available bookings (in pending status)
+export const getAvailableBookings = async (req, res) => {
     try {
-        const { bookingId } = req.params;
-        const { status } = req.body;
+        const userId = Number(req.user._id);
 
-        const validStatuses = [
-            "applied",
-            "accepted",
-            "declined",
-            "in_progress",
-            "completed_by_seeker",
-            "completed",
-            "payment_pending",
-            "paid",
-            "cancelled"
-        ];
-
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid booking status"
-            });
-        }
-
-        const booking = await Booking.findOne({ _id: Number(bookingId) });
-        if (!booking) {
-            return res.status(404).json({
-                success: false,
-                message: "Booking not found"
-            });
-        }
-
-        booking.status = status;
-        booking.dates[status] = new Date();
-        await booking.save();
+        // Get all bookings in pending status, excluding the ones created by the current user
+        const bookings = await Booking.find({
+            status: 'pending',
+            posterId: { $ne: userId } // Exclude bookings created by the current user
+        }).sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            message: "Booking status updated successfully",
-            booking
+            bookings
         });
     } catch (error) {
-        console.error('Error updating booking status:', error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to update booking status",
-            error: error.message
+        console.error('Error fetching available bookings:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch available bookings", 
+            error: error.message 
+        });
+    }
+};
+
+// Get all bookings (admin only)
+export const getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find()
+            .sort({ createdAt: -1 })
+            .populate('posterId', 'name')
+            .populate('seekerId', 'name')
+            .lean();
+
+        // Transform the data to include poster and seeker names
+        const enhancedBookings = bookings.map(booking => ({
+            ...booking,
+            posterName: booking.posterId?.name || 'Unknown',
+            seekerName: booking.seekerId?.name || null,
+        }));
+
+        res.json({
+            success: true,
+            bookings: enhancedBookings
+        });
+    } catch (error) {
+        console.error('Error fetching all bookings:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to fetch bookings", 
+            error: error.message 
         });
     }
 };

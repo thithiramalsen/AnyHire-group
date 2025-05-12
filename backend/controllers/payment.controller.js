@@ -350,42 +350,41 @@ export const confirmPayment = async (req, res) => {
 export const getAllPayments = async (req, res) => {
     try {
         const payments = await Payment.find()
-            .sort({ createdAt: -1 });
+            .populate({
+                path: 'bookingId',
+                populate: [
+                    { path: 'posterId', select: 'name email' },
+                    { path: 'seekerId', select: 'name email' }
+                ]
+            })
+            .sort({ createdAt: -1 })
+            .lean();
 
-        // Fetch booking details for each payment
-        const paymentsWithDetails = await Promise.all(payments.map(async (payment) => {
-            const booking = await Booking.findOne({ _id: payment.bookingId });
-            return {
-                _id: payment._id,
-                bookingId: payment.bookingId,
-                amount: payment.amount,
-                paymentType: payment.paymentType,
-                paymentMethod: payment.paymentMethod,
-                status: payment.status,
-                proofPath: payment.proofPath,
-                proofFilename: payment.proofFilename,
-                seekerConfirmation: payment.seekerConfirmation,
-                createdAt: payment.createdAt,
-                completedAt: payment.completedAt,
-                booking: booking ? {
-                    jobTitle: booking.jobTitle,
-                    posterDetails: booking.posterDetails,
-                    seekerDetails: booking.seekerDetails,
-                    status: booking.status
-                } : null
-            };
+        const enhancedPayments = payments.map(payment => ({
+            ...payment,
+            booking: {
+                jobTitle: payment.bookingId?.title || 'N/A',
+                posterDetails: {
+                    name: payment.bookingId?.posterId?.name || 'Unknown',
+                    email: payment.bookingId?.posterId?.email || 'N/A'
+                },
+                seekerDetails: {
+                    name: payment.bookingId?.seekerId?.name || 'Unknown',
+                    email: payment.bookingId?.seekerId?.email || 'N/A'
+                }
+            }
         }));
 
         res.json({
             success: true,
-            payments: paymentsWithDetails
+            payments: enhancedPayments
         });
     } catch (error) {
-        console.error('Error fetching all payments:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Failed to fetch payments", 
-            error: error.message 
+        console.error('Error fetching payments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch payments',
+            error: error.message
         });
     }
 };

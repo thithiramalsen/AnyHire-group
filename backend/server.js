@@ -9,21 +9,15 @@ import { createServer } from 'http';
 
 import authRoutes from "./routes/auth.route.js";
 import analyticsRoutes from "./routes/analytics.route.js";
-import portfolioRoutes from "./routes/portfolio.route.js";
-import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
-import categoryRoutes from "./routes/category.route.js";
-import contactRoutes from "./routes/contact.route.js";
-import ticketRoutes from "./routes/ticket.route.js";
+
 import userRoutes from "./routes/user.route.js";
-import chatRoutes from "./routes/chat.route.js";
-import cartRoutes from "./routes/cart.route.js";
+
 import { initializeSocket } from "./lib/socket.js";
 import paymentRoutes from './routes/payment.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import { updateLastActive } from './middleware/updateLastActive.middleware.js';
 import notificationRoutes from './routes/notification.routes.js';
-import awardsRoutes from './routes/awards.routes.js';
 
 import reportsRoutes from './routes/reports.route.js';
 
@@ -67,22 +61,15 @@ app.post("/upload", upload.single("file"), (req, res) => {
 // Middleware routes
 app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/portfolio", portfolioRoutes);
-app.use("/api/job", jobRouter);
-app.use("/api/booking", bookingRoutes);
-app.use("/api/category", categoryRoutes);
 
-app.use("/api/contact", contactRoutes);
-app.use("/api/ticket", ticketRoutes);
+app.use("/api/booking", bookingRoutes);
 
 app.use("/api/users", userRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api/cart", cartRoutes);
+
 app.use("/api/payment", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/awards", awardsRoutes);
 
 app.use("/api/reports", reportsRoutes);
 

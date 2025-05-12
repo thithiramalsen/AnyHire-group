@@ -15,8 +15,9 @@ const BookingsManagement = () => {
 
     const fetchBookings = async () => {
         try {
-            const response = await axios.get('/booking');
-            setBookings(response.data);
+            setLoading(true);
+            const response = await axios.get('/booking/all');
+            setBookings(response.data.bookings);
         } catch (error) {
             console.error('Error fetching bookings:', error);
             toast.error('Failed to load bookings');
@@ -64,22 +65,26 @@ const BookingsManagement = () => {
         }
     };
 
-    const handleUpdateBookingStatus = async (bookingId, newStatus) => {
+    const handleStatusChange = async (bookingId, newStatus) => {
         try {
-            await axios.patch(`/booking/admin/${bookingId}/status`, { status: newStatus });
+            await axios.patch(`/booking/${bookingId}/status`, {
+                status: newStatus
+            });
             toast.success('Booking status updated successfully');
-            fetchBookings(); // Refresh the list
+            fetchBookings();
         } catch (error) {
             console.error('Error updating booking status:', error);
-            toast.error(error.response?.data?.message || 'Failed to update booking status');
+            toast.error('Failed to update booking status');
         }
     };
 
     const filteredBookings = bookings.filter(booking => {
         const matchesSearch = 
-            booking.jobId?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booking.posterId?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            booking.seekerId?.name.toLowerCase().includes(searchTerm.toLowerCase());
+            booking.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            booking.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            booking.posterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            booking.seekerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            booking.status.toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
         
@@ -103,7 +108,7 @@ const BookingsManagement = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
             </div>
         );
     }
@@ -148,7 +153,8 @@ const BookingsManagement = () => {
                     <table className="w-full">
                         <thead>
                             <tr className="bg-gray-700">
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Job Title</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Title</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Customer</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Job Seeker</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
@@ -161,16 +167,19 @@ const BookingsManagement = () => {
                             {filteredBookings.map((booking) => (
                                 <tr key={booking._id} className="hover:bg-gray-700/50">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-white">{booking.jobId?.title}</div>
+                                        <div className="text-sm font-medium text-white">{booking.title}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-400">{booking.posterId?.name}</div>
+                                        <div className="text-sm text-gray-400">{booking.category}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-400">{booking.seekerId?.name}</div>
+                                        <div className="text-sm text-gray-400">{booking.posterName}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-emerald-500">Rs. {booking.payment?.amount}</div>
+                                        <div className="text-sm text-gray-400">{booking.seekerName || 'Not assigned'}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-emerald-500">Rs. {booking.payment.amount}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
@@ -202,15 +211,14 @@ const BookingsManagement = () => {
                                             </button>
                                             <select
                                                 value={booking.status}
-                                                onChange={(e) => handleUpdateBookingStatus(booking._id, e.target.value)}
+                                                onChange={(e) => handleStatusChange(booking._id, e.target.value)}
                                                 className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm"
                                             >
-                                                <option value="applied">Applied</option>
+                                                <option value="pending">Pending</option>
                                                 <option value="accepted">Accepted</option>
                                                 <option value="declined">Declined</option>
                                                 <option value="in_progress">In Progress</option>
                                                 <option value="completed_by_seeker">Completed by Seeker</option>
-                                                <option value="completed">Completed</option>
                                                 <option value="payment_pending">Payment Pending</option>
                                                 <option value="paid">Paid</option>
                                                 <option value="cancelled">Cancelled</option>

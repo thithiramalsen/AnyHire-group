@@ -1,9 +1,7 @@
 import User from '../models/user.model.js';
-import Job from '../models/job.model.js';
 import Booking from '../models/booking.model.js';
 import Payment from '../models/payment.model.js';
 import Rating from '../models/review.model.js';
-import Support from '../models/ticket.model.js';
 import mongoose from 'mongoose';
 
 // Helper function to get date range based on timeRange parameter
@@ -186,29 +184,13 @@ export const getBookingsAnalytics = async (req, res) => {
 
         // Get active bookings (including those with pending payments)
         const activeBookings = await Booking.countDocuments({
-            $or: [
-                // Active booking statuses
-                { status: { $in: ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending'] } },
-                // Bookings with pending payments
-                {
-                    status: 'paid',
-                    'payment.status': { $in: ['pending', 'awaiting_confirmation'] }
-                }
-            ],
+            status: { $in: ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending'] },
             createdAt: { $gte: startDate, $lte: endDate }
         });
 
-        // Get completed bookings (including those with confirmed payments)
+        // Get completed bookings
         const completedBookings = await Booking.countDocuments({
-            $or: [
-                // Bookings marked as paid
-                { status: 'paid' },
-                // Bookings with confirmed payments
-                {
-                    status: 'payment_pending',
-                    'payment.status': { $in: ['confirmed', 'completed'] }
-                }
-            ],
+            status: 'paid',
             createdAt: { $gte: startDate, $lte: endDate }
         });
 
@@ -220,45 +202,8 @@ export const getBookingsAnalytics = async (req, res) => {
                 }
             },
             {
-                $lookup: {
-                    from: 'payments',
-                    localField: '_id',
-                    foreignField: 'bookingId',
-                    as: 'payment'
-                }
-            },
-            {
-                $addFields: {
-                    effectiveStatus: {
-                        $switch: {
-                            branches: [
-                                {
-                                    case: { $in: ['$status', ['accepted', 'in_progress', 'completed_by_seeker', 'payment_pending']] },
-                                    then: 'active'
-                                },
-                                {
-                                    case: {
-                                        $or: [
-                                            { $eq: ['$status', 'paid'] },
-                                            {
-                                                $and: [
-                                                    { $eq: ['$status', 'payment_pending'] },
-                                                    { $in: ['$payment.status', ['confirmed', 'completed']] }
-                                                ]
-                                            }
-                                        ]
-                                    },
-                                    then: 'completed'
-                                }
-                            ],
-                            default: '$status'
-                        }
-                    }
-                }
-            },
-            {
                 $group: {
-                    _id: '$effectiveStatus',
+                    _id: '$status',
                     count: { $sum: 1 }
                 }
             },
@@ -279,19 +224,8 @@ export const getBookingsAnalytics = async (req, res) => {
                 }
             },
             {
-                $lookup: {
-                    from: 'jobs',
-                    localField: 'jobId',
-                    foreignField: '_id',
-                    as: 'job'
-                }
-            },
-            {
-                $unwind: '$job'
-            },
-            {
                 $group: {
-                    _id: '$job.category',
+                    _id: '$category',
                     count: { $sum: 1 }
                 }
             },

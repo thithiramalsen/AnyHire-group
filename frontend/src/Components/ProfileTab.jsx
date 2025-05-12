@@ -221,23 +221,6 @@ const ViewProfile = ({ profile, onEdit, setProfile }) => (
                     <p className="text-lg capitalize">{profile.role}</p>
                     {profile.role === 'customer' && (
                         <div className="flex flex-col space-y-2">
-                            <p className="text-sm text-gray-400">Want to start offering your services?</p>
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        await axios.post('/auth/upgrade-role');
-                                        setProfile(prev => ({ ...prev, role: 'jobSeeker' }));
-                                        toast.success('Successfully upgraded to Job Seeker!');
-                                    } catch (error) {
-                                        console.error('Error upgrading role:', error);
-                                        toast.error('Failed to upgrade role.');
-                                    }
-                                }}
-                                className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
-                            >
-                                <Upload size={16} />
-                                <span>Upgrade to Job Seeker</span>
-                            </button>
                         </div>
                     )}
                 </div>

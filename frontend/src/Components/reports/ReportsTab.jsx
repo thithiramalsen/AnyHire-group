@@ -155,39 +155,24 @@ const ReportsTab = () => {
             endpoint: 'admin/users'
         },
         {
-            title: 'Jobs Report',
-            description: 'Overview of all jobs and their performance metrics',
-            endpoint: 'admin/jobs'
-        },
-        {
             title: 'Bookings Report',
-            description: 'Details of all bookings and their statuses',
+            description: 'Details of all bookings, their statuses, and participants',
             endpoint: 'admin/bookings'
         },
         {
             title: 'Payments Report',
-            description: 'Summary of all financial transactions',
+            description: 'Summary of all financial transactions and payment statuses',
             endpoint: 'admin/payments'
         },
         {
-            title: 'Support Tickets Report',
-            description: 'Overview of all support tickets and response times',
-            endpoint: 'admin/tickets'
-        },
-        {
             title: 'Reviews Report',
-            description: 'Summary of all user reviews and ratings',
+            description: 'Summary of all user reviews and ratings for completed bookings',
             endpoint: 'admin/reviews'
-        },
-        {
-            title: 'Contact Inquiries Report',
-            description: 'Log of all contact form submissions and responses',
-            endpoint: 'admin/contacts'
         }
     ] : [
         {
             title: 'My Activity Report',
-            description: 'Your personal activity summary and statistics',
+            description: 'Your personal activity summary including bookings and payments',
             endpoint: `user/${user?._id}`
         }
     ];

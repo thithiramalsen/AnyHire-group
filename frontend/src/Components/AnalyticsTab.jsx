@@ -1,11 +1,9 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import UsersAnalytics from "./analytics/UsersAnalytics";
-import JobsAnalytics from "./analytics/JobsAnalytics";
 import BookingsAnalytics from "./analytics/BookingsAnalytics";
 import PaymentsAnalytics from "./analytics/PaymentsAnalytics";
 import RatingsAnalytics from "./analytics/RatingsAnalytics";
-import SupportAnalytics from "./analytics/SupportAnalytics";
 
 const AnalyticsTab = () => {
 	console.log("[AnalyticsTab] Component mounted");
@@ -13,11 +11,9 @@ const AnalyticsTab = () => {
 
 	const analyticsTabs = [
 		{ id: "analytics-users", label: "Users", component: <UsersAnalytics /> },
-		{ id: "analytics-jobs", label: "Jobs", component: <JobsAnalytics /> },
 		{ id: "analytics-bookings", label: "Bookings", component: <BookingsAnalytics /> },
 		{ id: "analytics-payments", label: "Payments", component: <PaymentsAnalytics /> },
-		{ id: "analytics-ratings", label: "Ratings", component: <RatingsAnalytics /> },
-		{ id: "analytics-support", label: "Support", component: <SupportAnalytics /> }
+		{ id: "analytics-ratings", label: "Ratings", component: <RatingsAnalytics /> }
 	];
 
 	console.log("[AnalyticsTab] Current tab:", currentAnalyticsTab);

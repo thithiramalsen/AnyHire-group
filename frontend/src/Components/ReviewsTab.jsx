@@ -141,7 +141,7 @@ const ReviewsTab = () => {
                                     <div className="flex items-center gap-4 mt-2">
                                         <div className="flex items-center text-gray-400">
                                             <Briefcase className="w-4 h-4 mr-2" />
-                                            <span>{review.bookingId?.jobTitle ?? "Job not found"}</span>
+                                            <span>{review.bookingId?.title ?? "Booking not found"}</span>
                                         </div>
                                         <div className="flex items-center text-gray-400">
                                             <Calendar className="w-4 h-4 mr-2" />
@@ -186,15 +186,39 @@ const ReviewsTab = () => {
                             <p className="text-gray-300 mb-4">{review.comment ?? "No comment provided"}</p>
                             {review.bookingId && (
                                 <div className="mt-4 pt-4 border-t border-gray-700">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-400">Booking Status:</span>
-                                        <span className={`px-2 py-1 rounded-full ${
-                                            review.bookingId?.status === 'completed' 
-                                                ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-yellow-500/20 text-yellow-400'
-                                        }`}>
-                                            {review.bookingId?.status ?? "unknown"}
-                                        </span>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">Category:</span>
+                                            <span className="text-emerald-400">
+                                                {review.bookingId?.category}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">Amount:</span>
+                                            <span className="text-emerald-400">
+                                                Rs. {review.bookingId?.payment?.amount?.toLocaleString() ?? "N/A"}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">Status:</span>
+                                            <span className={`px-2 py-1 rounded-full text-xs ${
+                                                review.bookingId?.status === 'paid' 
+                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                    : review.bookingId?.status === 'pending'
+                                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                                    : review.bookingId?.status === 'in_progress'
+                                                    ? 'bg-blue-500/20 text-blue-400'
+                                                    : 'bg-gray-500/20 text-gray-400'
+                                            }`}>
+                                                {review.bookingId?.status?.replace('_', ' ').toUpperCase() ?? "unknown"}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-400">Location:</span>
+                                            <span className="text-gray-300 truncate">
+                                                {review.bookingId?.location?.address ?? "N/A"}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             )}

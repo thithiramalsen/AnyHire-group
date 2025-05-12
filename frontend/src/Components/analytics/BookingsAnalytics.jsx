@@ -29,16 +29,14 @@ const BookingsAnalytics = () => {
             const response = await axios.get(`/analytics/bookings?timeRange=${timeRange}`);
             
             if (response.data) {
-                // Ensure we have all required properties with default values
-                const data = {
+                setAnalyticsData({
                     totalBookings: response.data.totalBookings || 0,
                     activeBookings: response.data.activeBookings || 0,
                     completedBookings: response.data.completedBookings || 0,
                     bookingsByStatus: response.data.bookingsByStatus || [],
                     bookingsGrowth: response.data.bookingsGrowth || [],
                     bookingsByCategory: response.data.bookingsByCategory || []
-                };
-                setAnalyticsData(data);
+                });
                 toast.success('Analytics data loaded successfully');
             }
         } catch (error) {

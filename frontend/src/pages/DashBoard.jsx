@@ -6,52 +6,32 @@ import SideBar from "../Components/SideBar";
 // Import all tab components
 import ProfileTab from "../Components/ProfileTab";
 import AnalyticsTab from "../Components/AnalyticsTab";
-import JobApprovalTab from "../Components/JobApprovalTab";
 import BookingsTab from "../Components/BookingsTab";
-import JobPostingTab from "../Components/JobPostingTab";
-import PortfolioTab from "../Components/PortfolioTab";
-import WorkerProfileTab from "../Components/WorkerProfileTab";
+
 import JobsTab from "../Components/MyJobs";
-import CategoriesTab from "../Components/CategoriesTab";
-import SupportUserTab from "../Components/SupportUserTab";
-import SupportAdminTab from "../Components/SupportAdminTab";
-import ContactAdminTab from "../Components/admin/ContactAdminTab";
+
 import UserManagementTab from "../Components/UserManagementTab";
-import PendingJobsTab from "../Components/PendingJobsTab";
-import CartTab from "../Components/CartTab";
+
 import BookingsManagement from "../Components/admin/BookingsManagement";
 import PaymentsManagement from "../Components/admin/PaymentsManagement";
 import ReviewManagementTab from "../Components/admin/ReviewManagementTab";
 import ReviewsTab from "../Components/ReviewsTab";
 import NotificationTab from "../Components/NotificationTab";
-import GamificationManagementTab from "../Components/admin/GamificationManagementTab";
-import MyAwards from "../Components/MyAwards";
+
 import ReportsTab from "../Components/Reports/ReportsTab";
 
 // Component mapping
 const componentMap = {
     ProfileTab,
     AnalyticsTab,
-    JobApprovalTab,
     BookingsTab,
-    JobPostingTab,
-    PortfolioTab,
-    WorkerProfileTab,
     JobsTab,
-    CategoriesTab,
-    SupportUserTab,
-    ContactAdminTab,
-    SupportAdminTab,
     UserManagementTab,
-    PendingJobsTab,
-    CartTab,
     BookingsManagement,
     PaymentsManagement,
     ReviewManagementTab,
     ReviewsTab,
     NotificationTab,
-    GamificationManagementTab,
-    MyAwards,
     ReportsTab
 };
 

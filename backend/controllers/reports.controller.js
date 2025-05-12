@@ -1,12 +1,11 @@
 import PDFDocument from 'pdfkit';
 import { Parser } from 'json2csv';
 import User from '../models/user.model.js';
-import Job from '../models/job.model.js';
 import Booking from '../models/booking.model.js';
 import Payment from '../models/payment.model.js';
-import Ticket from '../models/ticket.model.js';
+
 import Review from '../models/review.model.js';
-import Contact from '../models/contact.model.js'; 
+
 
 const formatDate = (date) => {
     return date ? new Date(date).toLocaleDateString() : 'N/A';
@@ -243,26 +242,24 @@ export const generateJobsReport = async (req, res) => {
 
 export const generateBookingsReport = async (req, res) => {
     try {
-        const bookings = await Booking.find().lean();
-        const enhancedBookings = await Promise.all(bookings.map(async (booking) => {
-            const job = await Job.findById(booking.jobId);
-            const seeker = await User.findById(booking.seekerId);
-            const provider = await User.findById(booking.providerId);
-            const payment = await Payment.findOne({ bookingId: booking._id });
+        const bookings = await Booking.find()
+            .populate('posterId', 'name email')
+            .populate('seekerId', 'name email')
+            .lean();
 
-            return {
-                'ID': booking._id,
-                'Job Title': job?.title || 'N/A',
-                'Seeker': seeker?.name || 'N/A',
-                'Provider': provider?.name || 'N/A',
-                'Created Date': formatDate(booking.createdAt),
-                'Status': booking.status,
-                'Payment Status': payment?.status || 'No Payment',
-                'Amount': payment ? `$${payment.amount}` : 'N/A',
-                'Completion Date': formatDate(booking.completedAt),
-                'Rating': booking.rating || 'Not Rated',
-                'Feedback': booking.feedback || 'No Feedback'
-            };
+        const enhancedBookings = bookings.map(booking => ({
+            'ID': booking._id,
+            'Title': booking.title,
+            'Category': booking.category,
+            'Customer': booking.posterId?.name || 'N/A',
+            'Job Seeker': booking.seekerId?.name || 'N/A',
+            'Created Date': formatDate(booking.dates.created),
+            'Status': booking.status,
+            'Payment Amount': `Rs. ${booking.payment.amount}`,
+            'Location': booking.location.address,
+            'Started Date': formatDate(booking.dates.started),
+            'Completed Date': formatDate(booking.dates.completed),
+            'Paid Date': formatDate(booking.dates.paid)
         }));
 
         return res.json(enhancedBookings);
@@ -277,24 +274,27 @@ export const generateBookingsReport = async (req, res) => {
 
 export const generatePaymentsReport = async (req, res) => {
     try {
-        const payments = await Payment.find().lean();
-        const enhancedPayments = await Promise.all(payments.map(async (payment) => {
-            const booking = await Booking.findById(payment.bookingId);
-            const job = booking ? await Job.findById(booking.jobId) : null;
-            const payer = booking ? await User.findById(booking.seekerId) : null;
-            const receiver = booking ? await User.findById(booking.providerId) : null;
+        const payments = await Payment.find()
+            .populate({
+                path: 'bookingId',
+                select: 'title posterId seekerId',
+                populate: [
+                    { path: 'posterId', select: 'name' },
+                    { path: 'seekerId', select: 'name' }
+                ]
+            })
+            .lean();
 
-            return {
-                'ID': payment._id,
-                'Job': job?.title || 'N/A',
-                'From': payer?.name || 'N/A',
-                'To': receiver?.name || 'N/A',
-                'Amount': `$${payment.amount}`,
-                'Status': payment.status,
-                'Date': formatDate(payment.createdAt),
-                'Method': payment.paymentMethod || 'N/A',
-                'Transaction ID': payment.transactionId || 'N/A'
-            };
+        const enhancedPayments = payments.map(payment => ({
+            'ID': payment._id,
+            'Booking Title': payment.bookingId?.title || 'N/A',
+            'From': payment.bookingId?.posterId?.name || 'N/A',
+            'To': payment.bookingId?.seekerId?.name || 'N/A',
+            'Amount': `Rs. ${payment.amount}`,
+            'Status': payment.status,
+            'Date': formatDate(payment.createdAt),
+            'Method': payment.paymentMethod || 'N/A',
+            'Transaction ID': payment._id || 'N/A'
         }));
 
         return res.json(enhancedPayments);
@@ -343,24 +343,25 @@ export const generateTicketsReport = async (req, res) => {
 
 export const generateReviewsReport = async (req, res) => {
     try {
-        const reviews = await Review.find().lean();
+        const reviews = await Review.find()
+            .populate({
+                path: 'bookingId',
+                select: 'title'
+            })
+            .populate('reviewerId', 'name')
+            .populate('revieweeId', 'name')
+            .lean();
         
-        const enhancedReviews = await Promise.all(reviews.map(async (review) => {
-            const booking = await Booking.findById(review.bookingId);
-            const reviewer = await User.findById(review.reviewerId);
-            const reviewee = await User.findById(review.revieweeId);
-
-            return {
-                'ID': review._id,
-                'Booking ID': review.bookingId,
-                'Job Title': booking?.jobTitle || 'N/A',
-                'Reviewer': reviewer?.name || 'N/A',
-                'Reviewee': reviewee?.name || 'N/A',
-                'Rating': review.rating,
-                'Comment': review.comment || 'N/A',
-                'Type': review.reviewType === 'customer_to_seeker' ? 'Customer → Seeker' : 'Seeker → Customer',
-                'Date': formatDate(review.createdAt)
-            };
+        const enhancedReviews = reviews.map(review => ({
+            'ID': review._id,
+            'Booking ID': review.bookingId?._id || 'N/A',
+            'Job Title': review.bookingId?.title || 'N/A',
+            'Reviewer': review.reviewerId?.name || 'N/A',
+            'Reviewee': review.revieweeId?.name || 'N/A',
+            'Rating': review.rating,
+            'Comment': review.comment || 'N/A',
+            'Type': review.reviewType === 'customer_to_seeker' ? 'Customer → Seeker' : 'Seeker → Customer',
+            'Date': formatDate(review.createdAt)
         }));
 
         return res.json(enhancedReviews);

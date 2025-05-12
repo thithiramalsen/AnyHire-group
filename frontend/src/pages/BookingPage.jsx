@@ -3,19 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star, MapPin, FileText, Calendar } from 'lucide-react'; // Replace HeroIcon import with Lucide
-import Chat from '../Components/Chat';
-import PaymentConfirmation from './PaymentConfirmation';
+import { Play, Check, CreditCard, Star } from 'lucide-react';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [categories, setCategories] = useState([]); // Add categories state
     const { user } = useUserStore();
     const navigate = useNavigate();
     const [payment, setPayment] = useState(null);
-    const [reviewsByBooking, setReviewsByBooking] = useState({}); // Add reviews state
 
     const canShowReview = payment && ['confirmed', 'completed'].includes(payment.status);
 
@@ -38,7 +34,7 @@ const BookingPage = () => {
                     })
                 ]);
 
-                setBooking(bookingRes.data);
+                setBooking(bookingRes.data.booking);
                 setPayment(paymentRes.data.payment);
                 setLoading(false);
             } catch (error) {
@@ -54,11 +50,10 @@ const BookingPage = () => {
     const handleStartJob = async () => {
         try {
             await axios.patch(`/booking/${bookingId}/status`, { 
-                status: 'in_progress',
-                date: new Date()
+                status: 'in_progress'
             });
             toast.success('Job started successfully!');
-            fetchBooking(); // Refresh booking data
+            window.location.reload(); // Refresh the page to show updated status
         } catch (error) {
             console.error('Error starting job:', error);
             toast.error(error.response?.data?.message || 'Error starting job');
@@ -68,11 +63,10 @@ const BookingPage = () => {
     const handleCompleteJob = async () => {
         try {
             await axios.patch(`/booking/${bookingId}/status`, { 
-                status: 'completed_by_seeker',
-                date: new Date()
+                status: 'completed_by_seeker'
             });
             toast.success('Job marked as completed!');
-            fetchBooking(); // Refresh booking data
+            window.location.reload(); // Refresh the page to show updated status
         } catch (error) {
             console.error('Error completing job:', error);
             toast.error(error.response?.data?.message || 'Error completing job');
@@ -81,18 +75,11 @@ const BookingPage = () => {
 
     const handleConfirmCompletion = async () => {
         try {
-            // Update both booking and job status
-            await Promise.all([
-                axios.patch(`/booking/${bookingId}/status`, { 
-                    status: 'payment_pending',
-                    date: new Date()
-                }),
-                axios.patch(`/job/up/${booking.jobId}`, {
-                    status: 'completed'
-                })
-            ]);
+            await axios.patch(`/booking/${bookingId}/status`, { 
+                status: 'payment_pending'
+            });
             toast.success('Job completion confirmed! Payment pending.');
-            fetchBooking(); // Refresh booking data
+            window.location.reload(); // Refresh the page to show updated status
         } catch (error) {
             console.error('Error confirming completion:', error);
             toast.error(error.response?.data?.message || 'Error confirming completion');
@@ -100,13 +87,7 @@ const BookingPage = () => {
     };
 
     const handleProceedToPayment = () => {
-        // Navigate to payment page with booking details
         navigate(`/payment/${bookingId}`);
-    };
-
-    const getCategoryName = (categoryId) => {
-        const category = categories.find(cat => Number(cat._id) === Number(categoryId));
-        return category ? category.name : "Unknown Category";
     };
 
     const renderActionButton = () => {
@@ -158,7 +139,7 @@ const BookingPage = () => {
         <div className="flex gap-4">
             {renderActionButton()}
             
-            {canShowReview && !reviewsByBooking?.[booking._id] && (
+            {canShowReview && (
                 <button
                     onClick={() => navigate(`/review/${booking._id}`)}
                     className="w-full bg-yellow-500 text-white py-3 px-6 rounded-lg hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
@@ -167,41 +148,8 @@ const BookingPage = () => {
                     Leave Review
                 </button>
             )}
-            
-            <button
-                onClick={() => navigate(`/chat/${booking._id}`)}
-                className="w-full bg-emerald-500 text-white py-3 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-            >
-                <MessageCircle size={20} />
-                Chat
-            </button>
         </div>
     );
-
-    const renderUserInfo = () => {
-        if (!booking) return null;
-
-        const isCustomer = user.role === 'customer';
-        const relevantUser = isCustomer ? booking.seekerDetails : booking.posterDetails;
-
-        return (
-            <div className="flex items-center gap-4 mb-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-1">
-                        {isCustomer ? 'Job Seeker' : 'Customer'}
-                    </h3>
-                    <p className="text-gray-400">{relevantUser?.name}</p>
-                </div>
-                <button
-                    onClick={() => navigate(`/chat/${booking._id}`)}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                    <MessageCircle size={20} />
-                    Chat
-                </button>
-            </div>
-        );
-    };
 
     const renderPaymentSection = () => {
         if (payment) {
@@ -225,17 +173,11 @@ const BookingPage = () => {
                                 <p className="text-gray-400 mt-1">
                                     Amount: <span className="text-emerald-500 font-semibold">Rs. {payment.amount}</span>
                                 </p>
-                                {payment.paymentType === 'payment_proof' && (
-                                    <p className="text-gray-400 mt-1">
-                                        Type: <span className="font-semibold">Payment Proof</span>
-                                    </p>
-                                )}
                             </div>
                             <button
                                 onClick={() => {
-                                    // Fix the navigation path for job seekers
                                     if (user.role === 'jobSeeker') {
-                                        navigate(`/confirm-payment/${bookingId}`); // Changed from /payment/${bookingId}/confirm
+                                        navigate(`/confirm-payment/${bookingId}`);
                                     } else {
                                         navigate(`/payment/${bookingId}`);
                                     }
@@ -246,27 +188,6 @@ const BookingPage = () => {
                                 {user.role === 'jobSeeker' ? 'Review Payment' : 'View Payment'}
                             </button>
                         </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // If payment is pending and user is customer
-        if (booking.status === 'payment_pending' && user?._id === booking.posterId) {
-            return (
-                <div className="mb-8">
-                    <h2 className="text-xl font-semibold mb-4">Payment Required</h2>
-                    <div className="bg-gray-800 rounded-lg p-4">
-                        <p className="text-gray-400 mb-4">
-                            Please complete the payment to proceed with the booking.
-                        </p>
-                        <button
-                            onClick={() => navigate(`/payment/${bookingId}`)}
-                            className="bg-emerald-500 text-white py-2 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2"
-                        >
-                            <CreditCard size={20} />
-                            Proceed to Payment
-                        </button>
                     </div>
                 </div>
             );
@@ -291,16 +212,9 @@ const BookingPage = () => {
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-3xl mx-auto">
                 <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                    {booking.jobDetails?.images && (
-                        <img
-                            src={`http://localhost:5000${booking.jobDetails.images}`}
-                            alt={booking.jobTitle}
-                            className="w-full h-64 object-cover"
-                        />
-                    )}
                     <div className="p-8">
                         <div className="flex items-center justify-between mb-6">
-                            <h1 className="text-3xl font-bold">{booking.jobTitle}</h1>
+                            <h1 className="text-3xl font-bold">{booking.title}</h1>
                             <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
                                 booking.status === 'accepted' ? 'bg-green-500' :
                                 booking.status === 'in_progress' ? 'bg-blue-500' :
@@ -314,25 +228,22 @@ const BookingPage = () => {
                             </span>
                         </div>
 
-                        {renderUserInfo()}
-
                         <div className="grid md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Location</h3>
-                                <p className="text-gray-400">{booking.jobDetails?.location}, {booking.jobDetails?.district}</p>
+                                <p className="text-gray-400">{booking.location.address}</p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Category</h3>
-                                <p className="text-gray-400">{getCategoryName(booking.jobDetails?.category)}</p>
+                                <p className="text-gray-400">{booking.category}</p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Payment</h3>
-                                <p className="text-green-400 font-semibold">Rs. {booking.payment?.amount}</p>
+                                <p className="text-green-400 font-semibold">Rs. {booking.payment.amount}</p>
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-2">Status</h3>
                                 <p className={`font-semibold ${
-                                    booking.status === 'applied' ? 'text-yellow-400' :
                                     booking.status === 'accepted' ? 'text-green-400' :
                                     booking.status === 'in_progress' ? 'text-blue-400' :
                                     'text-gray-400'
@@ -346,7 +257,7 @@ const BookingPage = () => {
 
                         <div className="mb-8">
                             <h3 className="text-lg font-semibold mb-2">Description</h3>
-                            <p className="text-gray-400 whitespace-pre-line">{booking.jobDetails?.description}</p>
+                            <p className="text-gray-400 whitespace-pre-line">{booking.description}</p>
                         </div>
 
                         <div className="mt-8 border-t border-gray-700 pt-6">

@@ -37,7 +37,6 @@ const PaymentsManagement = () => {
 
         try {
             setDeletingId(paymentId);
-            // Update the endpoint to use the admin-specific delete route
             await axios.delete(`/payment/admin/${paymentId}`);
             toast.success('Payment deleted successfully');
             setPayments(payments.filter(p => p._id !== paymentId));
@@ -117,7 +116,7 @@ const PaymentsManagement = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-full overflow-hidden">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-white">Payments Management</h2>
                 <div className="text-sm text-gray-400">
@@ -163,54 +162,55 @@ const PaymentsManagement = () => {
                 </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
+            <div className="bg-gray-800 rounded-lg shadow-lg">
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                    <table className="min-w-[1200px] w-full">
                         <thead>
                             <tr className="bg-gray-700">
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Payment ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Booking Details</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Method</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Users</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-24">ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-64">Booking</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-28">Amount</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-28">Type</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-28">Method</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-64">Users</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-24">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
                             {filteredPayments.map((payment) => (
                                 <tr key={payment._id} className="hover:bg-gray-700/50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <span className="text-sm font-medium text-white">#{payment._id}</span>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 py-4">
                                         <div className="text-sm text-white">
-                                            {payment.booking?.jobTitle || 'N/A'}
+                                            {payment.booking?.jobTitle || payment.bookingId?.title || 'N/A'}
                                         </div>
                                         <div className="text-sm text-gray-400">
-                                            ID: #{payment.bookingId}
+                                            ID: #{payment.bookingId?._id || payment.bookingId || 'N/A'}
                                         </div>
                                         <div className="mt-2 flex items-center text-sm text-gray-400">
                                             <User className="h-4 w-4 mr-1" />
-                                            {payment.booking?.posterDetails?.name || 'Unknown'} → {payment.booking?.seekerDetails?.name || 'Unknown'}
+                                            {payment.booking?.posterDetails?.name || payment.bookingId?.posterId?.name || 'Unknown'} → 
+                                            {payment.booking?.seekerDetails?.name || payment.bookingId?.seekerId?.name || 'Unknown'}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <span className="text-sm text-emerald-500">Rs. {payment.amount}</span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <span className="text-sm text-gray-400 capitalize">
                                             {payment.paymentType?.replace('_', ' ') || 'N/A'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <span className="text-sm text-gray-400 capitalize">
                                             {payment.paymentMethod?.replace('-', ' ') || 'N/A'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <select
                                             value={payment.status}
                                             onChange={(e) => handleUpdatePaymentStatus(payment._id, e.target.value)}
@@ -222,35 +222,35 @@ const PaymentsManagement = () => {
                                             <option value="reported">Reported</option>
                                         </select>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <div className="flex items-center text-sm text-gray-400">
                                             <Calendar className="h-4 w-4 mr-1" />
                                             {new Date(payment.createdAt).toLocaleDateString()}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 py-4">
                                         <div className="space-y-2">
                                             <div className="flex items-center text-sm">
                                                 <span className="text-emerald-500 font-medium mr-2">Job Seeker:</span>
                                                 <span className="text-gray-300">
-                                                    {payment.booking?.seekerDetails?.name || 'Unknown'}
+                                                    {payment.booking?.seekerDetails?.name || payment.bookingId?.seekerId?.name || 'Unknown'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center text-sm">
                                                 <span className="text-blue-500 font-medium mr-2">Customer:</span>
                                                 <span className="text-gray-300">
-                                                    {payment.booking?.posterDetails?.name || 'Unknown'}
+                                                    {payment.booking?.posterDetails?.name || payment.bookingId?.posterId?.name || 'Unknown'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center text-sm text-gray-400">
                                                 <User className="h-4 w-4 mr-1" />
                                                 <span className="text-xs">
-                                                    {payment.booking?.seekerDetails?.email || 'No email'}
+                                                    {payment.booking?.seekerDetails?.email || payment.bookingId?.seekerId?.email || 'No email'}
                                                 </span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => window.location.href = `/booking/${payment.bookingId}`}
@@ -283,6 +283,10 @@ const PaymentsManagement = () => {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <div className="md:hidden text-sm text-gray-400 text-center mt-2">
+                Scroll horizontally to view all data
             </div>
         </div>
     );

@@ -35,7 +35,6 @@ import ReviewPage from './pages/ReviewPage';
 import HowAnyHireWorks from "./pages/HowAnyHireWorks";
 import AboutUs from "./pages/AboutUs";
 import TermsAndPolicies from "./pages/TermsAndPolicies";
-import ReportsTab from "./Components/analytics/ReportsTab";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
@@ -217,19 +216,6 @@ function App() {
 					<Route path="/about" element={<AboutUs />} />
 					<Route path="/terms-and-policies" element={<TermsAndPolicies />} />
 					<Route path="/user/:userId" element={<UserProfileView />} />
-					<Route
-						path="/reports"
-						element={
-							user?.role === 'admin' ? (
-								<ReportsTab />
-							) : (
-								<Navigate to="/login" replace />
-							)
-						}
-					/>
-
-
-
 				</Routes>
 			</div>
 			<Toaster />

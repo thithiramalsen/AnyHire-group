@@ -12,7 +12,7 @@ import {
     X, 
     AlertTriangle 
 } from "lucide-react";
-import UserReports from './UserReports';
+//import UserReports from './UserReports';
 
 const ProfileTab = () => {
     const [isEditing, setIsEditing] = useState(false);
@@ -188,11 +188,11 @@ const ProfileTab = () => {
                 </div>
             </div>
 
-            {/* Add Reports Section */}
+            {/* Add Reports Section 
             <div className="mt-8">
                 <h3 className="text-xl font-bold text-white mb-4">Reports</h3>
                 <UserReports userId={profile._id} />
-            </div>
+            </div>*/}
         </div>
     );
 };

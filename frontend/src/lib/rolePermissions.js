@@ -16,7 +16,6 @@ export const rolePermissions = {
                     { id: "support", label: "Support", component: "SupportAnalytics" }
                 ]
             },
-            { id: "reports", label: "Reports", component: "ReportsTab" },
             { id: "job-approval", label: "Job Approval", component: "JobApprovalTab" },
             { id: "bookings", label: "Bookings", component: "BookingsManagement" },
             { id: "payments", label: "Payments", component: "PaymentsManagement" },

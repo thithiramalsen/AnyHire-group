@@ -37,7 +37,8 @@ export const rolePermissions = {
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
-            { id: "my-awards", label: "My Awards", component: "MyAwards" }
+            { id: "my-awards", label: "My Awards", component: "MyAwards" },
+            { id: "reports", label: "Reports", component: "ReportsTab" }
         ]
     },
     jobSeeker: {
@@ -50,7 +51,8 @@ export const rolePermissions = {
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "cart", label: "Cart", component: "CartTab" },
-            { id: "my-awards", label: "My Awards", component: "MyAwards" }
+            { id: "my-awards", label: "My Awards", component: "MyAwards" },
+            { id: "reports", label: "Reports", component: "ReportsTab" }
         ]
     }
 };

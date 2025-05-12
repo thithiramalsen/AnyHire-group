@@ -249,85 +249,27 @@ class ReportGeneratorService {
                    .text(`Generated on: ${new Date().toLocaleString()}`)
                    .moveDown();
 
-                // Extract the data array based on report type
-                const dataArray = data[reportType.toLowerCase()] || [];
-                
-                if (dataArray.length > 0) {
-                    // Get headers from the first object
-                    const headers = Object.keys(dataArray[0]);
-                    
-                    // Calculate column widths
-                    const pageWidth = doc.page.width - 100; // margins
-                    const columnWidth = pageWidth / headers.length;
-                    
-                    // Draw table header
-                    doc.fontSize(10);
-                    let yPos = doc.y;
-                    let xPos = 50;
-                    
-                    // Draw header background
-                    doc.rect(xPos, yPos, pageWidth, 20)
-                       .fill('#f0f0f0');
-                    
-                    // Draw header text
-                    headers.forEach((header, i) => {
-                        doc.fillColor('black')
-                           .text(
-                               header.charAt(0).toUpperCase() + header.slice(1),
-                               xPos + (i * columnWidth),
-                               yPos + 5,
-                               {
-                                   width: columnWidth,
-                                   align: 'center'
-                               }
-                           );
-                    });
-                    
-                    // Draw table rows
-                    yPos += 20;
-                    dataArray.forEach((row, rowIndex) => {
-                        // Alternate row background
-                        if (rowIndex % 2 === 0) {
-                            doc.rect(xPos, yPos, pageWidth, 20)
-                               .fill('#fafafa');
-                        }
-                        
-                        // Draw row data
-                        headers.forEach((header, i) => {
-                            let value = row[header];
-                            // Handle nested objects and arrays
-                            if (typeof value === 'object' && value !== null) {
-                                value = JSON.stringify(value);
-                            }
-                            
-                            doc.fillColor('black')
-                               .text(
-                                   value || '',
-                                   xPos + (i * columnWidth),
-                                   yPos + 5,
-                                   {
-                                       width: columnWidth,
-                                       align: 'center',
-                                       lineBreak: false,
-                                       ellipsis: true
-                                   }
-                               );
+                // Add data
+                if (Array.isArray(data)) {
+                    data.forEach((item, index) => {
+                        doc.fontSize(14)
+                           .text(`Item ${index + 1}:`)
+                           .moveDown(0.5);
+
+                        Object.entries(item).forEach(([key, value]) => {
+                            doc.fontSize(12)
+                               .text(`${key}: ${JSON.stringify(value)}`)
+                               .moveDown(0.2);
                         });
-                        
-                        yPos += 20;
-                        
-                        // Add new page if needed
-                        if (yPos > doc.page.height - 50) {
-                            doc.addPage();
-                            yPos = 50;
-                        }
+
+                        doc.moveDown();
                     });
                 } else {
-                    // No data message
-                    doc.fontSize(12)
-                       .text('No data available for this report.', {
-                           align: 'center'
-                       });
+                    Object.entries(data).forEach(([key, value]) => {
+                        doc.fontSize(12)
+                           .text(`${key}: ${JSON.stringify(value)}`)
+                           .moveDown(0.5);
+                    });
                 }
 
                 doc.end();

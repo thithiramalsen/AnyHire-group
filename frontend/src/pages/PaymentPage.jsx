@@ -277,10 +277,9 @@ const PaymentPage = () => {
                     </div>
                 </div>
 
-                {payment.status === 'confirmed' && (
-                    <div className="border-t border-gray-700 pt-6 mt-6">
-                        <h3 className="text-lg font-semibold mb-4">Complete Your Booking</h3>
-                        <div className="flex gap-4">
+                <div className="border-t border-gray-700 pt-6">
+                    <div className="flex gap-4">
+                        {payment.status === 'confirmed' && (
                             <button
                                 onClick={handleCompleteBooking}
                                 className="flex-1 bg-emerald-500 text-white py-3 px-6 rounded-lg hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
@@ -288,16 +287,16 @@ const PaymentPage = () => {
                                 <CheckCircle size={20} />
                                 Complete Booking
                             </button>
-                            <button
-                                onClick={() => navigate(`/review/${payment.bookingId}`)}
-                                className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Star size={20} />
-                                Leave Review
-                            </button>
-                        </div>
+                        )}
+                        <button
+                            onClick={() => navigate(`/review/${payment.bookingId}`)}
+                            className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Star size={20} />
+                            Leave Review
+                        </button>
                     </div>
-                )}
+                </div>
 
                 {payment.paymentType === 'payment_proof' && (
                     <div className="border-t border-gray-700 pt-6">

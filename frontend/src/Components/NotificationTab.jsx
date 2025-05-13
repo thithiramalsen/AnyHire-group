@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
-import { Bell, Check, Loader } from 'lucide-react';
+import { Bell, Check, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const NotificationTab = () => {
@@ -8,6 +9,7 @@ const NotificationTab = () => {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchNotifications();
@@ -50,88 +52,170 @@ const NotificationTab = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader className="animate-spin" />
-            </div>
-        );
-    }
+    const clearAllNotifications = async () => {
+        try {
+            if (!window.confirm('Are you sure you want to clear all notifications? This cannot be undone.')) {
+                return;
+            }
+
+            await axios.delete('/notifications/clear-all');
+            setNotifications([]);
+            toast.success('All notifications cleared');
+        } catch (error) {
+            console.error('Error clearing notifications:', error);
+            toast.error('Failed to clear notifications');
+        }
+    };
+
+    const getNotificationContent = (notification) => {
+        const { type, references, message } = notification;
+        
+        let content = {
+            message,
+            link: '#',
+            icon: <Bell className="w-5 h-5" />
+        };
+
+        switch (type) {
+            case 'BOOKING':
+                content.link = references?.bookingId ? 
+                    `/booking/${references.bookingId}` : notification.links?.booking;
+                break;
+            case 'JOB_APPLICATION':
+                content.link = references?.jobId ? 
+                    `/jobs/${references.jobId}` : notification.links?.job;
+                break;
+            case 'REVIEW':
+                content.link = references?.reviewId ? 
+                    `/reviews/${references.reviewId}` : notification.links?.review;
+                break;
+            case 'TICKET':
+                content.link = references?.ticketId ? 
+                    `/tickets/${references.ticketId}` : notification.links?.ticket;
+                break;
+            default:
+                content.link = notification.links?.profile || '#';
+        }
+
+        return content;
+    };
 
     return (
         <div className="p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Bell className="w-6 h-6" />
-                    Notifications
-                </h2>
-                {notifications.some(n => !n.isRead) && (
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-white">Notifications</h2>
+                <div className="flex gap-4">
                     <button
                         onClick={markAllAsRead}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                        className="text-sm text-emerald-500 hover:text-emerald-400"
                     >
                         Mark all as read
                     </button>
-                )}
+                    {notifications.length > 0 && (
+                        <button
+                            onClick={clearAllNotifications}
+                            className="text-sm text-red-500 hover:text-red-400 flex items-center gap-1"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Clear all
+                        </button>
+                    )}
+                </div>
             </div>
 
-            <div className="space-y-4">
-                {notifications.length === 0 ? (
-                    <p className="text-center text-gray-500">No notifications yet</p>
-                ) : (
-                    notifications.map((notification) => (
-                        <div
-                            key={notification._id}
-                            className={`p-4 rounded-lg ${
-                                notification.isRead ? 'bg-gray-800' : 'bg-gray-700'
-                            }`}
-                        >
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="font-semibold text-lg">{notification.title}</h3>
-                                    <p className="text-gray-300 mt-1">{notification.message}</p>
-                                    <p className="text-sm text-gray-400 mt-2">
-                                        {new Date(notification.createdAt).toLocaleDateString()}
-                                    </p>
+            {loading ? (
+                <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+                </div>
+            ) : notifications.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                    No notifications
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {notifications.map((notification) => {
+                        const content = getNotificationContent(notification);
+                        return (
+                            <div
+                                key={notification._id}
+                                className={`p-4 rounded-lg transition-colors ${
+                                    notification.isRead ? 'bg-gray-800' : 'bg-gray-700'
+                                }`}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0">
+                                        {content.icon}
+                                    </div>
+                                    <div className="flex-grow">
+                                        <h3 className="font-medium text-white">
+                                            {notification.title}
+                                        </h3>
+                                        <p className="text-gray-400 text-sm mt-1">
+                                            {content.message}
+                                        </p>
+                                        {notification.references?.targetUserId && (
+                                            <div className="flex items-center mt-2">
+                                                <img 
+                                                    src={notification.references.targetUserId.image} 
+                                                    alt={notification.references.targetUserId.name}
+                                                    className="w-6 h-6 rounded-full mr-2"
+                                                />
+                                                <span className="text-sm text-gray-400">
+                                                    {notification.references.targetUserId.name}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-between mt-3">
+                                            <button
+                                                onClick={() => navigate(content.link)}
+                                                className="text-emerald-500 hover:text-emerald-400 text-sm"
+                                            >
+                                                View details →
+                                            </button>
+                                            {!notification.isRead && (
+                                                <button
+                                                    onClick={() => markAsRead(notification._id)}
+                                                    className="text-gray-400 hover:text-white"
+                                                    title="Mark as read"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                {!notification.isRead && (
-                                    <button
-                                        onClick={() => markAsRead(notification._id)}
-                                        className="p-2 hover:bg-gray-600 rounded-full transition-colors"
-                                        title="Mark as read"
-                                    >
-                                        <Check className="w-5 h-5" />
-                                    </button>
-                                )}
                             </div>
-                            {notification.link && (
-                                <a
-                                    href={notification.link}
-                                    className="text-emerald-500 hover:text-emerald-400 mt-2 inline-block"
-                                >
-                                    View details →
-                                </a>
-                            )}
-                        </div>
-                    ))
-                )}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-4 mt-6">
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="px-4 py-2 bg-gray-700 rounded-lg disabled:opacity-50"
+                        className={`p-2 rounded ${
+                            page === 1 
+                                ? 'text-gray-500 cursor-not-allowed' 
+                                : 'text-emerald-500 hover:text-emerald-400'
+                        }`}
                     >
-                        Previous
+                        <ChevronLeft className="w-5 h-5" />
                     </button>
+                    <span className="text-gray-400">
+                        Page {page} of {totalPages}
+                    </span>
                     <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         disabled={page === totalPages}
-                        className="px-4 py-2 bg-gray-700 rounded-lg disabled:opacity-50"
+                        className={`p-2 rounded ${
+                            page === totalPages 
+                                ? 'text-gray-500 cursor-not-allowed' 
+                                : 'text-emerald-500 hover:text-emerald-400'
+                        }`}
                     >
-                        Next
+                        <ChevronRight className="w-5 h-5" />
                     </button>
                 </div>
             )}
@@ -139,4 +223,4 @@ const NotificationTab = () => {
     );
 };
 
-export default NotificationTab; 
+export default NotificationTab;

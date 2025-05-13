@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
-//import { useAuth } from '../stores/AuthContext';
 import toast from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
 
@@ -10,19 +9,20 @@ const ApplyPage = () => {
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState(false);
-    const [categories, setCategories] = useState([]); // Add categories state
+    const [categories, setCategories] = useState([]);
     const { user } = useUserStore();
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch both job and categories
                 const [jobResponse, categoriesResponse] = await Promise.all([
                     axios.get(`/job/${jobId}`),
                     axios.get("/category")
                 ]);
                 
+                console.log('Job Data:', jobResponse.data);
+                console.log('Current User:', user);
                 setJob(jobResponse.data);
                 setCategories(categoriesResponse.data.categories || []);
                 setLoading(false);
@@ -47,6 +47,17 @@ const ApplyPage = () => {
             return;
         }
 
+        if (user.role !== 'jobSeeker') {
+            toast.error('Please upgrade to a Job Seeker account to apply for jobs');
+            return;
+        }
+
+        // Compare with the _id from the createdBy object
+        if (Number(user._id) === Number(job.createdBy._id)) {
+            toast.error('You cannot apply to your own job posting');
+            return;
+        }
+
         try {
             setApplying(true);
             await axios.post(`/booking/apply/${jobId}`);
@@ -55,8 +66,67 @@ const ApplyPage = () => {
         } catch (error) {
             console.error('Error applying for job:', error);
             toast.error(error.response?.data?.message || 'Error submitting application');
+        } finally {
             setApplying(false);
         }
+    };
+
+    const renderActionButton = () => {
+        // Debug log with correct property
+        console.log('Button Render State:', {
+            userLoggedIn: !!user,
+            userRole: user?.role,
+            jobCreatedById: job?.createdBy?._id,
+            userId: user?._id,
+            isOwnJob: Number(user?._id) === Number(job?.createdBy?._id)
+        });
+
+        if (!user) {
+            return (
+                <button
+                    onClick={() => navigate('/login')}
+                    className="w-full max-w-md bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                    Login to Apply
+                </button>
+            );
+        }
+
+        if (user.role !== 'jobSeeker') {
+            return (
+                <button
+                    disabled
+                    className="w-full max-w-md bg-gray-500 text-white py-3 px-4 rounded-lg cursor-not-allowed"
+                >
+                    Upgrade to Job Seeker to Apply
+                </button>
+            );
+        }
+
+        // Compare with the _id from the createdBy object
+        const isOwnJob = Number(user._id) === Number(job?.createdBy?._id);
+        if (isOwnJob) {
+            return (
+                <button
+                    disabled
+                    className="w-full max-w-md bg-gray-500 text-white py-3 px-4 rounded-lg cursor-not-allowed"
+                >
+                    Cannot Apply to Own Job
+                </button>
+            );
+        }
+
+        return (
+            <button
+                onClick={handleApply}
+                disabled={applying}
+                className={`w-full max-w-md bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors ${
+                    applying ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
+            >
+                {applying ? 'Submitting Application...' : 'Submit Application'}
+            </button>
+        );
     };
 
     if (loading) {
@@ -75,7 +145,7 @@ const ApplyPage = () => {
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-3xl mx-auto">
                 <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                {job.images && (
+                    {job.images && (
                         <img
                             src={`http://localhost:5000${job.images}`}
                             alt={job.title}
@@ -86,9 +156,26 @@ const ApplyPage = () => {
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
-                                <p className="text-gray-400">
-                                    Posted by: {job.posterDetails?.name}
-                                </p>
+                                <div className="flex items-center space-x-4">
+                                    {job.createdBy?.profileImage && (
+                                        <img 
+                                            src={`http://localhost:5000${job.createdBy.profileImage}`}
+                                            alt={job.createdBy.name}
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                    )}
+                                    <div>
+                                        <p className="text-gray-300 font-medium">
+                                            Posted by: {job.createdBy?.name}
+                                        </p>
+                                        <p className="text-gray-400 text-sm">
+                                            {job.createdBy?.email}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                                Posted: {new Date(job.postedDate).toLocaleDateString()}
                             </div>
                         </div>
                         
@@ -122,15 +209,7 @@ const ApplyPage = () => {
                                     By applying, you agree to complete the job according to the description 
                                     and requirements specified above.
                                 </p>
-                                <button
-                                    onClick={handleApply}
-                                    disabled={applying}
-                                    className={`w-full max-w-md bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors ${
-                                        applying ? 'opacity-75 cursor-not-allowed' : ''
-                                    }`}
-                                >
-                                    {applying ? 'Submitting Application...' : 'Submit Application'}
-                                </button>
+                                {renderActionButton()}
                             </div>
                         </div>
                     </div>

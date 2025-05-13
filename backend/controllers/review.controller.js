@@ -2,6 +2,7 @@ import Review from '../models/review.model.js';
 import Booking from '../models/booking.model.js';
 import User from '../models/user.model.js';
 import Payment from '../models/payment.model.js';
+import NotificationService from '../services/notification.service.js';
 
 // Create a new review
 export const createReview = async (req, res) => {
@@ -59,15 +60,40 @@ export const createReview = async (req, res) => {
 
         await review.save();
 
+        // Send notification to reviewee
+        await NotificationService.createNotification(
+            revieweeId,
+            'REVIEW',
+            'New Review Received',
+            `You received a ${rating}-star review for job "${booking.jobTitle}"`,
+            {
+                references: {
+                    reviewId: review._id,
+                    bookingId: booking._id,
+                    targetUserId: reviewerId
+                }
+            }
+        );
+
         // If customer submitted the review, set booking and payment status to 'completed'
         if (reviewType === 'customer_to_seeker') {
-            // Update booking status
-            booking.status = 'completed';
-            await booking.save();
-            // Update payment status
-            if (payment.status !== 'completed') {
-                payment.status = 'completed';
-                await payment.save();
+            try {
+                // Update booking status
+                await Booking.findByIdAndUpdate(bookingId, {
+                    status: 'completed',
+                    'payment.status': 'completed',
+                    'dates.completed': new Date()
+                });
+
+                // Update payment status if exists
+                if (payment) {
+                    payment.status = 'completed';
+                    payment.completedAt = new Date();
+                    await payment.save();
+                }
+            } catch (err) {
+                console.error('Error updating statuses:', err);
+                // Don't throw error here, still create the review
             }
         }
 
@@ -189,6 +215,38 @@ export const deleteUserReview = async (req, res) => {
         res.status(200).json({ message: "Review deleted successfully" });
     } catch (error) {
         console.error("Error deleting review:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Update a review
+export const updateReview = async (req, res) => {
+    try {
+        const reviewId = req.params.id;
+        const userId = req.user._id;
+        const { rating, comment } = req.body;
+
+        const review = await Review.findById(reviewId);
+        
+        if (!review) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        // Check if the user is the reviewer
+        if (review.reviewerId !== userId) {
+            return res.status(403).json({ 
+                message: "Not authorized to update this review" 
+            });
+        }
+
+        // Update the review
+        review.rating = rating;
+        review.comment = comment;
+        await review.save();
+
+        res.status(200).json(review);
+    } catch (error) {
+        console.error("Error updating review:", error);
         res.status(500).json({ message: error.message });
     }
 };

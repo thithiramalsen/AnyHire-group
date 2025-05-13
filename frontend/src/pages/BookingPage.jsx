@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star } from 'lucide-react'; // Replace HeroIcon import with Lucide
+import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star, MapPin, FileText, Calendar } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
 import PaymentConfirmation from './PaymentConfirmation';
 
@@ -314,7 +314,7 @@ const BookingPage = () => {
                             </span>
                         </div>
 
-                        {renderUserInfo()} {/* Add this line after the header */}
+                        {renderUserInfo()}
 
                         <div className="grid md:grid-cols-2 gap-6 mb-6">
                             <div>

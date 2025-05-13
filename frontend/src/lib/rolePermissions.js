@@ -16,14 +16,16 @@ export const rolePermissions = {
                     { id: "support", label: "Support", component: "SupportAnalytics" }
                 ]
             },
+            { id: "reports", label: "Reports", component: "ReportsTab" },
             { id: "job-approval", label: "Job Approval", component: "JobApprovalTab" },
             { id: "bookings", label: "Bookings", component: "BookingsManagement" },
             { id: "payments", label: "Payments", component: "PaymentsManagement" },
             { id: "reviews", label: "Reviews", component: "ReviewManagementTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
-            {id:"contact", label: "Contact", component: "ContactAdminTab"},
+            { id: "contact", label: "Contact", component: "ContactAdminTab" },
             { id: "user-management", label: "User Management", component: "UserManagementTab" },
-            { id: "categories", label: "Categories", component: "CategoriesTab" }
+            { id: "categories", label: "Categories", component: "CategoriesTab" },
+            { id: "gamification", label: "Gamification", component: "GamificationManagementTab" }
         ]
     },
     customer: {
@@ -32,9 +34,12 @@ export const rolePermissions = {
             { id: "notifications", label: "Notifications", component: "NotificationTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
             { id: "post-job", label: "Post Job", component: "JobPostingTab" },
+            { id: "payments", label: "Payments", component: "PaymentsTab" },
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
+            { id: "my-awards", label: "My Awards", component: "MyAwards" },
+            { id: "reports", label: "Reports", component: "ReportsTab" }
         ]
     },
     jobSeeker: {
@@ -44,9 +49,14 @@ export const rolePermissions = {
             { id: "worker-profile", label: "Worker Profile", component: "WorkerProfileTab" },
             { id: "jobs", label: "My Jobs", component: "JobsTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
+            { id: "post-job", label: "Post Job", component: "JobPostingTab" },
+            { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
+            { id: "payments", label: "Payments", component: "PaymentsTab" },
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
-            { id: "cart", label: "Cart", component: "CartTab" }
+            { id: "cart", label: "Cart", component: "CartTab" },
+            { id: "my-awards", label: "My Awards", component: "MyAwards" },
+            { id: "reports", label: "Reports", component: "ReportsTab" }
         ]
     }
 };

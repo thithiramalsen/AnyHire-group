@@ -10,6 +10,7 @@ import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import MyJobs from "./Components/MyJobs";
+import PaymentsTab from "./Components/PaymentsTab";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";
 import UsersAnalytics from "./Components/analytics/UsersAnalytics";
@@ -19,7 +20,8 @@ import PaymentsAnalytics from "./Components/analytics/PaymentsAnalytics";
 import RatingsAnalytics from "./Components/analytics/RatingsAnalytics";
 import SupportAnalytics from "./Components/analytics/SupportAnalytics";
 import UserProfileView from "./Components/UserProfileView";
-
+import GamificationManagementTab from "./Components/admin/GamificationManagementTab";
+import MyAwards from "./Components/MyAwards";
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
 import { useUserStore } from "./stores/useUserStore";
@@ -37,7 +39,7 @@ import TermsAndPolicies from "./pages/TermsAndPolicies";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
-  
+
 	useEffect(() => {
 		checkAuth();
 	}, [checkAuth]);
@@ -65,7 +67,7 @@ function App() {
 					<Route path='/signup' element={!user ? <SignUpPage /> : <Navigate to='/' />} />
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
-					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />	
+					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />
 
 					<Route
 						path="/secret-dashboard"
@@ -140,6 +142,29 @@ function App() {
 						}
 					/>
 
+					{/* Gamification Management Route */}
+					<Route
+						path="/gamification"
+						element={
+							user?.role === 'admin' ? (
+								<GamificationManagementTab />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+
+					<Route
+						path="/my-awards"
+						element={
+							user ? (
+								<MyAwards />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+
 					{/* Other Routes */}
 					<Route path="/apply/:jobId" element={<ApplyPage />} />
 					<Route path="/upgrade-account" element={<UpgradeAccount />} />
@@ -173,6 +198,16 @@ function App() {
 							)
 						}
 					/>
+					<Route
+						path="/my-payments"
+						element={
+							user ? (
+								<PaymentsTab />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
 					<Route path="/booking/:bookingId" element={<BookingPage />} />
 					<Route path="/bookings" element={<BookingPage />} />
 					<Route path="/chat/:bookingId" element={<ChatPage />} />
@@ -192,9 +227,6 @@ function App() {
 					<Route path="/about" element={<AboutUs />} />
 					<Route path="/terms-and-policies" element={<TermsAndPolicies />} />
 					<Route path="/user/:userId" element={<UserProfileView />} />
-
-
-
 				</Routes>
 			</div>
 			<Toaster />

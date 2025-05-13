@@ -58,6 +58,34 @@ class NotificationController {
             res.status(500).json({ message: 'Error getting unread count' });
         }
     }
+
+    static async createNotification(req, res) {
+        try {
+            const { userId, type, title, message, links } = req.body;
+            const notification = await NotificationService.createNotification(
+                userId,
+                type,
+                title,
+                message,
+                links
+            );
+            res.status(201).json(notification);
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            res.status(500).json({ message: 'Failed to create notification' });
+        }
+    }
+
+    static async clearAllNotifications(req, res) {
+        try {
+            const userId = req.user._id;
+            await NotificationService.clearAllNotifications(userId);
+            res.json({ message: 'All notifications cleared' });
+        } catch (error) {
+            console.error('Controller - clearAllNotifications error:', error);
+            res.status(500).json({ message: 'Error clearing notifications' });
+        }
+    }
 }
 
 export default NotificationController;

@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { updateJobStatus } from '../middleware/jobStatus.middleware.js';
+import NotificationService from '../services/notification.service.js';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -64,7 +65,7 @@ export const initializePayment = async (req, res) => {
             });
         }
 
-        // Create new payment record - the _id will be auto-incremented by the pre-save middleware
+        // Create new payment record
         const payment = new Payment({
             bookingId: Number(bookingId),
             amount: booking.payment.amount,
@@ -74,6 +75,20 @@ export const initializePayment = async (req, res) => {
         });
 
         await payment.save();
+
+        // Send notification to job seeker
+        await NotificationService.createNotification(
+            booking.seekerId,
+            'PAYMENT',
+            'Payment Initiated',
+            `Customer has initiated payment for "${booking.jobTitle}". Please confirm once received.`,
+            {
+                references: {
+                    bookingId: booking._id,
+                    targetUserId: booking.posterId
+                }
+            }
+        );
 
         res.status(201).json({
             success: true,
@@ -276,10 +291,38 @@ export const confirmPayment = async (req, res) => {
                 }
             );
 
+            // Send notification to customer for payment confirmation
+            await NotificationService.createNotification(
+                booking.posterId,
+                'PAYMENT',
+                'Payment Confirmed',
+                `Job seeker has confirmed receiving payment for "${booking.jobTitle}". Transaction completed.`,
+                {
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.seekerId
+                    }
+                }
+            );
+
             // Update job status after payment confirmation
             await updateJobStatus(booking.jobId);
         } else {
             payment.status = 'reported';
+            
+            // Send notification to customer for payment report
+            await NotificationService.createNotification(
+                booking.posterId,
+                'PAYMENT',
+                'Payment Reported',
+                `Job seeker has reported an issue with the payment for "${booking.jobTitle}". Reason: ${notes || 'No reason provided'}`,
+                {
+                    references: {
+                        bookingId: booking._id,
+                        targetUserId: booking.seekerId
+                    }
+                }
+            );
         }
 
         await payment.save();
@@ -559,6 +602,83 @@ export const completePayment = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to complete payment",
+            error: error.message
+        });
+    }
+};
+
+export const getUserPayments = async (req, res) => {
+    try {
+        const userId = Number(req.user._id);
+        const { type, range } = req.query;
+
+        console.log('Fetching payments for user:', userId); // Debug log
+
+        // Get bookings where user is either seeker or poster
+        const bookings = await Booking.find({
+            $or: [
+                { seekerId: userId },
+                { posterId: userId }
+            ]
+        });
+
+        const bookingIds = bookings.map(booking => Number(booking._id));
+        console.log('Associated booking IDs:', bookingIds); // Debug log
+
+        // Build query
+        let query = {
+            bookingId: { $in: bookingIds }
+        };
+
+        // Add date filter if specified
+        if (range === 'month') {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            query.createdAt = { $gte: startOfMonth };
+        } else if (range === 'year') {
+            const startOfYear = new Date();
+            startOfYear.setMonth(0, 1);
+            startOfYear.setHours(0, 0, 0, 0);
+            query.createdAt = { $gte: startOfYear };
+        }
+
+        console.log('Final query:', query); // Debug log
+
+        const payments = await Payment.find(query)
+            .populate({
+                path: 'bookingId',
+                populate: [
+                    { 
+                        path: 'seekerId',
+                        model: 'User',
+                        select: 'name email'
+                    },
+                    { 
+                        path: 'posterId',
+                        model: 'User',
+                        select: 'name email'
+                    },
+                    {
+                        path: 'jobId',
+                        model: 'Job',
+                        select: 'title'
+                    }
+                ]
+            })
+            .sort({ createdAt: -1 });
+
+        console.log('Found payments:', payments.length); // Debug log
+
+        res.json({
+            success: true,
+            payments
+        });
+    } catch (error) {
+        console.error('Error fetching user payments:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch payments",
             error: error.message
         });
     }

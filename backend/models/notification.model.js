@@ -1,37 +1,28 @@
-import { Schema, model } from 'mongoose';
+import mongoose from "mongoose";
 import Counter from './counter.model.js';
 
-const notificationSchema = new Schema({
-    _id: { 
-        type: Number // Keep this consistent with other models
-    },
-    userId: {
-        type: Number, // Changed from ObjectId to Number
-        ref: 'User',
-        required: true
-    },
+const notificationSchema = new mongoose.Schema({
+    _id: { type: Number },
+    userId: { type: Number, ref: 'User', required: true },
     type: {
         type: String,
         required: true,
-        enum: ['WELCOME', 'BOOKING', 'PAYMENT', 'REVIEW', 'SYSTEM', 'ROLE_UPGRADE',
-            'JOB_POSTED', 'JOB_APPROVED', 'JOB_DECLINED'
+        enum: ['BOOKING', 'JOB_APPLICATION', 'REVIEW', 'PAYMENT', 'TICKET', 'JOB_POSTED', 'JOB_APPROVED', 'JOB_DECLINED', 'WELCOME',
+            'CHAT', 'New Message', 'CONTACT'
         ]
     },
-    title: {
-        type: String,
-        required: true
-    },
-    message: {
-        type: String,
-        required: true
-    },
-    isRead: {
-        type: Boolean,
-        default: false
-    },
-    link: {
-        type: String,
-        default: null
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    isRead: { type: Boolean, default: false },
+    link: { type: String }, // Keep for backward compatibility
+    links: { type: Object }, // Keep for backward compatibility
+    references: {
+        bookingId: { type: Number, ref: 'Booking' },
+        jobId: { type: Number, ref: 'Job' },
+        reviewId: { type: Number, ref: 'Review' },
+        ticketId: { type: Number, ref: 'Ticket' },
+        targetUserId: { type: Number, ref: 'User' },
+        paymentId: { type: Number, ref: 'Payment' }
     }
 }, {
     timestamps: true
@@ -54,4 +45,4 @@ notificationSchema.pre('save', async function(next) {
     next();
 });
 
-export default model('Notification', notificationSchema);
+export default mongoose.model('Notification', notificationSchema);

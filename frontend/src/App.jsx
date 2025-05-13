@@ -10,6 +10,7 @@ import SignUpJobSeekerPage from "./pages/SignUpJobSeekerPage";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import MyJobs from "./Components/MyJobs";
+import PaymentsTab from "./Components/PaymentsTab";
 import UpgradeAccount from "./pages/UpgradeAccount";
 import Cart from "../../backend/models/cart.model";
 import UsersAnalytics from "./Components/analytics/UsersAnalytics";
@@ -38,7 +39,7 @@ import TermsAndPolicies from "./pages/TermsAndPolicies";
 
 function App() {
 	const { user, checkAuth, checkingAuth } = useUserStore();
-  
+
 	useEffect(() => {
 		checkAuth();
 	}, [checkAuth]);
@@ -66,7 +67,7 @@ function App() {
 					<Route path='/signup' element={!user ? <SignUpPage /> : <Navigate to='/' />} />
 					<Route path='/signupchoice' element={!user ? <SignUpChoicePage /> : <Navigate to='/' />} />
 					<Route path='/signup-jobseeker' element={!user ? <SignUpJobSeekerPage /> : <Navigate to='/' />} />
-					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />	
+					<Route path='/login' element={!user ? <LoginPage /> : <Navigate to='/' />} />
 
 					<Route
 						path="/secret-dashboard"
@@ -192,6 +193,16 @@ function App() {
 						element={
 							user ? (
 								<PaymentConfirmation />
+							) : (
+								<Navigate to="/login" replace />
+							)
+						}
+					/>
+					<Route
+						path="/my-payments"
+						element={
+							user ? (
+								<PaymentsTab />
 							) : (
 								<Navigate to="/login" replace />
 							)

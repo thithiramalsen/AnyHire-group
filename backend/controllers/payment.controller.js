@@ -606,3 +606,80 @@ export const completePayment = async (req, res) => {
         });
     }
 };
+
+export const getUserPayments = async (req, res) => {
+    try {
+        const userId = Number(req.user._id);
+        const { type, range } = req.query;
+
+        console.log('Fetching payments for user:', userId); // Debug log
+
+        // Get bookings where user is either seeker or poster
+        const bookings = await Booking.find({
+            $or: [
+                { seekerId: userId },
+                { posterId: userId }
+            ]
+        });
+
+        const bookingIds = bookings.map(booking => Number(booking._id));
+        console.log('Associated booking IDs:', bookingIds); // Debug log
+
+        // Build query
+        let query = {
+            bookingId: { $in: bookingIds }
+        };
+
+        // Add date filter if specified
+        if (range === 'month') {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            query.createdAt = { $gte: startOfMonth };
+        } else if (range === 'year') {
+            const startOfYear = new Date();
+            startOfYear.setMonth(0, 1);
+            startOfYear.setHours(0, 0, 0, 0);
+            query.createdAt = { $gte: startOfYear };
+        }
+
+        console.log('Final query:', query); // Debug log
+
+        const payments = await Payment.find(query)
+            .populate({
+                path: 'bookingId',
+                populate: [
+                    { 
+                        path: 'seekerId',
+                        model: 'User',
+                        select: 'name email'
+                    },
+                    { 
+                        path: 'posterId',
+                        model: 'User',
+                        select: 'name email'
+                    },
+                    {
+                        path: 'jobId',
+                        model: 'Job',
+                        select: 'title'
+                    }
+                ]
+            })
+            .sort({ createdAt: -1 });
+
+        console.log('Found payments:', payments.length); // Debug log
+
+        res.json({
+            success: true,
+            payments
+        });
+    } catch (error) {
+        console.error('Error fetching user payments:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch payments",
+            error: error.message
+        });
+    }
+};

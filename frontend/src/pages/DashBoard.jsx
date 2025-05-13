@@ -22,6 +22,7 @@ import CartTab from "../Components/CartTab";
 import BookingsManagement from "../Components/admin/BookingsManagement";
 import PaymentsManagement from "../Components/admin/PaymentsManagement";
 import ReviewManagementTab from "../Components/admin/ReviewManagementTab";
+import PaymentsTab from "../Components/PaymentsTab";
 import ReviewsTab from "../Components/ReviewsTab";
 import NotificationTab from "../Components/NotificationTab";
 import GamificationManagementTab from "../Components/admin/GamificationManagementTab";
@@ -48,6 +49,7 @@ const componentMap = {
     BookingsManagement,
     PaymentsManagement,
     ReviewManagementTab,
+    PaymentsTab,
     ReviewsTab,
     NotificationTab,
     GamificationManagementTab,

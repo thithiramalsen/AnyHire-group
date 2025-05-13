@@ -10,7 +10,8 @@ import {
     getTopSeekerOfMonth,
     getTopSeekerOfDay,
     calculateTopSeekerOfMonth,
-    calculateTopSeekerOfDay
+    calculateTopSeekerOfDay,
+    getUserAwards,
 } from '../controllers/awards.controller.js';
 import { protectRoute, adminRoute } from '../middleware/auth.middleware.js'; 
 
@@ -32,5 +33,6 @@ router.get('/customer-of-day/:year/:month/:day', getCustomerOfDay);
 router.get('/seeker-of-month/:year/:month', getTopSeekerOfMonth);
 router.get('/seeker-of-day/:year/:month/:day', getTopSeekerOfDay);
 router.post('/validate-discount', protectRoute, validateDiscountCode);
+router.get('/user/:userId', getUserAwards);
 
 export default router; 

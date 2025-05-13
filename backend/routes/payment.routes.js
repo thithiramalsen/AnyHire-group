@@ -12,6 +12,8 @@ import {
     updatePaymentStatus,
     completePayment,
     getUserPayments,
+    calculateDiscountedAmount, 
+    retryPayment
 } from '../controllers/payment.controller.js';
 import { protectRoute, adminRoute } from '../middleware/auth.middleware.js';
 
@@ -49,5 +51,10 @@ router.get('/:paymentId/proof', protectRoute, getPaymentProof);
 
 // get all payments for a user
 router.get('/user', protectRoute, getUserPayments);
+
+router.post('/calculate-discount', protectRoute, calculateDiscountedAmount);
+
+// Add this with your other routes
+router.post('/:paymentId/retry', protectRoute, retryPayment);
 
 export default router;

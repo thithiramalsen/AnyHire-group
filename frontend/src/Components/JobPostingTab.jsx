@@ -76,8 +76,9 @@ const JobPostingTab = () => {
       case 'deadline':
         if (value) {
           const selectedDate = new Date(value);
+          selectedDate.setHours(0, 0, 0, 0); // Set selected date to midnight
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0); // Set today to midnight
           if (selectedDate < today) {
             error = 'Deadline must be today or a future date';
           }

@@ -1,4 +1,5 @@
 import CustomerRewardsService from '../services/customerRewards.service.js';
+import Award from '../models/award.model.js';
 
 export const calculateCustomerOfMonth = async (req, res) => {
     try {
@@ -282,3 +283,43 @@ export const getTopSeekerOfDay = async (req, res) => {
         });
     }
 }; 
+
+
+export const getUserAwards = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Add logging to debug
+        console.log('Fetching awards for userId:', userId);
+        
+        // Ensure userId is a number
+        const numericUserId = Number(userId);
+        if (isNaN(numericUserId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID format'
+            });
+        }
+
+        const awards = await Award.find({ userId: numericUserId })
+            .sort({ issuedAt: -1 })
+            .select('-__v') // Exclude version key
+            .lean(); // Convert to plain JavaScript objects
+
+        // Add logging to debug
+        console.log('Found awards:', awards);
+
+        return res.status(200).json({
+            success: true,
+            data: awards || [] // Ensure we always return an array
+        });
+
+    } catch (error) {
+        console.error('Error in getUserAwards:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user awards',
+            error: error.message
+        });
+    }
+};

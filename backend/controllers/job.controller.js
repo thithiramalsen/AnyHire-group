@@ -69,8 +69,14 @@ export const addJob = async (req, res) => {
 
     // Validate deadline
     const deadlineDate = new Date(deadline);
-    if (isNaN(deadlineDate.getTime()) || deadlineDate < new Date()) {
-      return res.status(400).json({ message: "Deadline must be a valid future date." });
+    const today = new Date();
+
+    // Set both dates to start of day for comparison
+    deadlineDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (isNaN(deadlineDate.getTime()) || deadlineDate < today) {
+      return res.status(400).json({ message: "Deadline must be today or a future date." });
     }
 
 

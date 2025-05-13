@@ -3,18 +3,68 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Trash2, PenSquare, Upload, FileText, CheckCircle, Star } from 'lucide-react';
+import { Trash2, PenSquare, Upload, FileText, CheckCircle, Star, RefreshCw } from 'lucide-react';
 
 const PaymentPage = () => {
     const { bookingId } = useParams();
     const [payment, setPayment] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ paymentType: '', paymentMethod: '' });
+
+    const [form, setForm] = useState({
+        paymentType: '',
+        paymentMethod: '',
+        discountCode: '' // Add this
+    });
+
+    const [discountInfo, setDiscountInfo] = useState(null);
+    const [originalAmount, setOriginalAmount] = useState(null);
+
+    const [paymentDetails, setPaymentDetails] = useState({
+        originalAmount: null,
+        currentAmount: null,
+        discountApplied: null
+    });
+
+    const validateDiscountCode = async () => {
+        try {
+            const discountRes = await axios.post('/payment/calculate-discount', {
+                bookingId,
+                discountCode: form.discountCode
+            });
+            
+            if (discountRes.data.success) {
+                const { originalAmount, discountedAmount, discountValue } = discountRes.data.data;
+                
+                setPaymentDetails({
+                    originalAmount,
+                    currentAmount: discountedAmount,
+                    discountApplied: discountValue
+                });
+
+                setDiscountInfo({
+                    ...discountRes.data.data,
+                    isApplied: true
+                });
+                
+                toast.success('Discount code applied successfully!');
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Invalid discount code');
+            setDiscountInfo(null);
+            setPaymentDetails({
+                originalAmount: null,
+                currentAmount: null,
+                discountApplied: null
+            });
+        }
+    };
+
     const [submitting, setSubmitting] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
     const { user } = useUserStore();
+    
 
     useEffect(() => {
         const fetchPayment = async () => {
@@ -64,19 +114,26 @@ const PaymentPage = () => {
                 return;
             }
 
-            // First create the payment
+            // First create the payment with discount info
             const paymentRes = await axios.post('/payment/initialize', {
                 ...form,
-                bookingId
+                bookingId,
+                amount: discountInfo?.discountedAmount || payment?.amount,
+                discountInfo: discountInfo ? {
+                    originalAmount,
+                    discountValue: discountInfo.value,
+                    discountCode: discountInfo.code,
+                    awardId: discountInfo.awardId
+                } : null
             });
-            
+
             if (!paymentRes.data.success || !paymentRes.data.payment?._id) {
                 throw new Error('Failed to create payment');
             }
 
             const paymentId = paymentRes.data.payment._id;
 
-            // If payment type is payment_proof, handle file upload
+            // Handle file upload if payment type is payment_proof
             if (form.paymentType === 'payment_proof') {
                 if (!selectedFile) {
                     toast.error('Please select a proof file');
@@ -94,8 +151,8 @@ const PaymentPage = () => {
                 });
             }
 
-            toast.success('Payment initiated!');
-            // Refetch payment info
+            toast.success('Payment initiated successfully!');
+            // Refetch payment info to update the UI
             const res = await axios.get(`/payment/booking/${bookingId}`);
             setPayment(res.data.payment);
         } catch (err) {
@@ -187,6 +244,19 @@ const PaymentPage = () => {
         }
     };
 
+    const handleRetryPayment = async () => {
+        try {
+            await axios.post(`/payment/${payment._id}/retry`);
+            toast.success('Payment reset successfully');
+            // Refetch payment to update the UI
+            const res = await axios.get(`/payment/booking/${bookingId}`);
+            setPayment(res.data.payment);
+        } catch (error) {
+            console.error('Error retrying payment:', error);
+            toast.error(error.response?.data?.message || 'Failed to retry payment');
+        }
+    };
+
     if (loading) return <div className="text-center py-10">Loading...</div>;
 
     if (!payment) {
@@ -195,6 +265,31 @@ const PaymentPage = () => {
             <div className="max-w-lg mx-auto bg-gray-800 rounded-lg p-8 mt-10">
                 <button onClick={() => navigate(-1)} className="mb-4 text-emerald-400">&larr; Back to Booking</button>
                 <h2 className="text-2xl font-bold mb-6">Make a Payment</h2>
+
+                {paymentDetails.currentAmount && (
+                    <div className="mb-6 p-4 bg-gray-700 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-300">Amount:</span>
+                            <div className="text-right">
+                                <span className="text-gray-400 line-through mr-2">
+                                    Rs. {paymentDetails.originalAmount}
+                                </span>
+                                <span className="text-emerald-400 font-medium">
+                                    Rs. {paymentDetails.currentAmount}
+                                </span>
+                            </div>
+                        </div>
+                        {paymentDetails.discountApplied && (
+                            <div className="flex justify-between text-sm mt-2">
+                                <span className="text-gray-400">Discount Applied:</span>
+                                <span className="text-emerald-400">
+                                    -{paymentDetails.discountApplied}%
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                         <label className="block mb-2">Payment Type</label>
@@ -240,6 +335,32 @@ const PaymentPage = () => {
                         </div>
                     )}
 
+                    <div className="space-y-2">
+                        <label className="block mb-2">Discount Code (Optional)</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                name="discountCode"
+                                value={form.discountCode}
+                                onChange={handleChange}
+                                placeholder="Enter discount code"
+                                className="flex-1 p-2 rounded bg-gray-700 text-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={validateDiscountCode}
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                        {discountInfo && (
+                            <div className="text-sm text-emerald-400">
+                                Discount applied: {discountInfo.value}% off
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         type="submit"
                         className="w-full bg-emerald-500 text-white py-2 px-6 rounded-lg hover:bg-emerald-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
@@ -265,8 +386,25 @@ const PaymentPage = () => {
                     </div>
                     <div className="flex justify-between mb-2">
                         <span className="font-semibold">Amount:</span>
-                        <span className="text-emerald-400">Rs. {payment.amount}</span>
+                        <div className="text-right">
+                            {payment.discountApplied && (
+                                <span className="text-sm text-gray-400 line-through mr-2">
+                                    Rs. {payment.originalAmount}
+                                </span>
+                            )}
+                            <span className="text-emerald-400 font-medium">
+                                Rs. {payment.amount}
+                            </span>
+                        </div>
                     </div>
+                    {payment.discountApplied && (
+                        <div className="flex justify-between mb-2 text-sm">
+                            <span className="text-gray-400">Discount Applied:</span>
+                            <span className="text-emerald-400">
+                                -{payment.discountValue}%
+                            </span>
+                        </div>
+                    )}
                     <div className="flex justify-between mb-2">
                         <span className="font-semibold">Type:</span>
                         <span>{payment.paymentType}</span>
@@ -286,6 +424,24 @@ const PaymentPage = () => {
                             >
                                 <CheckCircle size={20} />
                                 Complete Booking
+                            </button>
+                        )}
+                        {payment.status === 'reported' && (
+                            <button
+                                onClick={handleRetryPayment}
+                                className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <RefreshCw size={20} />
+                                Try Payment Again
+                            </button>
+                        )}
+                        {payment.paymentType === 'manual' && payment.status !== 'confirmed' && (
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 bg-red-500 text-white py-3 px-6 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Trash2 size={20} />
+                                Cancel Payment
                             </button>
                         )}
                         <button

@@ -48,6 +48,8 @@ export const rolePermissions = {
             { id: "worker-profile", label: "Worker Profile", component: "WorkerProfileTab" },
             { id: "jobs", label: "My Jobs", component: "JobsTab" },
             { id: "bookings", label: "Bookings", component: "BookingsTab" },
+            { id: "post-job", label: "Post Job", component: "JobPostingTab" },
+            { id: "pending-jobs", label: "Pending Jobs", component: "PendingJobsTab" },
             { id: "reviews", label: "Reviews", component: "ReviewsTab" },
             { id: "support", label: "Support", component: "SupportUserTab" },
             { id: "cart", label: "Cart", component: "CartTab" },

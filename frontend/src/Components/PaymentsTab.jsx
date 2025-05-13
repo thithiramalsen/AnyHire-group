@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import axios from "../lib/axios";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
+import { Link } from 'react-router-dom';
 import { 
     DollarSign, 
     Filter, 
     Calendar, 
     ArrowUpRight, 
     ArrowDownRight,
-    Download,
     FileText,
-    Clock
+    Clock,
+    ExternalLink
 } from "lucide-react";
 
 const PaymentsTab = () => {
@@ -81,24 +82,6 @@ const PaymentsTab = () => {
             sentCount: 0,
             receivedCount: 0
         });
-    };
-
-    const downloadPaymentProof = async (paymentId, filename) => {
-        try {
-            const response = await axios.get(`/payment/${paymentId}/proof`, {
-                responseType: 'blob'
-            });
-            
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch (error) {
-            toast.error("Failed to download payment proof");
-        }
     };
 
     const renderSummaryView = () => {
@@ -196,15 +179,15 @@ const PaymentsTab = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {payment.proofPath && (
-                                    <button
-                                        onClick={() => downloadPaymentProof(payment._id, payment.proofFilename)}
-                                        className="text-emerald-400 hover:text-emerald-300"
-                                        title="Download Payment Proof"
-                                    >
-                                        <Download className="w-5 h-5" />
-                                    </button>
-                                )}
+                                <Link
+                                    to={`/booking/${payment.bookingId._id}`}
+                                    state={{ paymentId: payment._id }}
+                                    className="inline-flex items-center gap-1 text-sm bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors"
+                                    title="View Payment Details"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    View Payment
+                                </Link>
                             </div>
                             
                             <div className="mt-4 pt-4 border-t border-gray-700">

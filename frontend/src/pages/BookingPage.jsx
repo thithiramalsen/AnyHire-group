@@ -6,6 +6,8 @@ import { useUserStore } from '../stores/useUserStore';
 import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star, MapPin, FileText, Calendar } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
 import PaymentConfirmation from './PaymentConfirmation';
+import { Link } from 'react-router-dom';
+import { User } from 'lucide-react';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
@@ -183,7 +185,8 @@ const BookingPage = () => {
 
         const isCustomer = user.role === 'customer';
         const relevantUser = isCustomer ? booking.seekerDetails : booking.posterDetails;
-
+        const userId = isCustomer ? booking.seekerId : booking.posterId;
+        
         return (
             <div className="flex items-center gap-4 mb-6">
                 <div>
@@ -191,6 +194,15 @@ const BookingPage = () => {
                         {isCustomer ? 'Job Seeker' : 'Customer'}
                     </h3>
                     <p className="text-gray-400">{relevantUser?.name}</p>
+                    <p className="text-gray-400 text-sm mb-3">{relevantUser?.email}</p>
+                    <Link
+                        to={`/user/${userId}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                        title="View Profile"
+                    >
+                        <User className="w-4 h-4" />
+                        View Profile
+                    </Link>
                 </div>
                 <button
                     onClick={() => navigate(`/chat/${booking._id}`)}

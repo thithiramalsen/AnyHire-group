@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from '../lib/axios';
 import toast from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
+import { User } from 'lucide-react';
 
 const ApplyPage = () => {
     const { jobId } = useParams();
@@ -168,9 +169,17 @@ const ApplyPage = () => {
                                         <p className="text-gray-300 font-medium">
                                             Posted by: {job.createdBy?.name}
                                         </p>
-                                        <p className="text-gray-400 text-sm">
+                                        <p className="text-gray-400 text-sm mb-3">
                                             {job.createdBy?.email}
                                         </p>
+                                             <Link
+                                                to={`/user/${job.createdBy?._id}`}
+                                                className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                                                title="View Profile"
+                                            >
+                                                <User className="w-4 h-4" />
+                                                View Profile
+                                            </Link>
                                     </div>
                                 </div>
                             </div>

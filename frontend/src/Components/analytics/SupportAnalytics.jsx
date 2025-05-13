@@ -15,22 +15,13 @@ import { toast } from "react-hot-toast";
 
 const SupportAnalytics = () => {
     const [analyticsData, setAnalyticsData] = useState({
-        tickets: {
-            total: 0,
-            open: 0,
-            resolved: 0,
-            averageResponseTime: 0,
-            byStatus: [],
-            byCategory: [],
-            growth: []
-        },
-        contacts: {
-            total: 0,
-            new: 0,
-            resolved: 0,
-            byStatus: [],
-            growth: []
-        }
+        totalTickets: 0,
+        openTickets: 0,
+        resolvedTickets: 0,
+        averageResponseTime: 0,
+        ticketsByStatus: [],
+        ticketsByCategory: [],
+        ticketsGrowth: []
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -60,6 +51,8 @@ const SupportAnalytics = () => {
         try {
             setIsLoading(true);
             setError(null);
+            
+            // Use analytics endpoint instead of direct ticket fetch
             const response = await axios.get(`/analytics/support?timeRange=${timeRange}`);
             
             if (response.data) {
@@ -68,9 +61,8 @@ const SupportAnalytics = () => {
             }
         } catch (error) {
             console.error("Error fetching support analytics data:", error);
-            const errorMessage = error.response?.data?.message || 'Failed to fetch analytics data';
-            setError(errorMessage);
-            toast.error(errorMessage);
+            setError(error.response?.data?.message || 'Failed to fetch analytics data');
+            toast.error(error.response?.data?.message || 'Failed to fetch analytics data');
         } finally {
             setIsLoading(false);
         }
@@ -228,30 +220,29 @@ const SupportAnalytics = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <AnalyticsCard
                             title="Total Tickets"
-                            value={analyticsData.tickets.total}  // Remove toLocaleString() if causing issues
-                            subValue={`Last ${timeRange === '7d' ? '7' : timeRange === '30d' ? '30' : '90'} days`}
+                            value={analyticsData.totalTickets}
                             icon={MessageSquare}
                             color="from-blue-500 to-blue-700"
                         />
                         <AnalyticsCard
                             title="Open Tickets"
-                            value={analyticsData.tickets.open}  // Remove hardcoded formatting
-                            subValue={analyticsData.tickets.total > 0 ? 
-                                `${((analyticsData.tickets.open / analyticsData.tickets.total) * 100).toFixed(1)}%` : '0%'}
+                            value={analyticsData.openTickets}
+                            subValue={analyticsData.totalTickets > 0 ? 
+                                `${((analyticsData.openTickets / analyticsData.totalTickets) * 100).toFixed(1)}%` : '0%'}
                             icon={Clock}
                             color="from-yellow-500 to-yellow-700"
                         />
                         <AnalyticsCard
                             title="Resolved Tickets"
-                            value={analyticsData.tickets.resolved}  // Remove hardcoded formatting
-                            subValue={analyticsData.tickets.total > 0 ? 
-                                `${((analyticsData.tickets.resolved / analyticsData.tickets.total) * 100).toFixed(1)}%` : '0%'}
+                            value={analyticsData.resolvedTickets}
+                            subValue={analyticsData.totalTickets > 0 ? 
+                                `${((analyticsData.resolvedTickets / analyticsData.totalTickets) * 100).toFixed(1)}%` : '0%'}
                             icon={CheckCircle}
                             color="from-green-500 to-green-700"
                         />
                         <AnalyticsCard
                             title="Avg Response Time"
-                            value={`${analyticsData.tickets.averageResponseTime?.toFixed(1) || 0}h`}
+                            value={`${analyticsData.averageResponseTime?.toFixed(1) || 0}h`}
                             subValue="Response time"
                             icon={TrendingUp}
                             color="from-purple-500 to-purple-700"
@@ -262,7 +253,7 @@ const SupportAnalytics = () => {
                     <ResponseTimeDistributionChart />
 
                     {/* Tickets Growth Chart */}
-                    {analyticsData.tickets.growth.length > 0 && (
+                    {analyticsData.ticketsGrowth.length > 0 && (
                         <motion.div
                             className="bg-gray-800/60 rounded-lg p-6 shadow-lg mb-8"
                             initial={{ opacity: 0, y: 20 }}
@@ -271,7 +262,7 @@ const SupportAnalytics = () => {
                         >
                             <h2 className="text-xl font-semibold text-white mb-4">Tickets Growth Trend</h2>
                             <ResponsiveContainer width="100%" height={400}>
-                                <LineChart data={analyticsData.tickets.growth}>
+                                <LineChart data={analyticsData.ticketsGrowth}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                     <XAxis dataKey="date" stroke="#D1D5DB" />
                                     <YAxis stroke="#D1D5DB" />
@@ -304,7 +295,7 @@ const SupportAnalytics = () => {
                     {/* Tickets by Status and Category */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                         {/* Tickets by Status */}
-                        {analyticsData.tickets.byStatus.length > 0 && (
+                        {analyticsData.ticketsByStatus.length > 0 && (
                             <motion.div
                                 className="bg-gray-800/60 rounded-lg p-6 shadow-lg"
                                 initial={{ opacity: 0, y: 20 }}
@@ -315,7 +306,7 @@ const SupportAnalytics = () => {
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
                                         <Pie
-                                            data={analyticsData.tickets.byStatus}
+                                            data={analyticsData.ticketsByStatus}
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
@@ -324,7 +315,7 @@ const SupportAnalytics = () => {
                                             fill="#8884d8"
                                             dataKey="count"
                                         >
-                                            {analyticsData.tickets.byStatus.map((entry, index) => (
+                                            {analyticsData.ticketsByStatus.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -342,7 +333,7 @@ const SupportAnalytics = () => {
                         )}
 
                         {/* Tickets by Category */}
-                        {analyticsData.tickets.byCategory.length > 0 && (
+                        {analyticsData.ticketsByCategory.length > 0 && (
                             <motion.div
                                 className="bg-gray-800/60 rounded-lg p-6 shadow-lg"
                                 initial={{ opacity: 0, y: 20 }}
@@ -351,7 +342,7 @@ const SupportAnalytics = () => {
                             >
                                 <h2 className="text-xl font-semibold text-white mb-4">Tickets by Category</h2>
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={analyticsData.tickets.byCategory}>
+                                    <BarChart data={analyticsData.ticketsByCategory}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                         <XAxis dataKey="category" stroke="#D1D5DB" />
                                         <YAxis stroke="#D1D5DB" />

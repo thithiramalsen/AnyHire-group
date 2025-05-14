@@ -23,7 +23,7 @@ export const rolePermissions = {
             { id: "reviews", label: "Reviews", component: "ReviewManagementTab" },
             { id: "support", label: "Support", component: "SupportAdminTab" },
             { id: "contact", label: "Contact", component: "ContactAdminTab" },
-            { id: "user-management", label: "User Management", component: "UserManagementTab" },
+            { id: "user-management", label: "Users", component: "UserManagementTab" },
             { id: "categories", label: "Categories", component: "CategoriesTab" },
             { id: "gamification", label: "Gamification", component: "GamificationManagementTab" }
         ]

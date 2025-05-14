@@ -4,6 +4,7 @@ import axios from '../lib/axios';
 import toast from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
 import { User } from 'lucide-react';
+import LocationDisplay from '../Components/Map/LocationDisplay';
 
 const ApplyPage = () => {
     const { jobId } = useParams();
@@ -19,13 +20,13 @@ const ApplyPage = () => {
             try {
                 const [jobResponse, categoriesResponse] = await Promise.all([
                     axios.get(`/job/${jobId}`),
-                    axios.get("/category")
+                    axios.get("/category/public")  // Changed from /category to /category/public
                 ]);
                 
                 console.log('Job Data:', jobResponse.data);
-                console.log('Current User:', user);
+                console.log('Categories Data:', categoriesResponse.data);
                 setJob(jobResponse.data);
-                setCategories(categoriesResponse.data.categories || []);
+                setCategories(categoriesResponse.data.categories || []); // Make sure to access .categories
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -205,6 +206,11 @@ const ApplyPage = () => {
                                 <h3 className="text-lg font-semibold mb-2">Deadline</h3>
                                 <p className="text-gray-400">{new Date(job.deadline).toLocaleDateString()}</p>
                             </div>
+                        </div>
+
+                        <div className="mb-8">
+                            <h3 className="text-lg font-semibold mb-2">Location</h3>
+                            <LocationDisplay location={job.location} />
                         </div>
 
                         <div className="mb-8">

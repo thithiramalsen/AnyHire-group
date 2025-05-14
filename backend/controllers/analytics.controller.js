@@ -117,26 +117,12 @@ export const getUsersAnalytics = async (req, res) => {
 // Get jobs analytics
 export const getJobsAnalytics = async (req, res) => {
     try {
-        // Get total jobs count
+        // Get basic stats
         const totalJobs = await Job.countDocuments();
-        
-        // Get active jobs
         const activeJobs = await Job.countDocuments({ status: 'active' });
-        
-        // Get completed jobs
         const completedJobs = await Job.countDocuments({ status: 'completed' });
-        
-        // Get jobs by category
-        const jobsByCategory = await Job.aggregate([
-            {
-                $group: {
-                    _id: "$category",
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
 
-        // Get jobs growth over time
+        // Get jobs growth data for the last 6 months
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         
@@ -156,16 +142,59 @@ export const getJobsAnalytics = async (req, res) => {
                 }
             },
             {
-                $sort: { "_id.year": 1, "_id.month": 1 }
+                $project: {
+                    _id: {
+                        $concat: [
+                            { $toString: "$_id.year" },
+                            "-",
+                            {
+                                $cond: {
+                                    if: { $lt: ["$_id.month", 10] },
+                                    then: { $concat: ["0", { $toString: "$_id.month" }] },
+                                    else: { $toString: "$_id.month" }
+                                }
+                            }
+                        ]
+                    },
+                    count: 1
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Get jobs by category
+        const jobsByCategory = await Job.aggregate([
+            {
+                $group: {
+                    _id: "$category",
+                    count: { $sum: 1 }
+                }
             }
         ]);
+
+        // Fill in missing months with zero counts
+        const months = [];
+        for (let i = 0; i < 6; i++) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            months.unshift(`${year}-${month}`);
+        }
+
+        const filledGrowthData = months.map(month => ({
+            _id: month,
+            count: jobsGrowth.find(item => item._id === month)?.count || 0
+        }));
+
+        console.log('Processed jobs growth data:', filledGrowthData);
 
         res.json({
             totalJobs,
             activeJobs,
             completedJobs,
             jobsByCategory,
-            jobsGrowth
+            jobsGrowth: filledGrowthData
         });
     } catch (error) {
         console.error('Error in getJobsAnalytics:', error);

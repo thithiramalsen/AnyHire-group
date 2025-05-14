@@ -68,36 +68,10 @@ const NotificationTab = () => {
     };
 
     const getNotificationContent = (notification) => {
-        const { type, references, message } = notification;
-        
-        let content = {
-            message,
-            link: '#',
-            icon: <Bell className="w-5 h-5" />
+        return {
+            message: notification.message,
+            icon: <Bell className="w-5 h-5 text-emerald-400" />
         };
-
-        switch (type) {
-            case 'BOOKING':
-                content.link = references?.bookingId ? 
-                    `/booking/${references.bookingId}` : notification.links?.booking;
-                break;
-            case 'JOB_APPLICATION':
-                content.link = references?.jobId ? 
-                    `/jobs/${references.jobId}` : notification.links?.job;
-                break;
-            case 'REVIEW':
-                content.link = references?.reviewId ? 
-                    `/reviews/${references.reviewId}` : notification.links?.review;
-                break;
-            case 'TICKET':
-                content.link = references?.ticketId ? 
-                    `/tickets/${references.ticketId}` : notification.links?.ticket;
-                break;
-            default:
-                content.link = notification.links?.profile || '#';
-        }
-
-        return content;
     };
 
     return (
@@ -139,7 +113,7 @@ const NotificationTab = () => {
                             <div
                                 key={notification._id}
                                 className={`p-4 rounded-lg transition-colors ${
-                                    notification.isRead ? 'bg-gray-800' : 'bg-gray-700'
+                                    notification.isRead ? 'bg-gray-800' : 'bg-gray-700/80 border border-emerald-500/20'
                                 }`}
                             >
                                 <div className="flex items-start gap-4">
@@ -153,29 +127,19 @@ const NotificationTab = () => {
                                         <p className="text-gray-400 text-sm mt-1">
                                             {content.message}
                                         </p>
-                                        {notification.references?.targetUserId && (
-                                            <div className="flex items-center mt-2">
-                                                <img 
-                                                    src={notification.references.targetUserId.image} 
-                                                    alt={notification.references.targetUserId.name}
-                                                    className="w-6 h-6 rounded-full mr-2"
-                                                />
-                                                <span className="text-sm text-gray-400">
-                                                    {notification.references.targetUserId.name}
-                                                </span>
-                                            </div>
-                                        )}
                                         <div className="flex items-center justify-between mt-3">
-                                            <button
-                                                onClick={() => navigate(content.link)}
-                                                className="text-emerald-500 hover:text-emerald-400 text-sm"
-                                            >
-                                                View details →
-                                            </button>
+                                            <span className="text-xs text-gray-500">
+                                                {new Date(notification.createdAt).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </span>
                                             {!notification.isRead && (
                                                 <button
                                                     onClick={() => markAsRead(notification._id)}
-                                                    className="text-gray-400 hover:text-white"
+                                                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
                                                     title="Mark as read"
                                                 >
                                                     <Check className="w-4 h-4" />

@@ -8,6 +8,7 @@ import Chat from '../Components/Chat';
 import PaymentConfirmation from './PaymentConfirmation';
 import { Link } from 'react-router-dom';
 import { User } from 'lucide-react';
+import LocationDisplay from '../Components/Map/LocationDisplay';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
@@ -30,18 +31,20 @@ const BookingPage = () => {
                     return;
                 }
 
-                const [bookingRes, paymentRes] = await Promise.all([
+                const [bookingRes, paymentRes, categoriesRes] = await Promise.all([
                     axios.get(`/booking/${bookingId}`),
                     axios.get(`/payment/booking/${bookingId}`).catch(err => {
                         if (err.response?.status === 404) {
                             return { data: { success: false, payment: null } };
                         }
                         throw err;
-                    })
+                    }),
+                    axios.get("/category/public")  // Add this line to fetch categories
                 ]);
 
                 setBooking(bookingRes.data);
                 setPayment(paymentRes.data.payment);
+                setCategories(categoriesRes.data.categories || []); // Add this line
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -354,6 +357,11 @@ const BookingPage = () => {
                                     ).join(' ')}
                                 </p>
                             </div>
+                        </div>
+
+                        <div className="mb-8">
+                            <h3 className="text-lg font-semibold mb-2">Location</h3>
+                            <LocationDisplay location={booking.jobDetails?.location} />
                         </div>
 
                         <div className="mb-8">

@@ -15,15 +15,15 @@ const bookingSchema = new mongoose.Schema({
             "declined",          // When poster declines the application
             "in_progress",       // When work has started
             "completed_by_seeker", // When seeker marks as complete
-            "completed",         // When both parties confirm completion
-            "payment_pending",   // Ready for payment
-            "paid"              // Payment completed
+            "payment_pending",   // When both parties confirm completion
+            "paid",             // When payment is completed
+            "cancelled"         // When another booking goes to in_progress
         ],
         default: "applied" 
     },
     payment: {
         amount: { type: Number, required: true },
-        status: { type: String, enum: ["pending", "completed"], default: "pending" }
+        status: { type: String, enum: ["pending", 'confirmed', "completed"] }
     },
     dates: {
         applied: { type: Date, default: Date.now },
@@ -37,7 +37,7 @@ const bookingSchema = new mongoose.Schema({
     timestamps: true // Adds createdAt and updatedAt timestamps
 });
 
-// Add pre-save middleware to handle auto-incrementing
+// Add pre-save middleware to handle auto-incrementing and payment status
 bookingSchema.pre('save', async function(next) {
     if (this.isNew) {
         const counter = await Counter.findByIdAndUpdate(
@@ -47,8 +47,17 @@ bookingSchema.pre('save', async function(next) {
         );
         this._id = counter.seq;
     }
+
+    // Set payment status to pending only when booking is accepted
+    if (this.status === 'accepted' && !this.payment.status) {
+        this.payment.status = 'pending';
+    }
+
     next();
 });
+
+// Add compound index to prevent duplicate applications
+bookingSchema.index({ jobId: 1, seekerId: 1 }, { unique: true });
 
 const Booking = mongoose.model("Booking", bookingSchema);
 export default Booking;

@@ -1,5 +1,8 @@
 import Job from "../models/job.model.js";
 import multer from "multer";
+import Booking from "../models/booking.model.js";
+import Payment from "../models/payment.model.js";
+import NotificationService from "../services/notification.service.js";
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -26,7 +29,9 @@ export const getJobs = async (req, res) => {
 // Get a job by ID
 export const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findById(req.params.id)
+      .populate('createdBy', 'name email profileImage role'); // Add fields you want to display
+
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
@@ -64,8 +69,14 @@ export const addJob = async (req, res) => {
 
     // Validate deadline
     const deadlineDate = new Date(deadline);
-    if (isNaN(deadlineDate.getTime()) || deadlineDate < new Date()) {
-      return res.status(400).json({ message: "Deadline must be a valid future date." });
+    const today = new Date();
+
+    // Set both dates to start of day for comparison
+    deadlineDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (isNaN(deadlineDate.getTime()) || deadlineDate < today) {
+      return res.status(400).json({ message: "Deadline must be today or a future date." });
     }
 
 
@@ -78,7 +89,7 @@ export const addJob = async (req, res) => {
       images: req.file ? `/uploads/${req.file.filename}` : "",
       location,
       district,
-      category,
+      category: Number(category), // Convert to number when saving
       jobType,
       payment,
       deadline,
@@ -87,6 +98,41 @@ export const addJob = async (req, res) => {
 
     try {
       const newJob = await job.save();
+              // Create notification for job posting
+        await NotificationService.createNotification(
+            req.user._id,
+            'JOB_POSTED',
+            'Job Posted Successfully',
+            `Your job "${title}" has been posted and is waiting for admin approval.`,
+            {
+                references: {
+                    jobId: newJob._id,
+                    targetUserId: req.user._id
+                }
+            }
+        );
+
+        // Find all admin users and notify them
+        const User = (await import('../models/user.model.js')).default;
+        const admins = await User.find({ role: 'admin' });
+        
+        // Create notifications for all admins
+        await Promise.all(admins.map(admin => 
+            NotificationService.createNotification(
+                admin._id,
+                'JOB_POSTED',
+                'New Job Requires Approval',
+                `A new job "${title}" by ${req.user.name} requires your approval.`,
+                {
+                    references: {
+                        jobId: newJob._id,
+                        targetUserId: req.user._id
+                    }
+                }
+            )
+        ));
+
+
       res.status(201).json(newJob);
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -140,18 +186,41 @@ export const updateJob = async (req, res) => {
 
 // Delete a job
 export const deleteJob = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedJob = await Job.findByIdAndDelete(id);
+    try {
+        const { id } = req.params;
+        
+        const job = await Job.findOne({ _id: Number(id) });
+        if (!job) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Job not found" 
+            });
+        }
 
-    if (!deletedJob) {
-      return res.status(404).json({ message: "Job not found" });
+        // Delete associated bookings and payments
+        const bookings = await Booking.find({ jobId: job._id });
+        for (const booking of bookings) {
+            const payment = await Payment.findOne({ bookingId: booking._id });
+            if (payment) {
+                await Payment.deleteOne({ _id: payment._id });
+            }
+            await Booking.deleteOne({ _id: booking._id });
+        }
+
+        await Job.deleteOne({ _id: Number(id) });
+
+        res.json({
+            success: true,
+            message: "Job and associated records deleted successfully"
+        });
+    } catch (error) {
+        console.error('Error deleting job:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to delete job", 
+            error: error.message 
+        });
     }
-
-    res.status(200).json({ message: "Job deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 };
 
 // Get jobs by status (approved or pending)
@@ -214,6 +283,20 @@ export const approveJob = async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
+    // Send notification to job poster
+    await NotificationService.createNotification(
+      job.createdBy, // userId of job poster
+      'JOB_APPROVED',
+      'Job Approved!',
+      `Your job "${job.title}" has been approved and is now visible to job seekers.`,
+      {
+          references: {
+              jobId: job._id,
+              targetUserId: req.user._id
+          }
+      }
+    );
+
     res.status(200).json(job);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -231,6 +314,15 @@ export const declineJob = async (req, res) => {
       return res.status(404).json({ message: "Job not found" });
     }
 
+    // Send notification to job poster
+    await NotificationService.createNotification(
+      job.createdBy, // userId of job poster
+      'JOB_DECLINED',
+      'Job Approved!',
+      `Your job "${job.title}" has been declined as it didn't meet our guidelines. Please make necessary changes and resubmit.`,
+      `/jobs/${job._id}`
+    );
+
     job.status = "declined";
     await job.save();
     console.log("Job declined successfully:", job);
@@ -239,5 +331,98 @@ export const declineJob = async (req, res) => {
   } catch (error) {
     console.error("Error declining job:", error);
     res.status(500).json({ message: "Failed to decline job" });
+  }
+};
+
+// Set job to pending
+export const setJobToPending = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Set job to pending request received for ID:", id);
+
+    const job = await Job.findById(id);
+    if (!job) {
+      console.log("Job not found for ID:", id);
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    job.status = "pending";
+    await job.save();
+    console.log("Job set to pending successfully:", job);
+
+    res.status(200).json({ message: "Job set to pending successfully", job });
+  } catch (error) {
+    console.error("Error setting job to pending:", error);
+    res.status(500).json({ message: "Failed to set job to pending" });
+  }
+};
+
+// Get public approved jobs (no authentication required)
+export const getPublicApprovedJobs = async (req, res) => {
+  try {
+    // Get all approved jobs
+    const jobs = await Job.find({ status: "approved" })
+      .populate("createdBy", "name")
+      .select("-__v");
+
+    // Get all bookings with statuses that make a job unavailable
+    const unavailableBookings = await Booking.find({
+      status: {
+        $in: [
+          'accepted',
+          'in_progress',
+          'completed_by_seeker',
+          'completed',
+          'payment_pending',
+          'paid'
+        ]
+      }
+    });
+
+    // Create a Set of unavailable job IDs for faster lookup
+    const unavailableJobIds = new Set(unavailableBookings.map(booking => booking.jobId.toString()));
+
+    // Filter out jobs that are unavailable
+    const availableJobs = jobs.filter(job => !unavailableJobIds.has(job._id.toString()));
+
+    res.status(200).json(availableJobs);
+  } catch (err) {
+    console.error("Error fetching public approved jobs:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get available jobs for application (filters out jobs with certain statuses)
+export const getAvailableJobs = async (req, res) => {
+  try {
+    // Get all approved jobs
+    const jobs = await Job.find({ status: "approved" })
+      .populate("createdBy", "name")
+      .select("-__v");
+
+    // Get all bookings with statuses that make a job unavailable
+    const unavailableJobIds = await Booking.distinct('jobId', {
+      status: {
+        $in: [
+          'accepted',
+          'in_progress',
+          'completed_by_seeker',
+          'completed',
+          'payment_pending',
+          'paid'
+        ]
+      }
+    });
+
+    // Convert job IDs to numbers for comparison
+    const unavailableJobIdsNumbers = unavailableJobIds.map(id => Number(id));
+
+    // Filter out jobs that are unavailable
+    const availableJobs = jobs.filter(job => !unavailableJobIdsNumbers.includes(job._id));
+
+    res.status(200).json(availableJobs);
+  } catch (err) {
+    console.error("Error fetching available jobs:", err.message);
+    res.status(500).json({ message: err.message });
   }
 };

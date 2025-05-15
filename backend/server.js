@@ -5,6 +5,7 @@ import path from "path";
 import cors from "cors";
 import multer from "multer";
 import mongoose from "mongoose";
+import { createServer } from 'http';
 
 import authRoutes from "./routes/auth.route.js";
 import analyticsRoutes from "./routes/analytics.route.js";
@@ -12,25 +13,41 @@ import portfolioRoutes from "./routes/portfolio.route.js";
 import jobRouter from "./routes/job.route.js";
 import bookingRoutes from "./routes/booking.route.js";
 import categoryRoutes from "./routes/category.route.js";
+import contactRoutes from "./routes/contact.route.js";
 import ticketRoutes from "./routes/ticket.route.js";
 import userRoutes from "./routes/user.route.js";
+import chatRoutes from "./routes/chat.route.js";
+import cartRoutes from "./routes/cart.route.js";
+import { initializeSocket } from "./lib/socket.js";
+import paymentRoutes from './routes/payment.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import { updateLastActive } from './middleware/updateLastActive.middleware.js';
+import notificationRoutes from './routes/notification.routes.js';
+import awardsRoutes from './routes/awards.routes.js';
+
+import reportsRoutes from './routes/reports.route.js';
 
 import { connectDB } from "./lib/db.js";
 
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
+
+// Initialize Socket.IO
+initializeSocket(server);
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(updateLastActive);
 
 // Booking
-app.use("/bookings", bookingRoutes);
+//app.use("/bookings", bookingRoutes);
 
 // Static file serving for uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -54,8 +71,20 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/job", jobRouter);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/category", categoryRoutes);
+
+app.use("/api/contact", contactRoutes);
 app.use("/api/ticket", ticketRoutes);
+
 app.use("/api/users", userRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
+
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/awards", awardsRoutes);
+
+app.use("/api/reports", reportsRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {
@@ -85,7 +114,8 @@ app.use(
   })
 );
 
-app.listen(PORT, () => {
+// Change app.listen to server.listen
+server.listen(PORT, () => {
   console.log("Server is running on http://localhost:" + PORT);
   connectDB();
 });

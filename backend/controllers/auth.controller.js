@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import multer from "../lib/multer.js";
+import NotificationService from "../services/notification.service.js";
+import { cleanupUserData } from '../utils/userCleanup.js';
 
 const generateTokens = (userId) => {
 	const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
@@ -75,8 +77,27 @@ export const signup = async (req, res) => {
         // Handle image upload
         const image = req.file ? req.file.filename : null;
 
-        // Create the user with the provided role (default is 'customer' if not provided)
-        const user = await User.create({ name, email, password, role, image });
+        // Parse preferredCategories if provided
+        let preferredCategories = [];
+        if (req.body.preferredCategories) {
+            try {
+                preferredCategories = JSON.parse(req.body.preferredCategories);
+            } catch (err) {
+                console.log("Error parsing preferredCategories:", err);
+                // Don't return error, just continue with empty array
+            }
+        }
+
+        // Create the user with the provided role and optional preferences
+        const user = await User.create({ 
+            name, 
+            email, 
+            password, 
+            role, 
+            image,
+            preferredCategories: preferredCategories.length > 0 ? preferredCategories : undefined,
+            preferredDistrict: req.body.preferredDistrict || undefined
+        });
 
         // Authenticate
         const { accessToken, refreshToken } = generateTokens(user._id);
@@ -84,12 +105,21 @@ export const signup = async (req, res) => {
 
         setCookies(res, accessToken, refreshToken);
 
+        await NotificationService.createNotification(
+            user._id,
+            'WELCOME',
+            'Welcome to AnyHire!',
+            'Thank you for joining AnyHire. We\'re excited to have you on board!',
+            '/profile' // Optional link to profile page
+        );
+
         res.status(201).json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
             image: user.image,
+            accessToken,
         });
     } catch (error) {
         console.log("Error in signup controller", error.message);
@@ -112,6 +142,7 @@ export const login = async (req, res) => {
 				name: user.name,
 				email: user.email,
 				role: user.role,
+				accessToken,
 			});
 		} else {
 			res.status(400).json({ message: "Invalid email or password" });
@@ -164,7 +195,7 @@ export const refreshToken = async (req, res) => {
 			maxAge: 15 * 60 * 1000,
 		});
 
-		res.json({ message: "Token refreshed successfully" });
+		res.json({ message: "Token refreshed successfully", accessToken });
 	} catch (error) {
 		console.log("Error in refreshToken controller", error.message);
 		res.status(500).json({ message: "Server error", error: error.message });
@@ -256,26 +287,62 @@ export const deletePfp = async (req, res) => {
 
 export const deleteAccount = async (req, res) => {
     try {
-        const user = req.user;
+        const userId = req.user._id;
 
-        // Delete the user's profile picture if it exists
-        if (user.image) {
-            const imagePath = path.join("uploads", user.image);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
-            }
-        }
-
-        // Delete the user from the database
-        await User.findByIdAndDelete(user._id);
+        // Perform cleanup of all user data
+        await cleanupUserData(userId);
 
         // Clear cookies
-        res.clearCookie("accessToken");
-        res.clearCookie("refreshToken");
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
 
-        res.json({ message: "Account deleted successfully" });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Account and all associated data deleted successfully'
+        });
     } catch (error) {
-        console.error("Error deleting account:", error);
-        res.status(500).json({ message: "Server error" });
+        console.error('Error deleting account:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to delete account',
+            error: error.message 
+        });
+    }
+};
+
+export const upgradeToJobSeeker = async (req, res) => {
+    try {
+        const user = req.user;
+
+        // Check if user is already a job seeker
+        if (user.role === 'jobSeeker') {
+            return res.status(400).json({ message: 'You are already a job seeker' });
+        }
+
+        // Check if user is a customer
+        if (user.role !== 'customer') {
+            return res.status(400).json({ message: 'Only customers can upgrade to job seekers' });
+        }
+
+        // Update user role
+        user.role = 'jobSeeker';
+        await user.save();
+
+        // Create notification
+        await NotificationService.createNotification(
+            user._id,
+            'ROLE_UPGRADE',
+            'Welcome Job Seeker!',
+            'Your account has been upgraded to Job Seeker. You can now start offering your services!',
+            '/jobs/create'
+        );
+
+        res.json({ 
+            message: 'Successfully upgraded to job seeker',
+            role: user.role 
+        });
+    } catch (error) {
+        console.error('Error upgrading role:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };

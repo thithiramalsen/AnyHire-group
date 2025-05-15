@@ -22,6 +22,8 @@ const PriorityTag = ({ priority }) => {
     );
 };
 
+//contactsupportm
+
 const SupportAdminTab = () => {
     const [tickets, setTickets] = useState([]);
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -29,6 +31,7 @@ const SupportAdminTab = () => {
     const [loading, setLoading] = useState(false);
     const [filterStatus, setFilterStatus] = useState("all");
     const [groupByUser, setGroupByUser] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchTickets();
@@ -112,6 +115,16 @@ const SupportAdminTab = () => {
     const processedTickets = () => {
         let filteredTickets = [...tickets];
         
+        // Apply search filter
+        if (searchTerm) {
+            filteredTickets = filteredTickets.filter(ticket => 
+                ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                ticket.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                ticket.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        
         // Apply status filter
         if (filterStatus !== "all") {
             filteredTickets = filteredTickets.filter(ticket => 
@@ -169,11 +182,26 @@ const SupportAdminTab = () => {
                             {urgentCount} Urgent {urgentCount === 1 ? "Ticket" : "Tickets"} Pending
                         </div>
                     )}
-                    <div className="flex gap-4">
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <div className="flex-1">
+                        <div className="relative">
+                            <ChatBubbleLeftIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search tickets by subject, message, name, or email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-emerald-500"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="bg-gray-700 text-white rounded-md px-3 py-2"
+                            className="bg-gray-700 text-white rounded-md px-3 py-2 border border-gray-600 focus:outline-none focus:border-emerald-500"
                         >
                             <option value="all">All Status</option>
                             <option value="open">Open</option>
@@ -185,7 +213,7 @@ const SupportAdminTab = () => {
                             onClick={() => setGroupByUser(!groupByUser)}
                             className={`flex items-center px-4 py-2 rounded-md ${
                                 groupByUser ? 'bg-emerald-600' : 'bg-gray-700'
-                            }`}
+                            } border border-gray-600`}
                         >
                             <UserGroupIcon className="w-5 h-5 mr-2" />
                             Group by User

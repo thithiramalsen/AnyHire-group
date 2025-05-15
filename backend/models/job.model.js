@@ -13,7 +13,18 @@ const jobSchema = new mongoose.Schema({
   payment: { type: Number, required: true },
   deadline: { type: Date, required: true },
   postedDate: { type: Date, default: Date.now },
-  status: { type: String, enum: ["pending", "approved", "declined", "completed"], default: "pending" },
+  status: { 
+    type: String, 
+    enum: [
+      "pending",           // Initial status when job is posted
+      "approved",          // When admin approves the job
+      "in_progress",       // When a booking is accepted and work has started
+      "completed",         // When work is completed and payment is pending
+      "paid",             // When payment is confirmed
+      "declined"          // When admin declines the job
+    ], 
+    default: "pending" 
+  },
   createdBy: { type: Number, ref: "User", required: true }
 });
 

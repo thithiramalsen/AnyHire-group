@@ -5,6 +5,47 @@ import { motion } from "framer-motion";
 import { useUserStore } from "../stores/useUserStore";
 import { toast } from "react-hot-toast";
 
+const validate = (fields) => {
+	const errs = {};
+
+	// Name validation
+	if (!fields.name) {
+		errs.name = "Name is required.";
+	} else if (fields.name.length < 3) {
+		errs.name = "Name must be at least 3 characters.";
+	} else if (!/^[A-Za-z\s]+$/.test(fields.name)) {
+		errs.name = "Name can only contain letters.";
+	}
+
+	// Email validation
+	if (!fields.email) {
+		errs.email = "Email is required.";
+	} else if (!/\S+@\S+\.\S+/.test(fields.email)) {
+		errs.email = "Please enter a valid email address.";
+	}
+
+	// Password validation
+	if (!fields.password) {
+		errs.password = "Password is required.";
+	} else if (fields.password.length < 6) {
+		errs.password = "Password must be at least 6 characters.";
+	}
+
+	// Confirm Password validation
+	if (!fields.confirmPassword) {
+		errs.confirmPassword = "Please confirm your password.";
+	} else if (fields.confirmPassword !== fields.password) {
+		errs.confirmPassword = "Passwords do not match.";
+	}
+
+	// Image validation (if required)
+	if (fields.image && !fields.image.type.startsWith("image/")) {
+		errs.image = "Please select a valid image file.";
+	}
+
+	return errs;
+};
+
 const SignUpPage = () => {
 	const [formData, setFormData] = useState({
 		name: "",
@@ -17,41 +58,13 @@ const SignUpPage = () => {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-	
-		// Name validation
-		const nameRegex = /^[A-Za-z\s]+$/;
-		if (formData.name.length < 3) {
-			toast.error("Name must be at least 3 characters long.");
-			return;
-		}
-		if (!nameRegex.test(formData.name)) {
-			toast.error("Name can only contain letters.");
-			return;
-		}
-	
-		// Password validation
-		if (formData.password.length < 6) {
-			toast.error("Password must be at least 6 characters long.");
-			return;
-		}
-	
-		if (formData.password !== formData.confirmPassword) {
-			toast.error("Passwords do not match.");
-			return;
-		}
-	
-		/*/ Profile picture validation
-		if (!formData.image) {
-			toast.error("Please select a profile picture.");
-			return;
-		}*/
 
-		// Image file type validation (only if an image is selected)
-		if (formData.image && !formData.image.type.startsWith("image/")) {
-			toast.error("Please select a valid image file.");
+		const errors = validate(formData);
+		if (Object.keys(errors).length > 0) {
+			Object.values(errors).forEach((error) => toast.error(error));
 			return;
-		}				
-	
+		}
+
 		const data = new FormData();
 		data.append("name", formData.name);
 		data.append("email", formData.email);
@@ -60,7 +73,7 @@ const SignUpPage = () => {
 		if (formData.image) {
 			data.append("image", formData.image); // Add image to FormData
 		}
-	
+
 		signup(data); // Pass FormData to the signup function
 	};
 
@@ -100,7 +113,11 @@ const SignUpPage = () => {
 									className='block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 rounded-md shadow-sm
 									 placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm'
 									placeholder='John Doe'
+									onBlur={(e) => setFormData({ ...formData, touched: { ...formData.touched, name: true } })}
 								/>
+								{formData.touched?.name && validate(formData).name && (
+									<div className="text-red-500 text-xs mt-1">{validate(formData).name}</div>
+								)}
 							</div>
 						</div>
 
@@ -123,7 +140,11 @@ const SignUpPage = () => {
 									 placeholder-gray-400 focus:outline-none focus:ring-emerald-500 
 									 focus:border-emerald-500 sm:text-sm'
 									placeholder='you@example.com'
+									onBlur={(e) => setFormData({ ...formData, touched: { ...formData.touched, email: true } })}
 								/>
+								{formData.touched?.email && validate(formData).email && (
+									<div className="text-red-500 text-xs mt-1">{validate(formData).email}</div>
+								)}
 							</div>
 						</div>
 
@@ -144,7 +165,11 @@ const SignUpPage = () => {
 									className=' block w-full px-3 py-2 pl-10 bg-gray-700 border border-gray-600 
 									rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm'
 									placeholder='••••••••'
+									onBlur={(e) => setFormData({ ...formData, touched: { ...formData.touched, password: true } })}
 								/>
+								{formData.touched?.password && validate(formData).password && (
+									<div className="text-red-500 text-xs mt-1">{validate(formData).password}</div>
+								)}
 							</div>
 						</div>
 
@@ -165,7 +190,11 @@ const SignUpPage = () => {
 									className=' block w-full px-3 py-2 pl-10 bg-gray-700 border
 									 border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm'
 									placeholder='••••••••'
+									onBlur={(e) => setFormData({ ...formData, touched: { ...formData.touched, confirmPassword: true } })}
 								/>
+								{formData.touched?.confirmPassword && validate(formData).confirmPassword && (
+									<div className="text-red-500 text-xs mt-1">{validate(formData).confirmPassword}</div>
+								)}
 							</div>
 						</div>
 

@@ -1,27 +1,86 @@
-import { ShoppingCart, UserPlus, LogIn, LogOut, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingCart, UserPlus, LogIn, LogOut, Lock, Briefcase, Info, HelpCircle, MailQuestion, FileText } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useUserStore } from "../stores/useUserStore";
 
 const Navbar = () => {
     const { user, logout } = useUserStore();
+    const location = useLocation();
+
+    const scrollToContact = () => {
+        if (location.pathname !== '/') {
+            window.location.href = '/#contact';
+            return;
+        }
+
+        const contactSection = document.getElementById('contact');
+        if (contactSection) {
+            contactSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
 
     return (
         <header className='fixed top-0 left-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-md shadow-lg z-40 transition-all duration-300 border-b border-emerald-800'>
             <div className='container mx-auto px-4 py-3'>
-                <div className='flex flex-wrap justify-between items-center'>
+                <div className='flex items-center justify-between'>
+                    {/* Logo - Left */}
                     <Link to='/' className='text-2xl font-bold text-emerald-400 items-center space-x-2 flex'>
                         AnyHire.lk
                     </Link>
 
-                    <nav className='flex flex-wrap items-center gap-4'>
-                        <Link
-                            to={"/"}
-                            className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out'
-                        >
-                            Home
-                        </Link>
+                    {/* Main Navigation - Center */}
+                    <nav className='flex-1 flex justify-center'>
+                        <div className='flex items-center gap-6'>
+                            <Link
+                                to={"/"}
+                                className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out'
+                            >
+                                Home
+                            </Link>
 
-                        {/* Show Dashboard link for any logged-in user */}
+                            <Link
+                                to={"/jobs"}
+                                className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                            >
+                                <Briefcase className="mr-1" size={18} />
+                                Jobs
+                            </Link>
+
+                            <Link
+                                to="/about"
+                                className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                            >
+                                <Info className="mr-1" size={18} />
+                                About Us
+                            </Link>
+
+                            <Link
+                                to="/terms-and-policies"
+                                className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                            >
+                                <FileText className="mr-1" size={18} />
+                                Terms & Policies
+                            </Link>
+
+                            <Link
+                                to="/how-anyhire-works"
+                                className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                            >
+                                <HelpCircle className="mr-1" size={18} />
+                                How It Works
+                            </Link>
+
+                            <button
+                                onClick={scrollToContact}
+                                className='text-gray-300 hover:text-emerald-400 transition duration-300 ease-in-out flex items-center'
+                            >
+                                <MailQuestion className="mr-1" size={18} />
+                                Help
+                            </button>
+                        </div>
+                    </nav>
+
+                    {/* Auth Buttons - Right */}
+                    <div className='flex items-center gap-4'>
                         {user && (
                             <Link
                                 className='bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 rounded-md font-medium transition duration-300 ease-in-out flex items-center'
@@ -58,7 +117,7 @@ const Navbar = () => {
                                 </Link>
                             </>
                         )}
-                    </nav>
+                    </div>
                 </div>
             </div>
         </header>

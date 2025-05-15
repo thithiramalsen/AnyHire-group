@@ -10,6 +10,10 @@ import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
+// Public route for getting categories
+router.get("/public", getAllCategories);
+
+// Protected routes
 router.get("/", protectRoute, getAllCategories);
 router.post("/", protectRoute, adminRoute, addCategory);
 router.get("/:id", protectRoute, getCategoryById);

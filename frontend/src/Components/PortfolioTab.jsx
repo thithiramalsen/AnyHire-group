@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
 import PortfolioModalForm from "./PortfolioModalForm";
+import PortfolioItem from "./PortfolioItem";
+import { 
+    Plus, 
+    Filter,
+    Clock
+} from "lucide-react";
 
 const PortfolioTab = () => {
     const [portfolioItems, setPortfolioItems] = useState([]);
@@ -95,89 +101,56 @@ const PortfolioTab = () => {
     };
 
     const handleFilterByCategory = (categoryId) => {
-        // Convert empty string to null for "All Categories"
         setSelectedCategory(categoryId === "" ? "" : Number(categoryId));
     };
 
     const filteredPortfolioItems = selectedCategory
-    ? portfolioItems.filter((item) => {
-        // Ensure categories is always an array of numbers
-        const itemCategoryIds = Array.isArray(item.categories) 
-            ? item.categories.map(id => Number(id))
-            : [];
-        
-        // Debug logging
-        console.log({
-            portfolioTitle: item.title,
-            rawCategories: item.categories,
-            parsedCategoryIds: itemCategoryIds,
-            selectedCategory: Number(selectedCategory),
-            categoriesType: typeof item.categories,
-            isArray: Array.isArray(item.categories),
-            matchFound: itemCategoryIds.includes(Number(selectedCategory))
-        });
-        
-        return itemCategoryIds.includes(Number(selectedCategory));
-    })
-    : portfolioItems;
-
-
+        ? portfolioItems.filter((item) => {
+            const itemCategoryIds = Array.isArray(item.categories) 
+                ? item.categories.map(id => Number(id))
+                : [];
+            return itemCategoryIds.includes(Number(selectedCategory));
+        })
+        : portfolioItems;
 
     const pendingPortfolios = portfolioItems.filter((item) => item.status === "pending");
 
     return (
-        <div>
-            {/* Add Portfolio Item Section */}
-            <h2 className="text-2xl font-bold mb-4">Add Portfolio Item</h2>
-            <div className="mb-8">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+            {/* Header Section */}
+            <div className="mb-8 flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-emerald-500">Portfolio Management</h1>
                 <button
                     onClick={handleAddItem}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded"
+                    className="flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
                 >
-                    Add Portfolio Item
+                    <Plus size={20} />
+                    <span>Add Portfolio Item</span>
                 </button>
             </div>
 
-            {/* Modal Form */}
-            <PortfolioModalForm
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setCurrentItem(null);
-                }}
-                onSave={handleSaveItem}
-                item={currentItem}
-            />
-
-            {/* Existing Portfolios Section */}
-            <hr className="my-8 border-gray-600" />
-            <h2 className="text-2xl font-bold mb-4">Existing Portfolios</h2>
-            <div className="mb-4">
-                
-                <label className="block text-gray-300 mb-1">Filter by Category</label>
+            {/* Filter Section */}
+            <div className="mb-8 bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                    <Filter size={20} className="text-emerald-500" />
+                    <label className="text-lg font-semibold">Filter Portfolios</label>
+                </div>
                 <select
                     value={selectedCategory}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        console.log('Selected category value:', value);
-                        handleFilterByCategory(value);
-                    }}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                    onChange={(e) => handleFilterByCategory(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                 >
                     <option value="">All Categories</option>
                     {categories.map((category) => (
-                        <option
-                            key={category._id}
-                            value={category._id}
-                        >
-                            {`${category.name} (ID: ${category._id})`}
+                        <option key={category._id} value={category._id}>
+                            {category.name}
                         </option>
                     ))}
                 </select>
-
             </div>
 
-            <div className="space-y-4">
+            {/* Portfolio Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 {filteredPortfolioItems.map((item) => (
                     <PortfolioItem
                         key={item._id}
@@ -187,104 +160,36 @@ const PortfolioTab = () => {
                         onDelete={() => handleDeleteItem(item._id)}
                     />
                 ))}
-                {filteredPortfolioItems.length === 0 && (
-                    <p className="text-gray-400">No portfolio items found.</p>
-                )}
             </div>
 
-            {/* Portfolios Awaiting Approval Section */}
-            <hr className="my-8 border-gray-600" />
-            <h2 className="text-2xl font-bold mb-4">Portfolios Awaiting Approval</h2>
-            <div className="space-y-4">
-                {pendingPortfolios.map((item) => (
-                    <PortfolioItem
-                        key={item._id}
-                        item={item}
-                        categories={categories}
-                        onEdit={() => handleEditItem(item)}
-                        onDelete={() => handleDeleteItem(item._id)}
-                    />
-                ))}
-                {pendingPortfolios.length === 0 && (
-                    <p className="text-gray-400">No portfolios awaiting approval.</p>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const PortfolioItem = ({ item, onEdit, onDelete, categories }) => {
-    const categoryNames = item.categories
-        .map(categoryId => {
-            const category = categories.find(cat => Number(cat._id) === Number(categoryId));
-            return category ? category.name : "";
-        })
-        .filter(name => name !== "")
-        .join(", ");
-
-    return (
-        <div className="p-4 bg-gray-800 rounded shadow">
-            <p>Title: {item.title}</p>
-            <p>Phone Number: {item.phoneNumber}</p>
-            <p>Email: {item.email}</p>
-            <p>Experience: {item.experience}</p>
-            <p>Qualifications: {item.qualifications}</p>
-            <p>Description: {item.description}</p>
-            <p>Categories: {categoryNames}</p>
-            <p>Status: {item.status}</p>
-
-            {/* Display Images */}
-            {item.images && item.images.length > 0 && (
-                <div className="mt-4">
-                    <h3 className="text-lg font-bold">Images:</h3>
-                    <div className="flex space-x-2">
-                        {item.images.map((image, index) => (
-                            <img
-                                key={index}
-                                src={`http://localhost:5000${image}`}
-                                alt={`Portfolio Image ${index + 1}`}
-                                className="w-32 h-32 object-cover rounded"
-                            />
-                        ))}
-                    </div>
+            {/* Pending Portfolios Section */}
+            <div className="mt-12">
+                <div className="flex items-center space-x-2 mb-6">
+                    <Clock size={24} className="text-emerald-500" />
+                    <h2 className="text-2xl font-bold">Pending Approval</h2>
                 </div>
-            )}
-
-            {/* Display Files */}
-            {item.files && item.files.length > 0 && (
-                <div className="mt-4">
-                    <h3 className="text-lg font-bold">Files:</h3>
-                    <ul className="list-disc list-inside">
-                        {item.files.map((file, index) => (
-                            <li key={index}>
-                                <a
-                                    href={`http://localhost:5000${file}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-emerald-400 hover:underline"
-                                >
-                                    {`File ${index + 1}`}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {pendingPortfolios.map((item) => (
+                        <PortfolioItem
+                            key={item._id}
+                            item={item}
+                            categories={categories}
+                            onEdit={() => handleEditItem(item)}
+                            onDelete={() => handleDeleteItem(item._id)}
+                        />
+                    ))}
                 </div>
-            )}
-
-            <div className="mt-4 flex space-x-2">
-                <button
-                    onClick={onEdit}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded"
-                >
-                    Edit
-                </button>
-                <button
-                    onClick={onDelete}
-                    className="px-4 py-2 bg-red-600 text-white rounded"
-                >
-                    Delete
-                </button>
             </div>
+
+            <PortfolioModalForm
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setCurrentItem(null);
+                }}
+                onSave={handleSaveItem}
+                item={currentItem}
+            />
         </div>
     );
 };

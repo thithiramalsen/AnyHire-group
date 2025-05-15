@@ -32,7 +32,19 @@ const userSchema = new mongoose.Schema({
         default: null, // Default to null if no image is provided
     },
 
-    
+    lastActive: {
+        type: Date,
+        default: Date.now
+    },
+
+        preferredCategories: [{
+        type: Number,
+        ref: 'Category'
+    }],
+    preferredDistrict: {
+        type: String
+    }
+
 }, {
      //createdAt, updatedAt
     timestamps: true 

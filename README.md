@@ -21,3 +21,11 @@
    ```bash
    git clone https://github.com/username/anyhire.git
    cd anyhire
+
+2.Install dependencies and run the backend:
+
+  2.1Navigate to the backend directory:
+  ```bash
+  cd backend
+
+

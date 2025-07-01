@@ -24,8 +24,40 @@
 
 2.Install dependencies and run the backend:
 
-  2.1Navigate to the backend directory:
-  ```bash
-  cd backend
+ Navigate to the project directory:
 
+bash
+Copy code
+cd anyhire
+Backend Setup
+2.1 Navigate to the backend directory:
 
+bash
+Copy code
+cd backend
+2.2 Install backend dependencies:
+
+bash
+Copy code
+npm install
+2.3 Start the backend development server:
+
+bash
+Copy code
+npm run dev
+Frontend Setup
+3.1 Open a new terminal and navigate to the frontend directory:
+
+bash
+Copy code
+cd frontend
+3.2 Install frontend dependencies:
+
+bash
+Copy code
+npm install
+3.3 Start the frontend development server:
+
+bash
+Copy code
+npm run dev

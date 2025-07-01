@@ -4,6 +4,8 @@
 
 **Anyhire.lk** is a location-based platform designed to connect university students with part-time job opportunities and customers with nearby skilled workers for specific services. The goal is to empower individuals to find flexible jobs or skilled professionals easily and efficiently.
 
+> **Group Project**: This project was developed as part of our coursework during **Year 1, Semester 2** of the Bachelor of Science in Information Technology program.
+
 ## Features
 - **Job seeker profile**: View detailed profiles of workers, including skills, experience, and ratings.
 - **Client **: Admin-approved job listings for enhanced credibility.

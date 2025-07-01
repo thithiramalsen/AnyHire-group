@@ -26,38 +26,35 @@
 
  Navigate to the project directory:
 
-bash
-Copy code
+ ```bash
 cd anyhire
+ ```
 Backend Setup
+
 2.1 Navigate to the backend directory:
 
-bash
-Copy code
+ ```bash
 cd backend
+ ```
 2.2 Install backend dependencies:
-
-bash
-Copy code
+ ```bash
 npm install
+ ```
 2.3 Start the backend development server:
-
-bash
-Copy code
+ ```bash
 npm run dev
+ ```
 Frontend Setup
+
 3.1 Open a new terminal and navigate to the frontend directory:
-
-bash
-Copy code
+ ```bash
 cd frontend
+ ```
 3.2 Install frontend dependencies:
-
-bash
-Copy code
+ ```bash
 npm install
+ ```
 3.3 Start the frontend development server:
-
-bash
-Copy code
+ ```bash
 npm run dev
+ ```

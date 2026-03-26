@@ -3,9 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useUserStore } from '../stores/useUserStore';
-import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star } from 'lucide-react'; // Replace HeroIcon import with Lucide
+import { Play, MessageCircle, Check, CreditCard, CheckCircle2, AlertCircle, Star, MapPin, FileText, Calendar } from 'lucide-react'; // Replace HeroIcon import with Lucide
 import Chat from '../Components/Chat';
 import PaymentConfirmation from './PaymentConfirmation';
+import { Link } from 'react-router-dom';
+import { User } from 'lucide-react';
+import LocationDisplay from '../Components/Map/LocationDisplay';
 
 const BookingPage = () => {
     const { bookingId } = useParams();
@@ -28,18 +31,20 @@ const BookingPage = () => {
                     return;
                 }
 
-                const [bookingRes, paymentRes] = await Promise.all([
+                const [bookingRes, paymentRes, categoriesRes] = await Promise.all([
                     axios.get(`/booking/${bookingId}`),
                     axios.get(`/payment/booking/${bookingId}`).catch(err => {
                         if (err.response?.status === 404) {
                             return { data: { success: false, payment: null } };
                         }
                         throw err;
-                    })
+                    }),
+                    axios.get("/category/public")  // Add this line to fetch categories
                 ]);
 
                 setBooking(bookingRes.data);
                 setPayment(paymentRes.data.payment);
+                setCategories(categoriesRes.data.categories || []); // Add this line
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -183,7 +188,8 @@ const BookingPage = () => {
 
         const isCustomer = user.role === 'customer';
         const relevantUser = isCustomer ? booking.seekerDetails : booking.posterDetails;
-
+        const userId = isCustomer ? booking.seekerId : booking.posterId;
+        
         return (
             <div className="flex items-center gap-4 mb-6">
                 <div>
@@ -191,6 +197,15 @@ const BookingPage = () => {
                         {isCustomer ? 'Job Seeker' : 'Customer'}
                     </h3>
                     <p className="text-gray-400">{relevantUser?.name}</p>
+                    <p className="text-gray-400 text-sm mb-3">{relevantUser?.email}</p>
+                    <Link
+                        to={`/user/${userId}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+                        title="View Profile"
+                    >
+                        <User className="w-4 h-4" />
+                        View Profile
+                    </Link>
                 </div>
                 <button
                     onClick={() => navigate(`/chat/${booking._id}`)}
@@ -314,7 +329,7 @@ const BookingPage = () => {
                             </span>
                         </div>
 
-                        {renderUserInfo()} {/* Add this line after the header */}
+                        {renderUserInfo()}
 
                         <div className="grid md:grid-cols-2 gap-6 mb-6">
                             <div>
@@ -342,6 +357,11 @@ const BookingPage = () => {
                                     ).join(' ')}
                                 </p>
                             </div>
+                        </div>
+
+                        <div className="mb-8">
+                            <h3 className="text-lg font-semibold mb-2">Location</h3>
+                            <LocationDisplay location={booking.jobDetails?.location} />
                         </div>
 
                         <div className="mb-8">

@@ -2,7 +2,7 @@ import {
     User, Edit, Settings, List, BarChart2, Folder, Calendar, 
     Briefcase, Clock, PlusCircle, MessageSquare, ShoppingCart,
     Home, LogOut, ChevronRight, CreditCard, Star, Users, FileText,
-    Bell
+    Bell, Trophy
 } from "lucide-react";
 import { useUserStore } from "../stores/useUserStore";
 import { rolePermissions } from "../lib/rolePermissions";
@@ -56,7 +56,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         "cart": ShoppingCart,
         "payments": CreditCard,
         "reviews": Star,
-        "notifications": Bell
+        "notifications": Bell,
+        "gamification": Trophy,
+        "my-awards": Trophy,
+        "reports": FileText
     };
 
     return (

@@ -117,26 +117,12 @@ export const getUsersAnalytics = async (req, res) => {
 // Get jobs analytics
 export const getJobsAnalytics = async (req, res) => {
     try {
-        // Get total jobs count
+        // Get basic stats
         const totalJobs = await Job.countDocuments();
-        
-        // Get active jobs
         const activeJobs = await Job.countDocuments({ status: 'active' });
-        
-        // Get completed jobs
         const completedJobs = await Job.countDocuments({ status: 'completed' });
-        
-        // Get jobs by category
-        const jobsByCategory = await Job.aggregate([
-            {
-                $group: {
-                    _id: "$category",
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
 
-        // Get jobs growth over time
+        // Get jobs growth data for the last 6 months
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         
@@ -156,16 +142,59 @@ export const getJobsAnalytics = async (req, res) => {
                 }
             },
             {
-                $sort: { "_id.year": 1, "_id.month": 1 }
+                $project: {
+                    _id: {
+                        $concat: [
+                            { $toString: "$_id.year" },
+                            "-",
+                            {
+                                $cond: {
+                                    if: { $lt: ["$_id.month", 10] },
+                                    then: { $concat: ["0", { $toString: "$_id.month" }] },
+                                    else: { $toString: "$_id.month" }
+                                }
+                            }
+                        ]
+                    },
+                    count: 1
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Get jobs by category
+        const jobsByCategory = await Job.aggregate([
+            {
+                $group: {
+                    _id: "$category",
+                    count: { $sum: 1 }
+                }
             }
         ]);
+
+        // Fill in missing months with zero counts
+        const months = [];
+        for (let i = 0; i < 6; i++) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            months.unshift(`${year}-${month}`);
+        }
+
+        const filledGrowthData = months.map(month => ({
+            _id: month,
+            count: jobsGrowth.find(item => item._id === month)?.count || 0
+        }));
+
+        console.log('Processed jobs growth data:', filledGrowthData);
 
         res.json({
             totalJobs,
             activeJobs,
             completedJobs,
             jobsByCategory,
-            jobsGrowth
+            jobsGrowth: filledGrowthData
         });
     } catch (error) {
         console.error('Error in getJobsAnalytics:', error);
@@ -614,84 +643,35 @@ export const getSupportAnalytics = async (req, res) => {
         const { timeRange = '30d' } = req.query;
         const { startDate, endDate } = getDateRange(timeRange);
 
-        // Get total tickets
-        const totalTickets = await Support.countDocuments({
+        // Get all tickets
+        const tickets = await Support.find({
             createdAt: { $gte: startDate, $lte: endDate }
         });
 
-        // Get open tickets
-        const openTickets = await Support.countDocuments({
-            status: 'open',
-            createdAt: { $gte: startDate, $lte: endDate }
-        });
+        // Basic metrics
+        const totalTickets = tickets.length;
+        const openTickets = tickets.filter(t => t.status === 'Open').length;
+        const resolvedTickets = tickets.filter(t => t.status === 'Resolved').length;
+        const averageResponseTime = tickets.reduce((acc, t) => acc + (t.responseTime || 0), 0) / totalTickets || 0;
 
-        // Get resolved tickets
-        const resolvedTickets = await Support.countDocuments({
-            status: 'resolved',
-            createdAt: { $gte: startDate, $lte: endDate }
-        });
+        // Calculate response time distribution
+        const responseTimeRanges = [
+            { min: 0, max: 1, label: '0-1h' },
+            { min: 1, max: 4, label: '1-4h' },
+            { min: 4, max: 8, label: '4-8h' },
+            { min: 8, max: 24, label: '8-24h' },
+            { min: 24, max: Infinity, label: '24h+' }
+        ];
 
-        // Calculate average response time
-        const responseTimeStats = await Support.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: startDate, $lte: endDate },
-                    firstResponseTime: { $exists: true }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    averageResponseTime: { $avg: '$firstResponseTime' }
-                }
-            }
-        ]);
+        const responseTimeDistribution = responseTimeRanges.map(range => ({
+            range: range.label,
+            count: tickets.filter(t => {
+                const responseTime = t.responseTime || 0;
+                return responseTime >= range.min && responseTime < range.max;
+            }).length
+        }));
 
-        // Get tickets by status
-        const ticketsByStatus = await Support.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: startDate, $lte: endDate }
-                }
-            },
-            {
-                $group: {
-                    _id: '$status',
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $project: {
-                    name: '$_id',
-                    count: 1,
-                    _id: 0
-                }
-            }
-        ]);
-
-        // Get tickets by category
-        const ticketsByCategory = await Support.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: startDate, $lte: endDate }
-                }
-            },
-            {
-                $group: {
-                    _id: '$category',
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $project: {
-                    category: '$_id',
-                    count: 1,
-                    _id: 0
-                }
-            }
-        ]);
-
-        // Get tickets growth trend
+        // Calculate tickets growth trend
         const ticketsGrowth = await Support.aggregate([
             {
                 $match: {
@@ -701,20 +681,22 @@ export const getSupportAnalytics = async (req, res) => {
             {
                 $group: {
                     _id: {
-                        $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
                     },
                     newTickets: { $sum: 1 },
                     resolvedTickets: {
-                        $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+                        $sum: {
+                            $cond: [{ $eq: ["$status", "Resolved"] }, 1, 0]
+                        }
                     }
                 }
             },
             {
                 $project: {
-                    date: '$_id',
+                    _id: 0,
+                    date: "$_id",
                     newTickets: 1,
-                    resolvedTickets: 1,
-                    _id: 0
+                    resolvedTickets: 1
                 }
             },
             {
@@ -722,18 +704,36 @@ export const getSupportAnalytics = async (req, res) => {
             }
         ]);
 
+        // Existing aggregations for status and category
+        const ticketsByStatus = await Support.aggregate([
+            { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } }
+        ]);
+
+        const ticketsByCategory = await Support.aggregate([
+            { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+            { $group: { _id: "$category", count: { $sum: 1 } } },
+            { $project: { _id: 0, category: "$_id", count: 1 } }
+        ]);
+
         res.json({
             totalTickets,
             openTickets,
             resolvedTickets,
-            averageResponseTime: responseTimeStats[0]?.averageResponseTime || 0,
+            averageResponseTime,
             ticketsByStatus,
             ticketsByCategory,
-            ticketsGrowth
+            ticketsGrowth,
+            responseTimeDistribution
         });
+
     } catch (error) {
         console.error('Error in getSupportAnalytics:', error);
-        res.status(500).json({ message: 'Error fetching support analytics' });
+        res.status(500).json({
+            message: 'Failed to fetch support analytics',
+            error: error.message
+        });
     }
 };
 

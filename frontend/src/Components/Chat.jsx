@@ -367,15 +367,15 @@ const Chat = ({ bookingId }) => {
             {/* Messages Container */}
             <div className="relative flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700/30 scrollbar-track-transparent">
                 <AnimatePresence>
-                    {messages.map((msg) => (
+                {messages.map((msg) => (
                         <motion.div
-                            key={msg._id}
+                        key={msg._id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.3 }}
-                            className={`flex ${msg.senderId === user._id ? 'justify-end' : 'justify-start'}`}
-                        >
+                        className={`flex ${msg.senderId === user._id ? 'justify-end' : 'justify-start'}`}
+                    >
                             <div className={`flex items-start gap-2 ${msg.senderId === user._id ? 'flex-row-reverse' : 'flex-row'}`}>
                                 {/* Profile Image */}
                                 <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border-2 border-gray-700/30 shadow-lg">
@@ -409,13 +409,13 @@ const Chat = ({ bookingId }) => {
                                 {/* Message Content */}
                                 <div
                                     className={`max-w-[70%] rounded-2xl p-3 shadow-lg transition-all duration-200 hover:shadow-xl backdrop-blur-md ${
-                                        msg.senderId === user._id
+                                msg.senderId === user._id
                                             ? 'bg-gradient-to-br from-emerald-600 to-emerald-700'
                                             : 'bg-gradient-to-br from-gray-700 to-gray-800'
-                                    }`}
-                                >
+                            }`}
+                        >
                                     <div className="text-sm font-semibold mb-1 text-white/90">
-                                        {msg.senderId === user._id ? 'You' : msg.senderName}
+                                {msg.senderId === user._id ? 'You' : msg.senderName}
                                     </div>
                                     
                                     {editingMessageId === msg._id ? (
@@ -520,17 +520,17 @@ const Chat = ({ bookingId }) => {
                             <button type="button" className="p-2 text-gray-400 hover:text-emerald-400 transition-colors duration-200">
                                 <Paperclip size={20} />
                             </button>
-                            <input
-                                type="text"
-                                value={newMessage}
+                    <input
+                        type="text"
+                        value={newMessage}
                                 onChange={(e) => {
                                     setNewMessage(e.target.value);
                                     handleTyping();
                                 }}
-                                placeholder={isConnected ? "Type your message..." : "Connecting..."}
-                                disabled={!isConnected}
+                        placeholder={isConnected ? "Type your message..." : "Connecting..."}
+                        disabled={!isConnected}
                                 className="flex-1 bg-gray-700/30 text-white rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
+                    />
                             <button type="button" className="p-2 text-gray-400 hover:text-emerald-400 transition-colors duration-200">
                                 <Smile size={20} />
                             </button>
@@ -538,13 +538,13 @@ const Chat = ({ bookingId }) => {
                                 <Mic size={20} />
                             </button>
                         </div>
-                        <button
-                            type="submit"
+                    <button
+                        type="submit"
                             disabled={!isConnected || !newMessage.trim()}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed p-2"
-                        >
+                    >
                             <Send size={20} />
-                        </button>
+                    </button>
                     </div>
                 </div>
             </form>

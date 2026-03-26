@@ -5,7 +5,8 @@ import {
     getUserAverageRating,
     getAdminReviews,
     deleteReview,
-    deleteUserReview // Add this import
+    deleteUserReview,
+    updateReview // Add this import
 } from '../controllers/review.controller.js';
 import { protectRoute, adminRoute } from '../middleware/auth.middleware.js';
 
@@ -22,6 +23,9 @@ router.get('/user/:userId/rating', getUserAverageRating);
 
 // Add new user delete route (requires authentication but not admin)
 router.delete('/user/:id', protectRoute, deleteUserReview);
+
+// Add update route (requires authentication)
+router.put('/user/:id', protectRoute, updateReview);
 
 // Admin routes
 router.get('/admin', protectRoute, adminRoute, getAdminReviews);

@@ -131,29 +131,57 @@ const BookingsTab = () => {
     };
 
     const handleDeleteReview = async (reviewId) => {
-        if (!window.confirm('Are you sure you want to delete this review?')) {
-            return;
-        }
-
-        try {
-            // Update the endpoint to use the new user delete route
-            await axios.delete(`/reviews/user/${reviewId}`);
-            toast.success('Review deleted successfully');
-            
-            // Update reviewsByBooking state to remove the deleted review
-            setReviewsByBooking(prev => {
-                const updated = { ...prev };
-                Object.keys(updated).forEach(key => {
-                    if (updated[key]._id === reviewId) {
-                        delete updated[key];
-                    }
+        // Create a toast promise
+        toast.promise(
+            new Promise(async (resolve, reject) => {
+                const toastId = toast((t) => (
+                    <div className="flex flex-col gap-2">
+                        <p className="font-medium">Delete this review?</p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    toast.dismiss(t.id);
+                                    reject();
+                                }}
+                                className="px-3 py-1 bg-gray-500 text-white rounded-md text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    toast.dismiss(t.id);
+                                    resolve();
+                                }}
+                                className="px-3 py-1 bg-red-500 text-white rounded-md text-sm"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                ), {
+                    duration: Infinity,
                 });
-                return updated;
-            });
-        } catch (error) {
-            console.error('Error deleting review:', error);
-            toast.error('Failed to delete review');
-        }
+            }).then(async () => {
+                // User confirmed, proceed with deletion
+                await axios.delete(`/reviews/user/${reviewId}`);
+                // Update reviewsByBooking state
+                setReviewsByBooking(prev => {
+                    const updated = { ...prev };
+                    Object.keys(updated).forEach(key => {
+                        if (updated[key]._id === reviewId) {
+                            delete updated[key];
+                        }
+                    });
+                    return updated;
+                });
+                return "Review deleted successfully";
+            }),
+            {
+                loading: 'Deleting review...',
+                success: 'Review deleted successfully!',
+                error: 'Failed to delete review'
+            }
+        );
     };
 
     if (isLoading) {

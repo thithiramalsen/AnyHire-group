@@ -1,6 +1,7 @@
 import Ticket from "../models/ticket.model.js";
 import User from "../models/user.model.js";
 import { sendEmail } from "../lib/email.js";
+import NotificationService from "../services/notification.service.js";
 
 export const createTicket = async (req, res) => {
     try {
@@ -28,6 +29,25 @@ export const createTicket = async (req, res) => {
         });
 
         const savedTicket = await ticket.save();
+
+        // Get all admin users
+        const adminUsers = await User.find({ role: 'admin' });
+
+        // Send notification to all admins
+        await Promise.all(adminUsers.map(admin => 
+            NotificationService.createNotification(
+                admin._id,
+                'TICKET',
+                'New Support Ticket',
+                `New ticket created: ${ticket.subject}`,
+                {
+                    references: {
+                        ticketId: ticket._id,
+                        targetUserId: req.user._id
+                    }
+                }
+            )
+        ));
 
         // Send confirmation to user
         await sendEmail({
@@ -128,6 +148,20 @@ export const replyToTicket = async (req, res) => {
         ticket.updatedAt = new Date();
         await ticket.save();
 
+        // Create notification for user when admin replies
+        await NotificationService.createNotification(
+            ticket.userId,
+            'TICKET',
+            'Support Ticket Update',
+            `Admin has replied to your ticket: ${ticket.subject}`,
+            {
+                references: {
+                    ticketId: ticket._id,
+                    targetUserId: req.user._id
+                }
+            }
+        );
+
         // Send email notification
         await sendEmail({
             to: ticket.email,
@@ -162,8 +196,20 @@ export const updateTicketStatus = async (req, res) => {
             return res.status(404).json({ message: "Ticket not found" });
         }
 
+        const oldStatus = ticket.status;
         ticket.status = status;
         await ticket.save();
+
+        // Create notification for user when ticket status changes
+        await NotificationService.createNotification(
+            ticket.userId,
+            'TICKET',
+            'Ticket Status Updated',
+            `Your ticket "${ticket.subject}" status has been changed from ${oldStatus} to ${status}`,
+            {
+                ticket: `/tickets/${ticket._id}`
+            }
+        );
 
         res.json(ticket);
     } catch (error) {
@@ -198,6 +244,21 @@ export const addUserReply = async (req, res) => {
         ticket.status = "Open"; // Change status back to Open when user replies
         ticket.updatedAt = new Date();
         await ticket.save();
+
+        // Get all admin users and notify them
+        const adminUsers = await User.find({ role: 'admin' });
+        await Promise.all(adminUsers.map(admin => 
+            NotificationService.createNotification(
+                admin._id,
+                'TICKET',
+                'New Ticket Reply',
+                `${ticket.name} has replied to ticket: ${ticket.subject}`,
+                {
+                    ticket: `/secret-dashboard?tab=tickets&ticket=${ticket._id}`,
+                    profile: `/user/${ticket.userId}`
+                }
+            )
+        ));
 
         // Notify support email
         await sendEmail({

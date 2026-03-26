@@ -80,9 +80,9 @@ const ReviewManagementTab = () => {
 
   const filteredReviews = reviews.filter(review => {
     const matchesSearch = 
-      review.reviewerId.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.revieweeId.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (review.comment && review.comment.toLowerCase().includes(searchTerm.toLowerCase()));
+      (review.reviewerId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (review.revieweeId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (review.comment?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     
     const matchesRating = ratingFilter === "all" || review.rating === parseInt(ratingFilter);
     const matchesType = reviewTypeFilter === "all" || review.reviewType === reviewTypeFilter;
@@ -204,10 +204,10 @@ const ReviewManagementTab = () => {
                 <tr key={review._id} className="hover:bg-gray-700/50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {review.reviewerId.image ? (
+                      {review.reviewerId?.image ? (
                         <img
                           src={`http://localhost:5000/uploads/${review.reviewerId.image}`}
-                          alt={review.reviewerId.name}
+                          alt={review.reviewerId?.name || 'User'}
                           className="w-8 h-8 rounded-full mr-2"
                         />
                       ) : (
@@ -215,15 +215,17 @@ const ReviewManagementTab = () => {
                           <User size={16} className="text-gray-400" />
                         </div>
                       )}
-                      <div className="text-sm font-medium text-white">{review.reviewerId.name}</div>
+                      <div className="text-sm font-medium text-white">
+                        {review.reviewerId?.name || 'Unknown User'}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {review.revieweeId.image ? (
+                      {review.revieweeId?.image ? (
                         <img
                           src={`http://localhost:5000/uploads/${review.revieweeId.image}`}
-                          alt={review.revieweeId.name}
+                          alt={review.revieweeId?.name || 'User'}
                           className="w-8 h-8 rounded-full mr-2"
                         />
                       ) : (
@@ -231,7 +233,9 @@ const ReviewManagementTab = () => {
                           <User size={16} className="text-gray-400" />
                         </div>
                       )}
-                      <div className="text-sm font-medium text-white">{review.revieweeId.name}</div>
+                      <div className="text-sm font-medium text-white">
+                        {review.revieweeId?.name || 'Unknown User'}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -283,4 +287,4 @@ const ReviewManagementTab = () => {
   );
 };
 
-export default ReviewManagementTab; 
+export default ReviewManagementTab;

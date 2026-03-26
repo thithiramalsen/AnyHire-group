@@ -12,6 +12,21 @@ const paymentSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+
+    originalAmount: {
+        type: Number
+    },
+    discountApplied: {
+        type: Boolean,
+        default: false
+    },
+    discountValue: {
+        type: Number
+    },
+    discountCode: {
+        type: String
+    },
+
     paymentType: {
         type: String,
         enum: ["manual", "payment_proof", "card"],

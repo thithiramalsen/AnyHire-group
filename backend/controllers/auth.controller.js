@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import multer from "../lib/multer.js";
 import NotificationService from "../services/notification.service.js";
+import { cleanupUserData } from '../utils/userCleanup.js';
 
 const generateTokens = (userId) => {
 	const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
@@ -286,27 +287,26 @@ export const deletePfp = async (req, res) => {
 
 export const deleteAccount = async (req, res) => {
     try {
-        const user = req.user;
+        const userId = req.user._id;
 
-        // Delete the user's profile picture if it exists
-        if (user.image) {
-            const imagePath = path.join("uploads", user.image);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
-            }
-        }
-
-        // Delete the user from the database
-        await User.findByIdAndDelete(user._id);
+        // Perform cleanup of all user data
+        await cleanupUserData(userId);
 
         // Clear cookies
-        res.clearCookie("accessToken");
-        res.clearCookie("refreshToken");
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
 
-        res.json({ message: "Account deleted successfully" });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Account and all associated data deleted successfully'
+        });
     } catch (error) {
-        console.error("Error deleting account:", error);
-        res.status(500).json({ message: "Server error" });
+        console.error('Error deleting account:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to delete account',
+            error: error.message 
+        });
     }
 };
 

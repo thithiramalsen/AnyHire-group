@@ -23,6 +23,9 @@ import paymentRoutes from './routes/payment.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import { updateLastActive } from './middleware/updateLastActive.middleware.js';
 import notificationRoutes from './routes/notification.routes.js';
+import awardsRoutes from './routes/awards.routes.js';
+
+import reportsRoutes from './routes/reports.route.js';
 
 import { connectDB } from "./lib/db.js";
 
@@ -79,6 +82,9 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/awards", awardsRoutes);
+
+app.use("/api/reports", reportsRoutes);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {

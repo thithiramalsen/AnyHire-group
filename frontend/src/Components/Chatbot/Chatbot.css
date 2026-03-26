@@ -97,7 +97,7 @@
   }
   
   .chatbot-message.user .chatbot-message-text {
-    @apply text-black;
+    @apply text-gray-900;
   }
   
   .chatbot-message.bot .chatbot-message-text {
@@ -121,7 +121,11 @@
   }
   
   .chatbot-input {
-    @apply flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-gray-100 shadow-sm transition placeholder-gray-500 hover:bg-white;
+    @apply flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-gray-100 shadow-sm transition placeholder-gray-500 hover:bg-white text-gray-900;
+  }
+  
+  .chatbot-input::placeholder {
+    @apply text-gray-500;
   }
   
   .chatbot-send-button {

@@ -29,7 +29,9 @@ export const getJobs = async (req, res) => {
 // Get a job by ID
 export const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findById(req.params.id)
+      .populate('createdBy', 'name email profileImage role'); // Add fields you want to display
+
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
@@ -67,8 +69,14 @@ export const addJob = async (req, res) => {
 
     // Validate deadline
     const deadlineDate = new Date(deadline);
-    if (isNaN(deadlineDate.getTime()) || deadlineDate < new Date()) {
-      return res.status(400).json({ message: "Deadline must be a valid future date." });
+    const today = new Date();
+
+    // Set both dates to start of day for comparison
+    deadlineDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (isNaN(deadlineDate.getTime()) || deadlineDate < today) {
+      return res.status(400).json({ message: "Deadline must be today or a future date." });
     }
 
 
@@ -95,8 +103,13 @@ export const addJob = async (req, res) => {
             req.user._id,
             'JOB_POSTED',
             'Job Posted Successfully',
-            `Your job "${title}" has been posted and is waiting for admin approval. We'll notify you once it's approved.`,
-            `/jobs/${newJob._id}`
+            `Your job "${title}" has been posted and is waiting for admin approval.`,
+            {
+                references: {
+                    jobId: newJob._id,
+                    targetUserId: req.user._id
+                }
+            }
         );
 
         // Find all admin users and notify them
@@ -110,7 +123,12 @@ export const addJob = async (req, res) => {
                 'JOB_POSTED',
                 'New Job Requires Approval',
                 `A new job "${title}" by ${req.user.name} requires your approval.`,
-                `/admin/jobs`
+                {
+                    references: {
+                        jobId: newJob._id,
+                        targetUserId: req.user._id
+                    }
+                }
             )
         ));
 
@@ -271,7 +289,12 @@ export const approveJob = async (req, res) => {
       'JOB_APPROVED',
       'Job Approved!',
       `Your job "${job.title}" has been approved and is now visible to job seekers.`,
-      `/jobs/${job._id}`
+      {
+          references: {
+              jobId: job._id,
+              targetUserId: req.user._id
+          }
+      }
     );
 
     res.status(200).json(job);

@@ -127,21 +127,21 @@ const ReviewsTab = () => {
                                 <div>
                                     <h3 className="text-lg font-semibold text-white">
                                         {filter === "all" ? (
-                                            review.reviewerId._id === user._id ? (
-                                                <>Review for: {review.revieweeId?.name || "User not found"}</>
+                                            review.reviewerId?._id === user?._id ? (
+                                                <>Review for: {review.revieweeId?.name ?? "User not found"}</>
                                             ) : (
-                                                <>Review from: {review.reviewerId?.name || "User not found"}</>
+                                                <>Review from: {review.reviewerId?.name ?? "User not found"}</>
                                             )
                                         ) : filter === "given" ? (
-                                            <>Review for: {review.revieweeId?.name || "User not found"}</>
+                                            <>Review for: {review.revieweeId?.name ?? "User not found"}</>
                                         ) : (
-                                            <>Review from: {review.reviewerId?.name || "User not found"}</>
+                                            <>Review from: {review.reviewerId?.name ?? "User not found"}</>
                                         )}
                                     </h3>
                                     <div className="flex items-center gap-4 mt-2">
                                         <div className="flex items-center text-gray-400">
                                             <Briefcase className="w-4 h-4 mr-2" />
-                                            <span>{review.bookingId?.jobTitle || "Job not found"}</span>
+                                            <span>{review.bookingId?.jobTitle ?? "Job not found"}</span>
                                         </div>
                                         <div className="flex items-center text-gray-400">
                                             <Calendar className="w-4 h-4 mr-2" />
@@ -150,16 +150,16 @@ const ReviewsTab = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {(filter === "given" || (filter === "all" && review.reviewerId._id === user._id)) && (
+                                    {(filter === "given" || (filter === "all" && review.reviewerId?._id === user?._id)) && (
                                         <>
                                             <button
                                                 onClick={() => {
                                                     const newRating = prompt("Enter new rating (1-5):", review.rating);
-                                                    if (!newRating || isNaN(newRating) || newRating < 1 || newRating > 5) {
+                                                    if (!newRating || isNaN(newRating) || +newRating < 1 || +newRating > 5) {
                                                         toast.error("Please enter a valid rating between 1 and 5");
                                                         return;
                                                     }
-                                                    const newComment = prompt("Enter new comment:", review.comment);
+                                                    const newComment = prompt("Enter new comment:", review.comment ?? "");
                                                     if (newComment !== null) {
                                                         handleEditReview(review._id, parseInt(newRating), newComment);
                                                     }
@@ -181,19 +181,19 @@ const ReviewsTab = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 mb-2">
-                                {renderStars(review.rating)}
+                                {renderStars(review.rating ?? 0)}
                             </div>
-                            <p className="text-gray-300 mb-4">{review.comment}</p>
+                            <p className="text-gray-300 mb-4">{review.comment ?? "No comment provided"}</p>
                             {review.bookingId && (
                                 <div className="mt-4 pt-4 border-t border-gray-700">
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-gray-400">Booking Status:</span>
                                         <span className={`px-2 py-1 rounded-full ${
-                                            review.bookingId.status === 'completed' 
+                                            review.bookingId?.status === 'completed' 
                                                 ? 'bg-green-500/20 text-green-400'
                                                 : 'bg-yellow-500/20 text-yellow-400'
                                         }`}>
-                                            {review.bookingId.status}
+                                            {review.bookingId?.status ?? "unknown"}
                                         </span>
                                     </div>
                                 </div>

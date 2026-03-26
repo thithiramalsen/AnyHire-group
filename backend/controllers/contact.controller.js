@@ -1,5 +1,7 @@
 import Contact from "../models/contact.model.js";
 import { sendEmail } from "../lib/email.js";
+import User from "../models/user.model.js";
+import NotificationService from "../services/notification.service.js";
 
 export const createContact = async (req, res) => {
     try {
@@ -56,6 +58,20 @@ export const createContact = async (req, res) => {
                 <p>Please log in to the admin panel to respond.</p>
             `
         });
+
+        // Get all admin users and notify them
+        const adminUsers = await User.find({ role: 'admin' });
+        await Promise.all(adminUsers.map(admin => 
+            NotificationService.createNotification(
+                admin._id,
+                'CONTACT',
+                'New Contact Form Submission',
+                `New message from ${name}: "${subject}"`,
+                {
+                    contact: `/secret-dashboard?tab=contacts&contact=${savedContact._id}`,
+                }
+            )
+        ));
 
         res.status(201).json({
             message: "Message sent successfully",

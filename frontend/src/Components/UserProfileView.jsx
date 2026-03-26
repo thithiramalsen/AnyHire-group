@@ -2,8 +2,24 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
-import { Star, Filter, User, Briefcase, MessageSquare, Tag, MapPin } from "lucide-react";
+import { Star, Filter, User, Briefcase, MessageSquare, Tag, MapPin, Award, Clock, CheckCircle, Trophy, Medal, Shield, Calendar, Gift, Crown } from "lucide-react";
 import PortfolioItem from "./PortfolioItem";
+
+// Add this helper function before your component
+const getAwardIcon = (type) => {
+  switch (type) {
+    case 'TOP_SEEKER_MONTH':
+      return <Crown className="w-5 h-5 text-yellow-400" />;
+    case 'TOP_SEEKER_DAY':
+      return <Star className="w-5 h-5 text-yellow-400" />;
+    case 'CUSTOMER_OF_MONTH':
+      return <Trophy className="w-5 h-5 text-amber-400" />;
+    case 'CUSTOMER_OF_DAY':
+      return <Medal className="w-5 h-5 text-amber-400" />;
+    default:
+      return null;
+  }
+};
 
 const UserProfileView = () => {
     const { userId } = useParams();
@@ -13,6 +29,7 @@ const UserProfileView = () => {
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [loading, setLoading] = useState(true);
+    const [awards, setAwards] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -33,6 +50,15 @@ const UserProfileView = () => {
                 // Fetch categories
                 const categoriesResponse = await axios.get("/category");
                 setCategories(categoriesResponse.data.categories);
+
+                try {
+                    // Try to fetch awards, but don't fail if unavailable
+                    const awardsResponse = await axios.get(`/awards/user/${userId}`);
+                    setAwards(awardsResponse.data.data || []);
+                } catch (awardsError) {
+                    console.log('Awards not available:', awardsError);
+                    setAwards([]); // Set empty awards array
+                }
             } catch (error) {
                 console.error("Error fetching data:", error);
                 toast.error("Failed to load profile data");
@@ -67,6 +93,33 @@ const UserProfileView = () => {
         ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length).toFixed(1)
         : 0;
 
+    const getLatestBadge = () => {
+        const seekerAwards = awards.filter(a => 
+            a.type === 'TOP_SEEKER_MONTH' || a.type === 'TOP_SEEKER_DAY'
+        );
+        return seekerAwards[0]?.badge || null;
+    };
+
+    const getBadgeIcon = (badge) => {
+        switch (badge) {
+            case 'PLATINUM': return <Shield className="w-6 h-6 text-purple-400" />;
+            case 'GOLD': return <Trophy className="w-6 h-6 text-yellow-400" />;
+            case 'SILVER': return <Medal className="w-6 h-6 text-gray-400" />;
+            case 'BRONZE': return <Award className="w-6 h-6 text-orange-400" />;
+            default: return null;
+        }
+    };
+
+    const calculateScore = (metrics) => {
+        if (!metrics) return 0;
+        return Math.round(
+            (metrics.averageRating * 20) + // Rating (max 100)
+            (metrics.onTimeDelivery * 0.3) + // On-time delivery (max 30)
+            (metrics.responseRate * 0.2) + // Response rate (max 20)
+            (Math.min(metrics.completedJobs, 10) * 5) // Completed jobs (max 50)
+        );
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -82,6 +135,8 @@ const UserProfileView = () => {
             </div>
         );
     }
+
+    const badge = getLatestBadge();
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -108,6 +163,12 @@ const UserProfileView = () => {
                                 <span className="text-white font-semibold">{averageRating}</span>
                                 <span className="text-gray-400 ml-1">({reviews.length} reviews)</span>
                             </div>
+                            {badge && (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-700">
+                                    {getBadgeIcon(badge)}
+                                    <span className="text-sm font-medium">{badge} Seeker</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -159,6 +220,63 @@ const UserProfileView = () => {
                     </div>
                 )}
             </div>
+
+            {/* Awards Section - Top Placement */}
+            {awards.length > 0 && (
+                <div className="bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
+                    <div className="flex items-center space-x-2 mb-6">
+                        <Trophy className="w-6 h-6 text-emerald-500" />
+                        <h2 className="text-2xl font-bold text-white">Awards & Achievements</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {awards.map((award) => (
+                            <div key={award._id} className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-duration-300">
+                                <div className="flex items-start gap-3">
+                                    {getAwardIcon(award.type)}
+                                    <div className="flex-1">
+                                        <h4 className="font-medium text-emerald-400">
+                                            {award.type === 'TOP_SEEKER_DAY' && 'Top Seeker of the Day'}
+                                            {award.type === 'TOP_SEEKER_MONTH' && 'Top Seeker of the Month'}
+                                            {award.type === 'CUSTOMER_OF_DAY' && 'Customer of the Day'}
+                                            {award.type === 'CUSTOMER_OF_MONTH' && 'Customer of the Month'}
+                                        </h4>
+                                        <p className="text-sm text-gray-400 mb-2">
+                                            {award.period.day && `${award.period.day}/`}{award.period.month}/{award.period.year}
+                                        </p>
+                                        
+                                        <div className="space-y-1.5">
+                                            {award.type.includes('SEEKER') ? (
+                                                <>
+                                                    <div className="flex items-center gap-2 text-gray-300 text-sm">
+                                                        <Star className="w-3.5 h-3.5" />
+                                                        <span>Rating: {award.metrics.averageRating.toFixed(1)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-gray-300 text-sm">
+                                                        <Clock className="w-3.5 h-3.5" />
+                                                        <span>On-time: {award.metrics.onTimeDelivery}%</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="flex items-center gap-2 text-gray-300 text-sm">
+                                                        <Calendar className="w-3.5 h-3.5" />
+                                                        <span>Bookings: {award.metrics.totalBookings}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-gray-300 text-sm">
+                                                        <Gift className="w-3.5 h-3.5" />
+                                                        <span>${award.metrics.totalSpent} spent</span>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Portfolio Section */}
             <div className="mb-12">
@@ -246,6 +364,9 @@ const UserProfileView = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Awards Section */}
+
         </div>
     );
 };

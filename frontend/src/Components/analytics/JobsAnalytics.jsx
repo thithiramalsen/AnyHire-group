@@ -18,6 +18,12 @@ const JobsAnalytics = () => {
         const fetchAnalyticsData = async () => {
             try {
                 const response = await axios.get("/analytics/jobs");
+                console.log('Raw analytics data:', response.data);
+                console.log('Jobs growth data structure:', {
+                    length: response.data.jobsGrowth?.length,
+                    sample: response.data.jobsGrowth?.[0],
+                    allData: response.data.jobsGrowth
+                });
                 setAnalyticsData(response.data);
             } catch (error) {
                 console.error("Error fetching jobs analytics data:", error);
@@ -75,29 +81,50 @@ const JobsAnalytics = () => {
                 transition={{ duration: 0.5 }}
             >
                 <h2 className="text-xl font-semibold text-white mb-4">Jobs Growth Trend</h2>
-                <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={analyticsData.jobsGrowth}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="_id" stroke="#D1D5DB" />
-                        <YAxis stroke="#D1D5DB" />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: "#1F2937",
-                                border: "none",
-                                borderRadius: "0.5rem",
-                                color: "#fff"
-                            }}
-                        />
-                        <Legend />
-                        <Line
-                            type="monotone"
-                            dataKey="count"
-                            stroke="#3B82F6"
-                            activeDot={{ r: 8 }}
-                            name="Number of Jobs"
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
+                {analyticsData.jobsGrowth && analyticsData.jobsGrowth.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                        <LineChart data={analyticsData.jobsGrowth}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                            <XAxis 
+                                dataKey="_id"
+                                stroke="#D1D5DB"
+                                tickFormatter={(value) => {
+                                    const [year, month] = value.split('-');
+                                    return new Date(year, month - 1).toLocaleString('default', { month: 'short' });
+                                }}
+                            />
+                            <YAxis stroke="#D1D5DB" />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "#1F2937",
+                                    border: "none",
+                                    borderRadius: "0.5rem",
+                                    color: "#fff"
+                                }}
+                                labelFormatter={(value) => {
+                                    const [year, month] = value.split('-');
+                                    return new Date(year, month - 1).toLocaleString('default', { 
+                                        month: 'long',
+                                        year: 'numeric'
+                                    });
+                                }}
+                            />
+                            <Legend />
+                            <Line
+                                type="monotone"
+                                dataKey="count"
+                                stroke="#3B82F6"
+                                strokeWidth={2}
+                                activeDot={{ r: 8 }}
+                                name="Number of Jobs"
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="text-gray-400 text-center py-8">
+                        No growth data available
+                    </div>
+                )}
             </motion.div>
 
             {/* Jobs by Category */}
@@ -177,4 +204,4 @@ const AnalyticsCard = ({ title, value, icon: Icon, color }) => (
     </motion.div>
 );
 
-export default JobsAnalytics; 
+export default JobsAnalytics;
